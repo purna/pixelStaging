@@ -1,0 +1,15 @@
+{
+  "name": "pixel-staging",
+  "private": true,
+  "scripts": {
+    "build": "esbuild js/appEntry.js --bundle --format=iife --platform=browser --target=es2020 --outfile=dist/pixel3d.js"
+  },
+  "dependencies": {
+    "cannon-es": "0.20.0",
+    "three": "0.160.0",
+    "three.quarks": "0.10.18"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.9"
+  }
+}

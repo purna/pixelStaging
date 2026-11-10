@@ -1,0 +1,463 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   animation.css — Pixel 3D Pro Staging Studio
+   Per-object keyframe timeline panel with SVG curve visualisation.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    --a-accent:       #00ff41;
+    --a-accent-dim:   #00d9ff;
+    --a-glow:         rgba(0,255,65,.32);
+    --a-bg:           #09090f;
+    --a-surface:      #0f0f1a;
+    --a-surface2:     #16162a;
+    --a-border:       #1e1e30;
+    --a-border-mid:   #282840;
+    --a-text:         #c4c8d8;
+    --a-text-dim:     #4a4a68;
+    --a-label-w:      78px;
+    --a-lane-h:       52px;   /* taller lane to show curves */
+    --a-header-h:     40px;
+    --a-ease:         cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Panel shell ──────────────────────────────────────────────────────────── */
+
+#anim-panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 850;
+    display: flex;
+    flex-direction: column;
+    background: var(--a-bg);
+    border-top: 1px solid var(--a-border-mid);
+    box-shadow: 0 -8px 40px rgba(0,0,0,.75), 0 -1px 0 rgba(245,158,11,.12);
+    font-family: 'Inter','Segoe UI',system-ui,sans-serif;
+    font-size: 11px;
+    color: var(--a-text);
+    /* Slide-up on appear */
+    transform: translateY(100%);
+    transition: transform .28s var(--a-ease);
+    will-change: transform;
+}
+#anim-panel[style*="flex"] { transform: translateY(0); }
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+#anim-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: var(--a-header-h);
+    min-height: var(--a-header-h);
+    padding: 0 10px 0 12px;
+    background: var(--a-surface);
+    border-bottom: 1px solid var(--a-border);
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.anim-header-gem {
+    width: 9px; height: 9px;
+    background: var(--a-accent);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+    box-shadow: 0 0 8px var(--a-glow);
+}
+
+.anim-panel-title {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--a-accent);
+    white-space: nowrap;
+}
+
+#anim-obj-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--a-text);
+    padding: 2px 8px;
+    background: var(--a-surface2);
+    border: 1px solid var(--a-border-mid);
+    border-radius: 4px;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.anim-hflex { flex: 1; }
+
+/* ── Transport controls ───────────────────────────────────────────────────── */
+
+.anim-transport {
+    display: flex; align-items: center; gap: 3px;
+}
+
+.anim-btn {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--a-surface2);
+    border: 1px solid var(--a-border-mid);
+    border-radius: 5px;
+    color: var(--a-text);
+    font-size: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .13s, border-color .13s, color .13s, box-shadow .13s;
+}
+.anim-btn:hover {
+    background: var(--a-accent);
+    border-color: var(--a-accent);
+    color: #000;
+    box-shadow: 0 0 8px var(--a-glow);
+}
+.anim-btn.anim-active {
+    background: var(--a-accent-dim);
+    border-color: var(--a-accent);
+    color: #fff;
+}
+#anim-play { width: 30px; }
+
+/* Add-keyframe pill */
+#anim-add-kf, #anim-add-object {
+    display: flex; align-items: center; gap: 5px;
+    padding: 0 10px; height: 26px;
+    background: transparent;
+    border: 1px solid var(--a-accent);
+    border-radius: 5px;
+    color: var(--a-accent);
+    font-size: 10px; font-weight: 600;
+    letter-spacing: .04em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .13s;
+}
+#anim-add-kf:hover, #anim-add-object:hover {
+    background: var(--a-accent); color: #000;
+    box-shadow: 0 0 10px var(--a-glow);
+}
+#anim-add-kf.anim-flash {
+    background: var(--a-accent); color: #000;
+    box-shadow: 0 0 20px var(--a-glow);
+    transform: scale(1.07);
+}
+#anim-add-kf:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+#anim-add-object[hidden] { display: none; }
+
+.anim-kf-diamond { cursor: grab; touch-action: none; }
+.anim-kf-diamond.is-dragging { cursor: grabbing; z-index: 8; transform: translate(-50%, -50%) rotate(45deg) scale(1.3); }
+
+/* Meta inputs */
+.anim-meta {
+    display: flex; align-items: center; gap: 5px;
+    color: var(--a-text-dim); font-size: 9px; white-space: nowrap;
+}
+.anim-meta-lbl {
+    font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+}
+#anim-duration, #anim-speed {
+    background: var(--a-surface2);
+    border: 1px solid var(--a-border);
+    border-radius: 4px; color: var(--a-text);
+    padding: 2px 5px; font-size: 10px; height: 22px;
+}
+#anim-duration { width: 50px; text-align: right; font-family: monospace; }
+#anim-speed    { width: 56px; cursor: pointer; }
+#anim-duration:focus, #anim-speed:focus { outline: none; border-color: var(--a-accent); }
+
+/* Time readout */
+#anim-time {
+    font-family: monospace; font-size: 10px;
+    color: var(--a-accent);
+    background: var(--a-surface2);
+    border: 1px solid var(--a-border);
+    border-radius: 4px; padding: 2px 7px;
+    min-width: 102px; text-align: center;
+    letter-spacing: .03em;
+}
+
+/* Collapse btn */
+#anim-collapse-btn {
+    width: 22px; height: 22px;
+    background: transparent;
+    border: 1px solid var(--a-border);
+    border-radius: 4px; color: var(--a-text-dim);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 8px; flex-shrink: 0;
+    transition: all .13s;
+}
+#anim-collapse-btn:hover { border-color: var(--a-accent); color: var(--a-accent); }
+
+/* ── Body (collapsible) ───────────────────────────────────────────────────── */
+
+#anim-body {
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    max-height: 0; opacity: 0; pointer-events: none;
+    transition: max-height .26s var(--a-ease), opacity .22s var(--a-ease);
+}
+
+/* ── Scrubber row ─────────────────────────────────────────────────────────── */
+
+#anim-scrub-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 10px 0 calc(var(--a-label-w) + 10px);
+    height: 20px; flex-shrink: 0;
+    background: var(--a-surface);
+    border-bottom: 1px solid var(--a-border);
+}
+
+#anim-scrub-track {
+    flex: 1; height: 8px;
+    background: var(--a-surface2);
+    border: 1px solid var(--a-border);
+    border-radius: 4px;
+    position: relative; cursor: pointer;
+}
+#anim-scrub-track:hover { border-color: var(--a-accent-dim); }
+
+#anim-scrub-head {
+    position: absolute; top: 50%; left: 0%;
+    transform: translate(-50%,-50%);
+    width: 14px; height: 14px;
+    background: var(--a-accent);
+    border-radius: 50%;
+    cursor: grab; z-index: 3;
+    box-shadow: 0 0 6px var(--a-glow), 0 0 0 2px rgba(245,158,11,.2);
+    transition: box-shadow .1s;
+}
+#anim-scrub-head:hover, #anim-scrub-head:active {
+    cursor: grabbing;
+    box-shadow: 0 0 14px var(--a-glow), 0 0 0 4px rgba(245,158,11,.15);
+}
+
+/* ── Track area ───────────────────────────────────────────────────────────── */
+
+#anim-track-area {
+    flex: 1;
+    overflow-y: auto; overflow-x: hidden;
+    position: relative;
+    min-height: 88px; max-height: 260px;
+}
+#anim-track-area::-webkit-scrollbar { width: 3px; background: var(--a-bg); }
+#anim-track-area::-webkit-scrollbar-thumb { background: var(--a-border); border-radius: 2px; }
+
+/* Empty state */
+.anim-empty {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; height: 68px; padding: 0 16px;
+    color: var(--a-text-dim); font-size: 10.5px; text-align: center;
+}
+.anim-empty i { font-size: 18px; opacity: .28; flex-shrink: 0; }
+.anim-empty kbd {
+    background: var(--a-surface2); border: 1px solid var(--a-border);
+    border-radius: 3px; padding: 1px 5px;
+    font-family: monospace; font-size: 10px; color: var(--a-accent);
+}
+
+/* ── Ruler ────────────────────────────────────────────────────────────────── */
+
+.anim-ruler {
+    position: relative; height: 18px;
+    background: var(--a-surface);
+    border-bottom: 1px solid var(--a-border);
+    padding-left: var(--a-label-w);
+    overflow: hidden; flex-shrink: 0;
+}
+.anim-ruler-tick {
+    position: absolute; top: 0; width: 1px;
+}
+.anim-ruler-tick.major { height: 12px; background: var(--a-text-dim); }
+.anim-ruler-tick.minor { height: 6px;  background: var(--a-border-mid); top: 12px; }
+.anim-ruler-lbl {
+    position: absolute; top: 1px;
+    font-size: 8px; font-family: monospace;
+    color: var(--a-text-dim);
+    transform: translateX(-50%);
+    pointer-events: none; white-space: nowrap;
+}
+
+/* ── Track rows ───────────────────────────────────────────────────────────── */
+
+.anim-track-row {
+    display: flex; align-items: stretch;
+    height: var(--a-lane-h);
+    border-bottom: 1px solid rgba(255,255,255,.03);
+}
+
+.anim-track-label {
+    width: var(--a-label-w); min-width: var(--a-label-w);
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 5px; padding-right: 10px;
+    font-size: 9px; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--a-text-dim);
+    background: var(--a-surface);
+    border-right: 1px solid var(--a-border);
+    flex-shrink: 0; user-select: none;
+}
+.anim-track-dot {
+    width: 7px; height: 7px; border-radius: 2px;
+    flex-shrink: 0; transform: rotate(45deg);
+}
+
+.anim-track-lane {
+    flex: 1; position: relative; cursor: crosshair;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent calc(10% - 1px),
+        rgba(255,255,255,.018) calc(10% - 1px),
+        rgba(255,255,255,.018) 10%
+    );
+    overflow: visible;
+}
+.anim-track-lane:hover { background-color: rgba(255,255,255,.012); }
+
+/* ── SVG curve overlay ────────────────────────────────────────────────────── */
+
+.anim-curve-svg {
+    position: absolute;
+    inset: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: visible;
+}
+
+/* ── Keyframe diamonds ────────────────────────────────────────────────────── */
+
+.anim-kf-diamond {
+    position: absolute;
+    top: 50%; transform: translate(-50%,-50%) rotate(45deg);
+    width: 11px; height: 11px;
+    background: var(--kf-color, var(--a-accent));
+    border: 1.5px solid rgba(0,0,0,.45);
+    cursor: pointer; z-index: 6;
+    transition: transform .12s, box-shadow .12s, background .12s;
+    box-shadow: 0 0 5px color-mix(in srgb, var(--kf-color, var(--a-accent)) 60%, transparent);
+}
+.anim-kf-diamond:hover {
+    background: #fff;
+    transform: translate(-50%,-50%) rotate(45deg) scale(1.4);
+    box-shadow: 0 0 12px var(--kf-color, var(--a-accent));
+}
+
+/* Colour-track diamond: show the swatch colour */
+.anim-kf-diamond.is-color {
+    background: var(--kf-swatch, #ffffff);
+    border-color: rgba(255,255,255,.4);
+}
+.anim-kf-diamond.is-color:hover {
+    background: var(--kf-swatch, #ffffff);
+    filter: brightness(1.3);
+}
+
+/* ── Playhead needle ──────────────────────────────────────────────────────── */
+
+.anim-needle {
+    position: absolute;
+    top: 0; left: 0%;
+    width: 1.5px; height: 100%;
+    background: var(--a-accent);
+    opacity: .8; pointer-events: none; z-index: 25;
+    box-shadow: 0 0 4px var(--a-glow);
+    /* offset by label width so it aligns with lanes */
+    margin-left: var(--a-label-w);
+    /* Shrink from overflow at edges */
+    max-width: calc(100% - var(--a-label-w));
+}
+
+/* ── Context menu ─────────────────────────────────────────────────────────── */
+
+.anim-ctx-menu {
+    position: fixed; z-index: 9999;
+    background: var(--a-surface);
+    border: 1px solid var(--a-border-mid);
+    border-radius: 10px;
+    box-shadow: 0 12px 48px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
+    padding: 12px;
+    width: 228px;
+    font-size: 11px; color: var(--a-text);
+}
+
+.anim-ctx-head {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 10px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    color: var(--a-text);
+}
+.anim-ctx-dot {
+    width: 8px; height: 8px; border-radius: 2px;
+    transform: rotate(45deg); flex-shrink: 0;
+}
+.anim-ctx-time {
+    margin-left: auto; font-family: monospace;
+    font-size: 10px; color: var(--a-accent);
+    background: var(--a-surface2);
+    padding: 1px 5px; border-radius: 3px;
+}
+
+.anim-ctx-section {
+    font-size: 8px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--a-text-dim);
+    margin: 8px 0 4px;
+}
+
+.anim-ctx-xyz { display: flex; flex-direction: column; gap: 4px; }
+.anim-ctx-row {
+    display: flex; align-items: center; gap: 6px;
+}
+.anim-ctx-row label {
+    font-size: 9px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--a-text-dim);
+    width: 14px; flex-shrink: 0;
+}
+.anim-ctx-row input[type=number] {
+    flex: 1; background: var(--a-bg);
+    border: 1px solid var(--a-border);
+    border-radius: 4px; color: var(--a-text);
+    padding: 3px 6px; font-size: 10px; font-family: monospace;
+}
+.anim-ctx-row input[type=number]:focus { outline: none; border-color: var(--a-accent); }
+.anim-ctx-row input[type=color] {
+    flex: 1; height: 26px; padding: 1px 2px;
+    background: var(--a-bg); border: 1px solid var(--a-border);
+    border-radius: 4px; cursor: pointer;
+}
+
+.anim-ctx-select {
+    width: 100%; background: var(--a-bg);
+    border: 1px solid var(--a-border);
+    border-radius: 4px; color: var(--a-text);
+    padding: 4px 6px; font-size: 10px;
+    margin-bottom: 6px;
+}
+.anim-ctx-select:focus { outline: none; border-color: var(--a-accent); }
+
+/* Canvas curve preview */
+.anim-ctx-canvas {
+    width: 100%; height: 60px;
+    border-radius: 6px;
+    border: 1px solid var(--a-border);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.anim-ctx-delete {
+    width: 100%; display: flex; align-items: center; gap: 6px;
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.3);
+    color: #ef4444;
+    border-radius: 5px; padding: 6px 10px;
+    cursor: pointer; font-size: 10px;
+    transition: background .13s;
+}
+.anim-ctx-delete:hover { background: rgba(239,68,68,.25); }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-height: 600px) {
+    :root { --a-lane-h: 38px; }
+    #anim-track-area { max-height: 160px; }
+}

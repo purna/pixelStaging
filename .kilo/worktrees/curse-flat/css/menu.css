@@ -1,0 +1,31 @@
+/* Update the container background size for a 3x6 grid */
+.primitive-icon {
+  /* ... previous base styles ... */
+  background-size: 1536px 768px; /* Correct scaling for 6x3 icons @ 256px */
+}
+
+/* Updated positioning for the actual grid in image_12.png */
+/* Row 1 (Top) */
+.icon.group1-sphere   { background-position: 0px 0px; }
+.icon.group1-cube     { background-position: -256px 0px; }
+.icon.group1-cylinder { background-position: -512px 0px; }
+/* (Wait, the first three are slightly lighter/different perspective on the image? Let's treat them all) */
+.icon.group2-sphere   { background-position: -768px 0px; }
+.icon.group2-cube     { background-position: -1024px 0px; }
+.icon.group2-cylinder { background-position: -1280px 0px; }
+
+/* Row 2 (Middle) */
+.icon.cone     { background-position: 0px -256px; }
+.icon.torus    { background-position: -256px -256px; }
+.icon.plane    { background-position: -512px -256px; }
+.icon.capsule  { background-position: -768px -256px; }
+.icon.pyramid  { background-position: -1024px -256px; }
+.icon.prism    { background-position: -1280px -256px; }
+
+/* Row 3 (Bottom) */
+.icon.capsule2 { background-position: 0px -512px; }
+.icon.pyramid2 { background-position: -256px -512px; }
+.icon.prism2   { background-position: -512px -512px; }
+.icon.sphere2  { background-position: -768px -512px; }
+.icon.cube2    { background-position: -1024px -512px; }
+.icon.cylinder2{ background-position: -1280px -512px; }

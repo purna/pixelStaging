@@ -1,0 +1,172 @@
+/* =============================================
+   MODAL SYSTEM STYLES
+   Styles for AI Modal and related components
+   ============================================= */
+
+/* =============================================
+   MODAL OVERLAY & CONTAINER
+   ============================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal-overlay.open {
+    display: flex;
+}
+
+.modal {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    width: 400px;
+    max-width: calc(100% - 40px);
+    max-height: calc(100vh - 100px);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    margin: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* =============================================
+   MODAL CONTENT STRUCTURE
+   ============================================= */
+.modal-content-wrapper {
+    flex: 1;
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 0px 20px 20px 20px;
+    margin-top: 60px;
+    box-sizing: border-box;
+    display: flex;
+}
+
+
+.modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #a855f7;
+    flex-shrink: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0px 0px 20px 0px;
+}
+
+#modal-desc {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 16px;
+    padding: 0 20px;
+    line-height: 1.4;
+}
+
+
+.modal-scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 0 20px;
+}
+
+/* =============================================
+   MODAL HEADER & FOOTER
+   ============================================= */
+.modal header {
+    flex-shrink: 0;
+    padding: 20px 20px 40px 20px;
+    width: 100%;
+    display: block;
+    margin-bottom: 20px;
+}
+
+.modal header>div {
+    width: 100%;
+}
+
+.modal footer {
+    flex-shrink: 0;
+    padding: 15px 0px 10px 15px;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+    background: var(--bg-dark);
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* =============================================
+   SETTINGS TABS SYSTEM
+   ============================================= */
+
+.modal section {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* =============================================
+   MODAL FORM ELEMENTS
+   ============================================= */
+.modal textarea {
+    width: calc(100% - 40px);
+    height: 100px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 12px 16px;
+    border-radius: 4px;
+    resize: none;
+    margin: 0 auto 15px auto;
+    font-family: inherit;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    display: block;
+}
+
+.modal textarea:focus {
+    outline: none;
+    border-color: #a855f7;
+}
+
+/* =============================================
+   MODAL ACTIONS & CONTROLS
+   ============================================= */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 20px 0 0;
+    margin-bottom: 10px;
+}
+
+.loading-spinner {
+    display: none;
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.loading-spinner.active {
+    display: block;
+}

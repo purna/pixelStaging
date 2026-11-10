@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Staging - Pro Staging Studio</title>
+    <!-- Fonts & Icons -->
+    <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+    <!-- Google Fonts - Press Start 2P -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Custom Font -->
+    <style>
+        @font-face {
+            font-family: 'Inter';
+            src: url('fonts/inter-normal.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Inter';
+            src: url('fonts/inter-bold.woff2') format('woff2');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
+    <!-- External Styles -->
+    <link rel="stylesheet" href="css/styles.css?v=20261005-5">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/modal.css">
+    <link rel="stylesheet" href="css/tutorials.css">
+    <link rel="stylesheet" href="css/animation.css">
+
+    <!-- Local Font Awesome -->
+    <link rel="stylesheet" href="fonts/fontawesome-free-6.5.0/css/all.min.css">
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+                "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+                "three.quarks": "https://cdn.jsdelivr.net/npm/three.quarks@0.10.18/dist/three.quarks.esm.js"
+            }
+        }
+    </script>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo-area">
+            <h1>Pixel Staging</h1>
+            <span class="badge">Pro 3D Studio V1.0</span>
+        </div>
+        <div class="header-controls">
+            <button id="undoBtn" class="btn icon-only" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+            <button id="redoBtn" class="btn icon-only" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+            <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
+            <button class="btn" id="btn-clear"><i class="fas fa-trash-alt"></i> Clear</button>
+            <input type="file" id="file-input" accept=".json" style="display:none">
+            <button class="btn" id="btn-load"><i class="fas fa-folder-open"></i> Load</button>
+            <button class="btn primary" id="btn-save"><i class="fas fa-save"></i> Save to Browser</button>
+            <button class="btn" id="btn-export"><i class="fas fa-download"></i> Export</button>
+            <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
+            <button class="btn icon-only" id="tool-settings" title="Settings"><i class="fas fa-cog"></i></button>
+        </div>
+    </header>
+
+    <!-- WORKSPACE -->
+    <div class="workspace">
+
+        <!-- LEFT TOOLBAR -->
+        <div class="tools-panel" id="tools-container">
+            <div class="tool-btn active" id="tool-select" data-tooltip="**Select Tool**
+Click objects to select them
+--Keyboard: Q--
+--Delete: X--"><i class="fas fa-mouse-pointer"></i></div>
+            <div class="tool-divider"></div>
+
+            <!-- AI Tools -->
+            <div class="tool-btn ai-tool" id="tool-ai-scene" data-tooltip="**Magic Scene Generator**
+Describe a scene and let AI create it
+Uses Gemini AI for generation"><i class="fas fa-wand-magic-sparkles"></i></div>
+
+            <div class="tool-divider"></div>
+
+            <!-- Shapes Menu -->
+            <div class="tool-btn menu-parent" data-tooltip="**Shapes**
+Hover to see all available shapes">
+                <i class="fas fa-shapes"></i>
+                <div class="tool-submenu">
+                    <div class="tool-btn" data-action="addShape" data-type="box" data-tooltip="**Box**"><span
+                            class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"
+                                    fill="currentColor" fill-opacity="0.2" />
+                                <path
+                                    d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"
+                                    stroke-width="1.5" />
+                                <polyline points="3.27,6.96 12,12.01 20.73,6.96" stroke-width="1.5" />
+                                <line x1="12" y1="22.08" x2="12" y2="12" stroke-width="1.5" />
+                            </svg></span></div>
+                    <div class="tool-btn" data-action="addShape" data-type="sphere" data-tooltip="**Sphere**"><span
+                            class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity="0.25" />
+                                <circle cx="12" cy="12" r="10" />
+                                <ellipse cx="12" cy="12" rx="10" ry="4" />
+                                <ellipse cx="12" cy="12" rx="4" ry="10" />
+                                <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(45 12 12)"
+                                    stroke-opacity="0.5" />
+                            </svg></span></div>
+                    <div class="tool-btn" data-action="addShape" data-type="cone" data-tooltip="**Cone**"><span
+                            class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <polygon points="12,2 22,20 2,20" fill="currentColor" fill-opacity="0.25" />
+                                <polygon points="12,2 22,20 2,20" stroke-width="1.5" />
+                                <polygon points="12,2 12,20 2,20" fill="currentColor" fill-opacity="0.15" />
+                                <ellipse cx="12" cy="20" rx="10" ry="3" fill="currentColor" fill-opacity="0.4" />
+                                <ellipse cx="12" cy="20" rx="10" ry="3" />
+                            </svg></span></div>
+                    <div class="tool-btn" data-action="addShape" data-type="cylinder" data-tooltip="**Cylinder**"><span
+                            class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <ellipse cx="12" cy="5" rx="8" ry="3" fill="currentColor" fill-opacity="0.4" />
+                                <ellipse cx="12" cy="5" rx="8" ry="3" />
+                                <path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5" fill="currentColor"
+                                    fill-opacity="0.2" />
+                                <path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5" stroke-width="1.5" />
+                                <ellipse cx="12" cy="19" rx="8" ry="3" fill="currentColor" fill-opacity="0.3" />
+                                <ellipse cx="12" cy="19" rx="8" ry="3" />
+                            </svg></span></div>
+                    <div class="tool-btn" data-action="addShape" data-type="plane" data-tooltip="**Plane**
+Great for floors"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="2,15 12,8 22,15 12,22" fill="currentColor" fill-opacity="0.2" />
+                                <polygon points="2,15 12,8 22,15 12,22" stroke-width="1.5" />
+                                <path d="M2 15L22 15M12 8L12 22" stroke-width="1" stroke-opacity="0.5" />
+                                <path d="M7 11.5L12 15L17 11.5" stroke-width="0.75" stroke-opacity="0.35" />
+                            </svg></span></div>
+                </div>
+            </div>
+
+
+            <!-- Characters Menu -->
+            <div class="tool-btn menu-parent" data-tooltip="**Characters**
+Add animated 3D characters">
+                <i class="fas fa-user"></i>
+                <div class="tool-submenu">
+                    <div class="tool-btn" data-action="addCharacter" data-type="xbot" data-tooltip="**Xbot Character**
+Animated female character with idle/walk/run animations"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="6" r="3.5" fill="currentColor" fill-opacity="0.3" />
+                                <circle cx="12" cy="6" r="3.5" />
+                                <path d="M12 2.5V1" stroke-width="1.25" />
+                                <path d="M5 21v-1.5a7 7 0 0114 0V21" fill="currentColor" fill-opacity="0.2" />
+                                <path d="M5 21v-1.5a7 7 0 0114 0V21" />
+                            </svg></span></div>
+                    <div class="tool-btn" data-action="addCharacter" data-type="ybot" data-tooltip="**Ybot Character**
+Animated male character with idle/walk/run animations"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="8.5" y="3" width="7" height="5.5" rx="1.5" fill="currentColor"
+                                    fill-opacity="0.3" />
+                                <rect x="8.5" y="3" width="7" height="5.5" rx="1.5" />
+                                <path d="M6 21v-2.5a6 6 0 0112 0V21" fill="currentColor" fill-opacity="0.2" />
+                                <path d="M6 21v-2.5a6 6 0 0112 0V21" />
+                            </svg></span></div>
+                </div>
+            </div>
+
+            <!-- Lights Menu -->
+            <div class="tool-btn menu-parent" data-tooltip="**Lights**
+Illuminate your scene">
+                <i class="fas fa-lightbulb"></i>
+                <div class="tool-submenu">
+                    <div class="tool-btn" data-action="addLight" data-type="point" data-tooltip="**Point Light**
+Radiates in all directions"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <circle cx="12" cy="12" r="5" fill="currentColor" fill-opacity="0.5" />
+                                <circle cx="12" cy="12" r="5" />
+                                <path
+                                    d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                                    stroke-width="1.5" />
+                            </svg></span></div>
+                    <div class="tool-btn" data-action="addLight" data-type="spot" data-tooltip="**Spot Light**
+Focused beam of light"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.74V17h8v-2.26A7 7 0 0012 2z"
+                                    fill="currentColor" fill-opacity="0.3" />
+                                <path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.74V17h8v-2.26A7 7 0 0012 2z"
+                                    stroke-width="1.5" />
+                                <path d="M10 8l-3 8h10l-3-8" fill="currentColor" fill-opacity="0.2" />
+                                <path d="M7 18l-2 4M17 18l2 4" stroke-width="1" stroke-opacity="0.6" />
+                            </svg></span></div>
+                    <div class="tool-btn" data-action="addLight" data-type="directional" data-tooltip="**Directional Light**
+Like sunlight, parallel rays"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <circle cx="12" cy="12" r="4" fill="currentColor" fill-opacity="0.4" />
+                                <circle cx="12" cy="12" r="4" />
+                                <path
+                                    d="M12 4v2M12 18v2M4 12h2M18 12h2M6.34 6.34l1.42 1.42M16.24 16.24l1.42 1.42M6.34 17.66l1.42-1.42M16.24 7.76l1.42-1.42"
+                                    stroke-width="1.5" />
+                                <rect x="10" y="2" width="4" height="2" fill="currentColor" fill-opacity="0.3" />
+                                <rect x="10" y="20" width="4" height="2" fill="currentColor" fill-opacity="0.3" />
+                                <rect x="2" y="10" width="2" height="4" fill="currentColor" fill-opacity="0.3" />
+                                <rect x="20" y="10" width="2" height="4" fill="currentColor" fill-opacity="0.3" />
+                            </svg></span></div>
+                    <div class="tool-btn" data-action="addLight" data-type="ambient" data-tooltip="**Ambient Light**
+Overall scene lighting"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <circle cx="12" cy="12" r="9" fill="currentColor" fill-opacity="0.2" />
+                                <circle cx="12" cy="12" r="9" stroke-width="1.5" />
+                                <circle cx="12" cy="12" r="5" fill="currentColor" fill-opacity="0.4" />
+                                <circle cx="12" cy="12" r="5" />
+                                <path d="M12 3v18M3 12h18" stroke-width="1.5" stroke-opacity="0.6" />
+                            </svg></span></div>
+                    <div class="tool-btn" data-action="addLight" data-type="hemisphere" data-tooltip="**Hemisphere Light**
+Sky and ground lighting"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <path d="M12 2a10 10 0 100 20 10 10 0 000-20z" fill="currentColor" fill-opacity="0.3" />
+                                <path d="M12 2a10 10 0 000 20" fill="currentColor" fill-opacity="0.5" />
+                                <path d="M12 2a10 10 0 00-10 10h20a10 10 0 00-10-10z" fill="currentColor"
+                                    fill-opacity="0.15" />
+                                <path d="M12 2a10 10 0 100 20 10 10 0 000-20z" stroke-width="1.5" />
+                            </svg></span></div>
+                </div>
+            </div>
+
+            <!-- Staging Menu (blocking: actors, props, architecture) -->
+            <div class="tool-btn menu-parent" data-tooltip="**Staging**
+Block actors, props and architecture">
+                <i class="fas fa-theater-masks"></i>
+                <div class="tool-submenu">
+                    <div class="tool-btn" data-action="addStaging" data-type="figure:figure-standing" data-tooltip="**Actor (standing)**"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="3" fill="currentColor" fill-opacity="0.3"/><circle cx="12" cy="5" r="3"/><path d="M12 8v8M12 16l-3 5M12 16l3 5M8 11h8"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="figure:figure-seated" data-tooltip="**Actor (seated)** — snaps to nearest chair"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="6" r="3" fill="currentColor" fill-opacity="0.3"/><circle cx="12" cy="6" r="3"/><path d="M12 9v5M12 14l-4 0M8 14v6M12 14v6"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="figure:figure-walking" data-tooltip="**Actor (walking)**"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="5" r="3" fill="currentColor" fill-opacity="0.3"/><circle cx="12" cy="5" r="3"/><path d="M12 8v7M12 15l-4 6M12 15l4 6M7 11l5-1 5 1"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="figure:figure-child" data-tooltip="**Child** (≈1.2 m)"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="7" r="2.5" fill="currentColor" fill-opacity="0.3"/><circle cx="12" cy="7" r="2.5"/><path d="M12 9.5v6M12 15.5l-2.5 4.5M12 15.5l2.5 4.5M9 12h6"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="prop:chair" data-tooltip="**Chair**"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 4v9h10M7 13v7M17 13v7M7 9h10v4"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="prop:table-small" data-tooltip="**Table**"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8h16M6 8v12M18 8v12M4 8v3"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="prop:sofa" data-tooltip="**Sofa**"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 11V8a3 3 0 013-3h8a3 3 0 013 3v3M3 11a2 2 0 012-2h14a2 2 0 012 2v6H3v-6zM6 17v2M18 17v2"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="prop:bed" data-tooltip="**Bed**"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 20v-2M21 20v-2M6 10V7h5v3"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="architecture:wall-straight" data-tooltip="**Wall (straight)**"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="5" width="16" height="14" fill="currentColor" fill-opacity="0.3"/><rect x="4" y="5" width="16" height="14"/><path d="M4 12h16M10 5v14"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="architecture:wall-doorway" data-tooltip="**Wall (door opening)**"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v14H4zM10 19v-8h4v8"/></svg></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="architecture:stairs" data-tooltip="**Stairs**"><span class="icon-svg" data-icon="box"></span></div>
+                    <div class="tool-btn" data-action="addStaging" data-type="primitive:cube" data-tooltip="**Cube** (blocking volume)"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 3v9m0 0l8-4.5M12 12L4 7.5"/></svg></span></div>
+                </div>
+            </div>
+
+            <!-- Separators to group functionality -->
+            <div class="tool-divider"></div>
+
+
+            <!-- Animation Tool -->
+            <div class="tool-btn" id="tool-animate" data-tooltip="**Camera Timeline**
+             Plan shots and preview cuts"><i class="fas fa-film"></i></div>
+
+
+
+            <!-- Scene Settings Tool -->
+            <div class="tool-btn scene-settings-tool" id="tool-scene-settings" data-tooltip="**Scene Settings**
+            Configure background, lighting, and export options"><i class="fas fa-image"></i></div>
+
+            <!-- Camera controls will be added here dynamically -->
+            <div id="camera-controls-container"></div>
+
+            <!-- Overlay Toggle Button -->
+            <div class="tool-btn overlay-toggle-btn" id="tool-toggle-overlays" data-tooltip="**Toggle Overlays**
+            Show/Hide all visual aids (Grid, Axes, Helpers)
+            --Keyboard: Ctrl+Shift+O--"><i class="fas fa-eye-slash"></i></div>
+
+            <!-- Settings moved to header -->
+            <div style="margin-top: auto;"></div>
+            <div class="tool-divider"></div>
+        </div>
+
+
+        <!-- CENTER CANVAS -->
+        <div class="canvas-area">
+            <div class="overlay-controls">
+                <button class="btn icon-only" id="mode-hand" title="Hand Tool (H)" data-tooltip="**Hand Tool**
+                Pan around the scene
+                --Keyboard: H--"><i class="fas fa-hand-paper"></i></button>
+                <button class="btn icon-only" id="mode-translate" title="Translate (G)" data-tooltip="**Translate Mode**
+                Move objects in 3D space
+                --Keyboard: G--"><i class="fas fa-arrows-alt"></i></button>
+                <button class="btn icon-only" id="mode-rotate" title="Rotate (R)" data-tooltip="**Rotate Mode**
+                Rotate objects around axes
+                --Keyboard: R--"><i class="fas fa-sync-alt"></i></button>
+                <button class="btn icon-only" id="mode-scale" title="Scale (S)" data-tooltip="**Scale Mode**
+                Resize objects
+                --Keyboard: S--"><i class="fas fa-expand-arrows-alt"></i></button>
+
+
+                <!-- Transform Space Toggle -->
+                <label class="transform-space-toggle" title="Toggle Transform Space">
+                    <input type="checkbox" id="transform-space-checkbox" class="Checkbox" checked>
+                    <span class="toggle-label">Local</span>
+                </label>
+            </div>
+
+            <!-- Zoom Control -->
+            <div class="zoom-control">
+                <button class="btn icon-only" id="zoom-out" title="Zoom Out (-)" data-tooltip="**Zoom Out**
+                Move camera away from scene
+                --Keyboard: ---"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <circle cx="10" cy="10" r="7" fill="currentColor" fill-opacity="0.15" />
+                            <circle cx="10" cy="10" r="7" />
+                            <line x1="7" y1="7" x2="13" y2="13" stroke-width="2" />
+                            <line x1="7" y1="10" x2="13" y2="10" stroke-width="1.5" />
+                        </svg></span></button>
+                <input type="range" id="zoom-slider" min="1" max="100" value="50" class="zoom-slider">
+                <button class="btn icon-only" id="zoom-in" title="Zoom In (+)" data-tooltip="**Zoom In**
+                Move camera closer to scene
+                --Keyboard: +--"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5">
+                            <circle cx="10" cy="10" r="7" fill="currentColor" fill-opacity="0.15" />
+                            <circle cx="10" cy="10" r="7" />
+                            <line x1="7" y1="7" x2="13" y2="13" stroke-width="2" />
+                            <line x1="10" y1="5" x2="10" y2="11" stroke-width="1.5" />
+                            <line x1="5" y1="10" x2="11" y2="10" stroke-width="1.5" />
+                        </svg></span></button>
+            </div>
+            <div id="canvas-container" style="width: 100%; height: 100%;"></div>
+
+            <!-- Floating Info Box (bottom left) -->
+            <div id="selection-info" class="selection-info-box hidden">
+                <p>Right click to deselect</p>
+            </div>
+
+            <!-- Deselect Info Box -->
+            <div id="deselect-info" class="deselect-info" style="display: none;">
+                <i class="fas fa-info-circle"></i> Right-click empty space to deselect
+            </div>
+        </div>
+
+        <!-- Floating Toggle -->
+        <div id="panel-toggle" title="Toggle Panel">
+            <i class="fas fa-chevron-right"></i>
+        </div>
+
+        <!-- RIGHT PANEL - Unified scrollable panel -->
+        <div class="right-panel" id="right-panel">
+            <div class="right-panel-tabs">
+                <button class="right-tab active" data-right-tab="hierarchy">Hierarchy</button>
+                <button class="right-tab" data-right-tab="object-properties">Properties</button>
+                <button class="right-tab" data-right-tab="assets">Assets</button>
+                <button class="right-tab" data-right-tab="scene-settings">Scene</button>
+            </div>
+            <div class="right-panel-scroll">
+                <!-- Hierarchy Tab -->
+                <div class="right-tab-content active" id="tab-hierarchy">
+                    <div class="panel-section" id="section-hierarchy">
+                        <div class="panel-header">
+                            <div class="panel-header-title"><i data-icon="hierarchy"></i> Hierarchy</div>
+                        </div>
+                        <div class="hierarchy-panel-content">
+                            <div id="hierarchy-list" class="layers-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scene Settings Tab -->
+                <div class="right-tab-content" id="tab-scene-settings">
+                    <div class="panel-section" id="section-scene">
+                        <div class="panel-header">
+                            <div class="panel-header-title"><i data-icon="scene"></i> Scene</div>
+                            <div class="panel-header-actions">
+                                <button class="btn icon-btn" id="scene-expand-all" title="Expand All Sections"><i
+                                        class="fas fa-expand-alt"></i></button>
+                                <button class="btn icon-btn" id="scene-collapse-all" title="Collapse All Sections"><i
+                                        class="fas fa-compress-alt"></i></button>
+                            </div>
+                        </div>
+                        <div id="scene-content" class="panel-content">
+                            <!-- Scene Settings Sections -->
+                            <div class="collapsible-section">
+                                <div class="collapsible-header" data-target="scene-section">
+                                    <span>Scene</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="collapsible-content" id="scene-section">
+                                    <div class="property-group">
+                                        <label class="property-label">Scene Title: <input type="text" id="scene-title"
+                                                value="My Scene"
+                                                style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px;"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header collapsed" data-target="play-camera-section">
+                                    <span>Play Camera</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="collapsible-content hidden" id="play-camera-section">
+                                    <div class="property-group">
+                                        <label class="property-label"><input type="checkbox" id="play-camera-enabled"
+                                                checked> Enable Play Camera</label>
+                                    </div>
+                                    <div class="property-group">
+                                        <label class="property-label">Camera Position X: <input type="number"
+                                                id="play-cam-x" value="0" step="0.1"
+                                                style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; font-size: 0.75rem; color: var(--text-primary); width: 100%; margin-top: 6px;"></label>
+                                    </div>
+                                    <div class="property-group">
+                                        <label class="property-label">Camera Position Y: <input type="number"
+                                                id="play-cam-y" value="5" step="0.1"
+                                                style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; font-size: 0.75rem; color: var(--text-primary); width: 100%; margin-top: 6px;"></label>
+                                    </div>
+                                    <div class="property-group">
+                                        <label class="property-label">Camera Position Z: <input type="number"
+                                                id="play-cam-z" value="10" step="0.1"
+                                                style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; font-size: 0.75rem; color: var(--text-primary); width: 100%; margin-top: 6px;"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header collapsed" data-target="light-section">
+                                    <span>Light</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="collapsible-content hidden" id="light-section">
+                                    <div class="property-group">
+                                        <label class="property-label"><input type="checkbox" id="scene-ambient-light"
+                                                checked> Ambient Light</label>
+                                    </div>
+                                    <div class="property-group">
+                                        <label class="property-label">Intensity: <input type="range"
+                                                id="ambient-intensity" min="0" max="2" step="0.1" value="0.6"
+                                                style="width: 100%;"></label>
+                                    </div>
+                                    <div class="property-group">
+                                        <label class="property-label">Color: <input type="color" id="ambient-color"
+                                                value="#ffffff" style="width: 100%; margin-top: 6px;"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header collapsed" data-target="sky-section">
+                                    <span>Sky</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="collapsible-content hidden" id="sky-section">
+                                    <div class="property-group">
+                                        <label class="property-label">Sky Color: <input type="color" id="sky-color"
+                                                value="#2a2a4e" style="width: 100%; margin-top: 6px;"></label>
+                                    </div>
+                                    <div class="property-group">
+                                        <label class="property-label"><input type="checkbox" id="sky-gradient" checked>
+                                            Use Gradient</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header collapsed" data-target="ambient-shadows-section">
+                                    <span>Ambient Shadows</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="collapsible-content hidden" id="ambient-shadows-section">
+                                    <div class="property-group">
+                                        <label class="property-label"><input type="checkbox"
+                                                id="ambient-shadows-enabled" checked> Enable Ambient Shadows</label>
+                                    </div>
+                                    <div class="property-group">
+                                        <label class="property-label">Shadow Intensity: <input type="range"
+                                                id="shadow-intensity" min="0" max="1" step="0.1" value="0.5"
+                                                style="width: 100%;"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header collapsed" data-target="color-section">
+                                    <span>Color</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="collapsible-content hidden" id="color-section">
+                                    <div class="property-group">
+                                        <label class="property-label">Background Color: <input type="color"
+                                                id="bg-color" value="#2a2a4e"
+                                                style="width: 100%; margin-top: 6px;"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Object Properties Tab -->
+                <div class="right-tab-content" id="tab-object-properties">
+                    <div class="panel-section" id="section-properties">
+                        <div class="panel-header" style="border-top:1px solid var(--border-color);">
+                            <div class="panel-header-title"><i data-icon="properties"></i> Properties</div>
+                        </div>
+                        <div id="props-content" class="panel-content">
+                            <div class="empty-state">
+                                <p>Click on an object to edit properties</p>
+                                <br>
+                                <p>Right click to deselect an object</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assets Tab -->
+                <div class="right-tab-content" id="tab-assets">
+                    <div class="panel-section" id="section-assets">
+                        <div class="panel-header" style="border-top:1px solid var(--border-color);">
+                            <div class="panel-header-title"><i data-icon="assets"></i> Assets</div>
+                        </div>
+                        <div class="assets-tabs">
+                            <button class="asset-tab active" data-asset-tab="colors">Colors</button>
+                            <button class="asset-tab" data-asset-tab="models">3D Models</button>
+                        </div>
+                        <div class="assets-panel-content">
+                            <!-- Colors Palette -->
+                            <div class="asset-tab-content active" id="asset-colors">
+                                <div class="palette-toolbar">
+                                    <button id="saveColorBtn" title="Save Current Color to Palette" class="palette-control-btn">
+                                        <i class="fas fa-save"></i>
+                                    </button>
+                                    <button id="importPaletteUrlBtn" title="Import Palette from Coolors URL" class="palette-control-btn">
+                                        <i class="fas fa-folder-open"></i>
+                                    </button>
+                                    <button id="addPaletteGroupBtn" title="Add New Palette Group" class="palette-control-btn">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div id="palette-container" class="palette-groups"></div>
+                                <div class="palette-color-picker">
+                                    <input type="color" id="colorPicker" value="#00ff41" class="color-picker-input">
+                                    <input type="text" id="colorHex" value="#00ff41" class="color-hex-input">
+                                </div>
+                            </div>
+                            
+                            <!-- 3D Models from polyfork.dev -->
+                            <div class="asset-tab-content" id="asset-models">
+                                <div class="polyfork-toolbar">
+                                    <input type="text" id="polyfork-search" placeholder="Search polyfork.dev models..." class="polyfork-search-input">
+                                    <button id="polyfork-load-more" class="btn" style="display:none;">Load More</button>
+                                </div>
+                                <div id="polyfork-results" class="polyfork-results-grid"></div>
+                                <div id="polyfork-loading" class="polyfork-loading" style="display:none;">
+                                    <i class="fas fa-circle-notch fa-spin"></i> Loading models...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI MODAL -->
+        <div class="modal-overlay" id="ai-modal">
+            <div class="modal">
+                <div class="modal-title">
+                    <i class="fas fa-sparkles"></i> <span id="modal-title-text">Magic Scene Generator</span>
+                </div>
+                <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:10px;" id="modal-desc">
+                    Describe the scene you want to build.
+                </div>
+                <textarea id="ai-prompt-input"
+                    placeholder="e.g. A circle of blue boxes with a red sphere in the middle..."></textarea>
+                <div class="modal-actions">
+                    <div class="loading-spinner" id="ai-spinner"><i class="fas fa-circle-notch fa-spin"></i>
+                        Generating...
+                    </div>
+                    <button class="btn" id="btn-ai-cancel">Cancel</button>
+                    <button class="btn ai-magic" id="btn-ai-generate">Generate ✨</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- UNIFIED SETTINGS MODAL -->
+        <div class="modal-overlay" id="unified-settings-modal">
+            <div class="modal">
+                <header>
+                    <div class="modal-title">
+                        <i class="fas fa-cog"></i> Settings
+                    </div>
+                    <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:15px;">
+                        Configure your 3D Studio preferences
+                    </div>
+
+                    <!-- Settings Tabs -->
+                    <div class="settings-tabs">
+                        <button class="settings-tab active" data-tab="general" id="tab-general">
+                            <i class="fas fa-sliders-h"></i> General
+                        </button>
+                        <button class="settings-tab" data-tab="scene" id="tab-scene">
+                            <i class="fas fa-image"></i> Scene
+                        </button>
+                        <button class="settings-tab" data-tab="export" id="tab-export">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button class="settings-tab" data-tab="tutorial" id="tab-tutorial">
+                            <i class="fas fa-graduation-cap"></i> Tutorial
+                        </button>
+                        <button class="settings-tab" data-tab="ai" id="tab-ai">
+                            <i class="fas fa-wand-magic-sparkles"></i> AI
+                        </button>
+                    </div>
+                </header>
+                <!-- Scrollable Content Wrapper -->
+                <div class="modal-content-wrapper">
+                    <!-- General Settings Tab -->
+                    <div class="settings-tab-content active" data-tab-content="general">
+                        <div class="settings-content">
+                            <!-- Visual Settings Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Visual Settings</div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-grid" checked>
+                                        Show Grid
+                                    </label>
+                                </div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-axes" checked>
+                                        Show Axes
+                                    </label>
+                                </div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-snap" checked>
+                                        Snap to Grid
+                                    </label>
+                                </div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-tooltips" checked>
+                                        Show Tooltips
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Camera Settings Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Camera Settings</div>
+                                <div class="property-group has-slider">
+                                    <label class="property-label">
+                                        Camera Speed: <span id="camera-speed-value">1.0</span>
+                                    </label>
+                                    <input type="range" id="setting-camera-speed" min="0.1" max="5" step="0.1"
+                                        value="1">
+                                </div>
+                            </div>
+
+                            <!-- Auto Save Settings Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Auto Save Settings</div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-autosave" checked>
+                                        Auto Save Scene
+                                    </label>
+                                </div>
+                                <div class="property-group has-slider">
+                                    <label class="property-label">
+                                        Auto Save Interval (minutes): <span id="autosave-interval-value">5</span>
+                                    </label>
+                                    <input type="range" id="setting-autosave-interval" min="1" max="60" step="1"
+                                        value="5">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scene Settings Tab -->
+                    <div class="settings-tab-content" data-tab-content="scene">
+                        <div class="scene-settings-content">
+                            <!-- Background Settings Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Background Settings</div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-background-enabled" checked>
+                                        Enable Custom Background
+                                    </label>
+
+                                    <label class="property-label">
+                                        Background Color:
+                                        <input type="color" id="setting-background-color" value="#1a1a2e">
+                                    </label>
+                                </div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-background-gradient">
+                                        Use Gradient Background
+                                    </label>
+                                    <label class="property-label">
+                                        Gradient Top Color:
+                                        <input type="color" id="setting-gradient-top" value="#1a1a2e">
+                                    </label>
+                                    <label class="property-label">
+                                        Gradient Bottom Color:
+                                        <input type="color" id="setting-gradient-bottom" value="#0f0f1b">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Fog Settings Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Fog Settings</div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-fog-enabled">
+                                        Enable Fog
+                                    </label>
+                                </div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        Fog Color:
+                                        <input type="color" id="setting-fog-color" value="#1a1a2e">
+                                    </label>
+                                </div>
+                                <div class="property-group has-slider">
+                                    <label class="property-label">
+                                        Fog Near: <span id="fog-near-value">30</span>
+                                    </label>
+                                    <input type="range" id="setting-fog-near" min="1" max="100" step="1" value="30">
+                                </div>
+                                <div class="property-group has-slider">
+                                    <label class="property-label">
+                                        Fog Far: <span id="fog-far-value">100</span>
+                                    </label>
+                                    <input type="range" id="setting-fog-far" min="50" max="300" step="5" value="100">
+                                </div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-fog-match-bg">
+                                        Match Fog to Background
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Lighting Settings Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Lighting Settings</div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-ambient-light" checked>
+                                        Enable Ambient Light
+                                    </label>
+                                </div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        Ambient Light Color:
+                                        <input type="color" id="setting-ambient-color" value="#ffffff">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Settings Tab -->
+                    <div class="settings-tab-content" data-tab-content="export">
+                        <div class="export-settings-content">
+                            <!-- Export Options Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Export Options</div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        Export Format:
+                                        <select id="setting-export-format"
+                                            style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px;">
+                                            <option value="json">JSON (.json) - Scene data for re-import</option>
+                                            <option value="glb">GLB (.glb) - Binary GLTF 3D model</option>
+                                            <option value="gltf">GLTF (.gltf) - GLTF JSON 3D model</option>
+                                            <option value="draco">Draco (.drc) - Google mesh compression (~90% size
+                                                reduction)</option>
+                                            <option value="aframe">A-Frame (.html) - Web VR export</option>
+                                            <option value="js">JS (.js) - Javascript 3D model</option>
+                                            <option disabled value="fbx">FBX (.fbx) - FBX (coming soon)</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        <input type="checkbox" id="setting-export-transparent">
+                                        Export with Transparent Background
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Resolution Settings Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Resolution Settings</div>
+                                <div class="property-group">
+                                    <label class="property-label">
+                                        Export Resolution:
+                                        <select id="setting-export-resolution"
+                                            style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px;">
+                                            <!-- Game Asset Sizes -->
+                                            <option value="24x24">24×24 - Game Icon</option>
+                                            <option value="36x36">36×36 - Game Icon</option>
+                                            <option value="48x48">48×48 - Game Icon</option>
+                                            <option value="128x128">128×128 - Game Sprite</option>
+                                            <option value="512x512">512×512 - Game Texture</option>
+                                            <option value="1024x1024">1024×1024 - High-res Texture</option>
+
+                                            <!-- Standard Resolutions -->
+                                            <option value="1920x1080" selected>1920×1080 - Full HD</option>
+                                            <option value="2560x1440">2560×1440 - 2K</option>
+                                            <option value="3840x2160">3840×2160 - 4K</option>
+                                            <option value="custom">Custom Size</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <div class="property-group" id="custom-resolution-group" style="display: none;">
+                                    <label class="property-label">
+                                        Custom Width:
+                                        <input type="number" id="setting-custom-width" value="1920" min="100"
+                                            max="8000">
+                                    </label>
+                                    <label class="property-label">
+                                        Custom Height:
+                                        <input type="number" id="setting-custom-height" value="1080" min="100"
+                                            max="8000">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tutorial Settings Tab -->
+                    <div class="settings-tab-content" data-tab-content="tutorial">
+                        <div class="settings-content">
+                            <!-- Tutorial Settings Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Tutorial Settings</div>
+                                <div class="property-group">
+                                    <label class="setting-label">
+                                        <input type="checkbox" id="settings-enable-tutorials" checked>
+                                        <span class="checkmark"></span> Enable Tutorials
+                                    </label>
+                                    <div class="setting-description">
+                                        Show interactive tutorials on startup
+                                    </div>
+                                </div>
+
+                                <div class="property-group">
+                                    <label class="setting-label">
+                                        <input type="checkbox" id="settings-show-hints" checked>
+                                        <span class="checkmark"></span> Show Tutorial Hints
+                                    </label>
+                                    <div class="setting-description">
+                                        Display helpful hints and tooltips
+                                    </div>
+                                </div>
+
+                                <div class="property-group">
+                                    <label class="setting-label">
+                                        <input type="checkbox" id="settings-tutorial-auto-start">
+                                        <span class="checkmark"></span> Auto-start Tutorial
+                                    </label>
+                                    <div class="setting-description">
+                                        Automatically start the tutorial on app launch
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tutorial Actions Group -->
+                            <div class="settings-section">
+                                <div class="section-heading">Tutorial Actions</div>
+                                <div class="property-group">
+                                    <button id="startTutorialBtn" class="btn" style="width: 100%;">
+                                        <i class="fas fa-graduation-cap"></i> Start Tutorial
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-tab-content" data-tab-content="ai">
+                        <div class="settings-content">
+                            <div class="settings-section">
+                                <div class="section-heading">AI Scene Assistant</div>
+                                <div class="property-group">
+                                    <label class="property-label" for="ai-provider">Provider used for generation</label>
+                                    <select id="ai-provider" class="ai-settings-input">
+                                        <option value="gemini">Google Gemini</option>
+                                        <option value="openai">OpenAI API (ChatGPT models)</option>
+                                        <option value="claude">Anthropic Claude</option>
+                                        <option value="openrouter">OpenRouter</option>
+                                    </select>
+                                </div>
+                                <p class="ai-settings-note">Add API keys from the provider’s developer platform. A
+                                    ChatGPT subscription does not include OpenAI API usage. Keys are saved in this
+                                    browser’s local storage and can be read by anyone with access to this browser
+                                    profile.</p>
+                                <div class="property-group ai-provider-fields" data-provider-fields="gemini"><label
+                                        class="property-label" for="ai-gemini-key">Gemini API key</label><input
+                                        class="ai-settings-input" id="ai-gemini-key" type="password" autocomplete="off"
+                                        placeholder="Google AI Studio API key"><label class="property-label"
+                                        for="ai-gemini-model">Gemini model</label><input class="ai-settings-input"
+                                        id="ai-gemini-model" type="text" value="gemini-3.8-flash"></div>
+                                <div class="property-group ai-provider-fields" data-provider-fields="openai"><label
+                                        class="property-label" for="ai-openai-key">OpenAI API key</label><input
+                                        class="ai-settings-input" id="ai-openai-key" type="password" autocomplete="off"
+                                        placeholder="OpenAI API key"><label class="property-label"
+                                        for="ai-openai-model">OpenAI model</label><input class="ai-settings-input"
+                                        id="ai-openai-model" type="text" value="gpt-4.1-mini"></div>
+                                <div class="property-group ai-provider-fields" data-provider-fields="claude"><label
+                                        class="property-label" for="ai-claude-key">Claude API key</label><input
+                                        class="ai-settings-input" id="ai-claude-key" type="password" autocomplete="off"
+                                        placeholder="Anthropic API key"><label class="property-label"
+                                        for="ai-claude-model">Claude model</label><input class="ai-settings-input"
+                                        id="ai-claude-model" type="text" value="claude-sonnet-5"></div>
+                                <div class="property-group ai-provider-fields" data-provider-fields="openrouter"><label
+                                        class="property-label" for="ai-openrouter-key">OpenRouter API key</label><input
+                                        class="ai-settings-input" id="ai-openrouter-key" type="password"
+                                        autocomplete="off" placeholder="OpenRouter API key"><label
+                                        class="property-label" for="ai-openrouter-model">OpenRouter model</label><input
+                                        class="ai-settings-input" id="ai-openrouter-model" type="text"
+                                        value="openrouter/auto" placeholder="e.g. provider/model:free"><button
+                                        class="btn" type="button" id="ai-openrouter-load-free-models">Load free
+                                        models</button><select class="ai-settings-input" id="ai-openrouter-free-models"
+                                        hidden aria-label="OpenRouter free models">
+                                        <option value="">Choose a free model…</option>
+                                    </select>
+                                    <div class="ai-settings-note" id="ai-openrouter-model-status" role="status"></div>
+                                    <label class="property-label ai-openrouter-fallback-toggle"><input type="checkbox"
+                                            id="ai-openrouter-fallback-enabled"> If this free model is rate-limited or
+                                        unavailable, automatically try the next free model</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <footer>
+                    <div class="modal-actions">
+                        <button class="btn" id="btn-settings-reset">Reset</button>
+                        <button class="btn" id="btn-settings-close">Close</button>
+                        <button class="btn primary" id="btn-settings-save">Save Settings</button>
+                    </div>
+                </footer>
+            </div>
+        </div>
+
+        <!-- MATERIAL ASSET MODAL -->
+
+        <!-- TEXTURE ASSET MODAL -->
+
+        <!-- COLOR ASSET MODAL -->
+        <div class="modal-overlay" id="color-asset-modal">
+            <div class="modal">
+                <div class="modal-top-section">
+                    <h2 class="modal-title-text">Edit Color Asset</h2>
+                    <button class="modal-close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="color-asset-container">
+                        <div class="color-asset-input">
+                            <input type="text" class="modal-input" placeholder="Color Name" id="color-asset-name">
+                        </div>
+                        <div class="color-asset-panel">
+                            <div class="color-picker-container">
+                                <div class="color-picker-main">
+                                    <div class="color-sl-picker" id="color-sl-picker">
+                                        <div class="color-sl-track">
+                                            <div class="color-sl-thumb"></div>
+                                        </div>
+                                    </div>
+                                    <div class="color-preview-col">
+                                        <div class="color-preview-swatch" id="color-preview-swatch"></div>
+                                        <button class="eyedropper-btn" title="Eyedropper" id="color-eyedropper-btn"><i
+                                                class="fas fa-eye-dropper"></i></button>
+                                    </div>
+                                </div>
+                                <div class="color-sliders">
+                                    <div class="color-slider-row">
+                                        <label class="color-slider-label">Hue</label>
+                                        <div class="hue-slider" id="hue-slider">
+                                            <div class="slider-track">
+                                                <div class="slider-thumb"></div>
+                                                <div class="slider-background"></div>
+                                            </div>
+                                        </div>
+                                        <input type="number" class="color-slider-value" id="hue-value" min="0" max="360"
+                                            value="0">
+                                    </div>
+                                    <div class="color-slider-row">
+                                        <label class="color-slider-label">Saturation</label>
+                                        <div class="saturation-slider" id="saturation-slider">
+                                            <div class="slider-track">
+                                                <div class="slider-thumb"></div>
+                                                <div class="slider-background"></div>
+                                            </div>
+                                        </div>
+                                        <input type="number" class="color-slider-value" id="saturation-value" min="0"
+                                            max="100" value="0">
+                                    </div>
+                                    <div class="color-slider-row">
+                                        <label class="color-slider-label">Transparency</label>
+                                        <div class="transparency-slider" id="transparency-slider">
+                                            <div class="slider-track">
+                                                <div class="slider-thumb"></div>
+                                                <div class="slider-background"></div>
+                                            </div>
+                                        </div>
+                                        <input type="number" class="color-slider-value" id="transparency-value" min="0"
+                                            max="100" value="100">
+                                    </div>
+                                </div>
+                                <div class="color-format-row">
+                                    <select class="format-select" id="color-format-select">
+                                        <option value="hex">HEX</option>
+                                        <option value="rgb">RGB</option>
+                                        <option value="css">CSS</option>
+                                        <option value="hsl">HSL</option>
+                                        <option value="hsb">HSB</option>
+                                    </select>
+                                    <div class="color-format-inputs" id="color-format-inputs"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" data-close-modal="color-asset-modal">Cancel</button>
+                    <button class="btn primary" id="color-asset-save">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- IMAGE ASSET MODAL -->
+
+        <!-- VIDEO ASSET MODAL -->
+
+        <!-- AUDIO ASSET MODAL -->
+
+        <!-- Self-contained app bundle: works over http:// and when index.html is opened directly. -->
+        <script src="dist/pixel3d.js?v=20261006-1"></script>
+
+        <!-- ANIMATION TIMELINE PANEL -->
+        <div id="anim-panel" style="display:none;">
+            <div id="anim-header">
+                <div class="anim-header-gem"></div>
+                <span class="anim-panel-title">Timeline</span>
+                <span id="anim-obj-label">—</span>
+                <div class="anim-hflex"></div>
+                <div class="anim-transport">
+                    <button class="anim-btn" id="anim-play" title="Play / Pause  (Space)"><i
+                            class="fas fa-play"></i></button>
+                    <button class="anim-btn" id="anim-stop" title="Stop &amp; Rewind"><i
+                            class="fas fa-stop"></i></button>
+                    <button class="anim-btn" id="anim-loop" title="Loop: OFF"><i class="fas fa-redo"></i></button>
+                </div>
+                <div class="anim-meta">
+                    <span class="anim-meta-lbl">Speed</span>
+                    <select id="anim-speed">
+                        <option value="0.25">0.25×</option>
+                        <option value="0.5">0.5×</option>
+                        <option value="1" selected>1×</option>
+                        <option value="1.5">1.5×</option>
+                        <option value="2">2×</option>
+                    </select>
+                </div>
+                <div class="anim-meta">
+                    <span class="anim-meta-lbl">Dur</span>
+                    <input type="number" id="anim-duration" value="3.0" min="0.5" max="300" step="0.5"
+                        title="Clip duration in seconds">
+                    <span class="anim-meta-lbl">s</span>
+                </div>
+                <span id="anim-time">0.00s / 3.00s</span>
+                <button id="anim-add-object" title="Add the selected object to the timeline as a 3 second clip">
+                    <i class="fas fa-plus"></i>&nbsp; Add Object
+                </button>
+                <button id="anim-add-kf" title="Record keyframe for selected object at current time  (K)">
+                    <i class="fas fa-diamond" style="font-size:8px"></i>&nbsp;+ Keyframe
+                </button>
+                <button id="anim-collapse-btn" title="Collapse timeline"><i class="fas fa-chevron-down"></i></button>
+            </div>
+            <div id="anim-body">
+                <div id="anim-scrub-row">
+                    <div id="anim-scrub-track">
+                        <div id="anim-scrub-head"></div>
+                    </div>
+                </div>
+                <div id="anim-track-area">
+                    <div class="anim-empty">
+                        <i class="fas fa-film"></i>
+                        <span>Select an object to view its animation timeline</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+</html>
