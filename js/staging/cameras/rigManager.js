@@ -27,8 +27,8 @@ export class CameraRigManager {
         this.rigs = [];
         this.viewingRigId = null;   // null = layout mode (editing camera)
         this.activeIndex = 0;
-        // Build UI after a short delay to ensure DOM is ready
-        setTimeout(() => this.buildUI(), 100);
+        // Camera controls are now in the right panel Camera tab
+        // setTimeout(() => this.buildUI(), 100);
     }
 
     /** Derived vertical FOV (degrees) for a lens spec. */
@@ -178,114 +178,13 @@ export class CameraRigManager {
         }
     }
 
-    /** Build UI for camera rig controls in the toolbar. */
+    /** Build UI for camera rig controls - now handled by right panel Camera tab. */
     buildUI() {
-        const container = document.getElementById('camera-controls-container');
-        if (!container) return;
-
-        // Clear existing
-        container.innerHTML = '';
-
-        // Camera rig group
-        const rigGroup = document.createElement('div');
-        rigGroup.className = 'camera-rig-controls-group';
-
-        // Add camera rig button
-        const addBtn = document.createElement('div');
-        addBtn.className = 'tool-btn camera-rig-btn';
-        addBtn.id = 'tool-add-camera-rig';
-        addBtn.innerHTML = `<span class="icon-svg">${Icons.add}</span>`;
-        addBtn.title = 'Add Virtual Camera';
-        addBtn.dataset.tooltip = '**Add Virtual Camera**\nCreate a new movie camera for shot planning';
-        addBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.addRig();
-        });
-        rigGroup.appendChild(addBtn);
-
-        // View through camera / cycle button
-        const viewBtn = document.createElement('div');
-        viewBtn.className = 'tool-btn camera-rig-btn';
-        viewBtn.id = 'tool-view-camera';
-        viewBtn.innerHTML = `<span class="icon-svg">${Icons.view}</span>`;
-        viewBtn.title = 'View Through Camera';
-        viewBtn.dataset.tooltip = '**View Through Camera**\nCycle through virtual cameras (Layout → Cam A → Cam B → … → Layout)';
-        viewBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.cycleViewThrough();
-        });
-        rigGroup.appendChild(viewBtn);
-
-        // Frame camera from current view button
-        const frameBtn = document.createElement('div');
-        frameBtn.className = 'tool-btn camera-rig-btn';
-        frameBtn.id = 'tool-frame-camera';
-        frameBtn.innerHTML = `<span class="icon-svg">${Icons.lock}</span>`;
-        frameBtn.title = 'Frame Camera from View';
-        frameBtn.dataset.tooltip = '**Frame Camera from View**\nLock the selected camera to match the current editor view';
-        frameBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.frameCameraFromView();
-        });
-        rigGroup.appendChild(frameBtn);
-
-        // Delete camera button
-        const deleteBtn = document.createElement('div');
-        deleteBtn.className = 'tool-btn camera-rig-btn';
-        deleteBtn.id = 'tool-delete-camera';
-        deleteBtn.innerHTML = `<span class="icon-svg">${Icons.delete}</span>`;
-        deleteBtn.title = 'Delete Camera';
-        deleteBtn.dataset.tooltip = '**Delete Camera**\nRemove the selected virtual camera';
-        deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.deleteSelectedRig();
-        });
-        rigGroup.appendChild(deleteBtn);
-
-        // Lens preset selector
-        const lensSelect = document.createElement('select');
-        lensSelect.id = 'camera-lens-preset';
-        lensSelect.className = 'camera-preset-select';
-        lensSelect.innerHTML = LENS_PRESETS.map(f => `<option value="${f}">${f}mm</option>`).join('');
-        lensSelect.value = '50';
-        lensSelect.addEventListener('change', (e) => {
-            const rig = this.selectedRig || this.rigs[0];
-            if (rig) this.setLens(rig, parseFloat(e.target.value), null);
-        });
-        rigGroup.appendChild(lensSelect);
-
-        // Sensor preset selector
-        const sensorSelect = document.createElement('select');
-        sensorSelect.id = 'camera-sensor-preset';
-        sensorSelect.className = 'camera-preset-select';
-        sensorSelect.innerHTML = Object.entries(SENSOR_PRESETS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
-        sensorSelect.value = 'fullFrame';
-        sensorSelect.addEventListener('change', (e) => {
-            const rig = this.selectedRig || this.rigs[0];
-            if (rig) this.setLens(rig, null, e.target.value);
-        });
-        rigGroup.appendChild(sensorSelect);
-
-        // Aspect ratio selector
-        const aspectSelect = document.createElement('select');
-        aspectSelect.id = 'camera-aspect-preset';
-        aspectSelect.className = 'camera-preset-select';
-        aspectSelect.innerHTML = Object.entries(ASPECT_PRESETS).map(([k, v]) => `<option value="${k}">${k} (${v.toFixed(2)})</option>`).join('');
-        aspectSelect.value = '16:9';
-        aspectSelect.addEventListener('change', (e) => {
-            const rig = this.selectedRig || this.rigs[0];
-            if (rig) this.setAspect(rig, e.target.value);
-        });
-        rigGroup.appendChild(aspectSelect);
-
-        // Camera list display
-        const listDiv = document.createElement('div');
-        listDiv.id = 'camera-rig-list';
-        listDiv.className = 'camera-rig-list';
-        rigGroup.appendChild(listDiv);
-
-        container.appendChild(rigGroup);
-        this.refreshUI();
+        // Camera controls are now in the right panel Camera tab
+        // This method is kept for compatibility but does nothing
+        if (this.app.ui?.refreshCameraRigList) {
+            this.app.ui.refreshCameraRigList();
+        }
     }
 
     /** Refresh the camera rig list display. */

@@ -33094,6 +33094,8 @@
             this.renderAssetsPanel("colors");
           } else if (tab.dataset.rightTab === "hierarchy") {
             this.renderHierarchyPanel();
+          } else if (tab.dataset.rightTab === "camera") {
+            this.setupCameraTab();
           }
         });
       });
@@ -34157,6 +34159,93 @@
           this.searchPolyforkModels("");
         }
       }
+    }
+    setupCameraTab() {
+      const cameras = this.app.staging?.cameras;
+      if (!cameras) return;
+      const lensSelect = document.getElementById("camera-lens-preset");
+      if (lensSelect && lensSelect.options.length === 0) {
+        lensSelect.innerHTML = "12,16,24,35,50,85,135".split(",").map((f) => `<option value="${f}">${f}mm</option>`).join("");
+        lensSelect.addEventListener("change", (e) => {
+          const rig = cameras.selectedRig || cameras.rigs[0];
+          if (rig) cameras.setLens(rig, parseFloat(e.target.value), null);
+        });
+      }
+      const sensorSelect = document.getElementById("camera-sensor-preset");
+      if (sensorSelect && sensorSelect.options.length === 0) {
+        sensorSelect.innerHTML = Object.entries({ fullFrame: "Full Frame", super35: "Super 35", mft: "MFT" }).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+        sensorSelect.addEventListener("change", (e) => {
+          const rig = cameras.selectedRig || cameras.rigs[0];
+          if (rig) cameras.setLens(rig, null, e.target.value);
+        });
+      }
+      const aspectSelect = document.getElementById("camera-aspect-preset");
+      if (aspectSelect && aspectSelect.options.length === 0) {
+        aspectSelect.innerHTML = Object.entries({ "16:9": "16:9 (1.78)", "2.39:1": "2.39:1", "1.85:1": "1.85:1", "4:3": "4:3 (1.33)", "1:1": "1:1" }).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+        aspectSelect.addEventListener("change", (e) => {
+          const rig = cameras.selectedRig || cameras.rigs[0];
+          if (rig) cameras.setAspect(rig, e.target.value);
+        });
+      }
+      const addBtn = document.getElementById("tool-add-camera-rig");
+      if (addBtn && !addBtn.dataset.wired) {
+        addBtn.dataset.wired = "true";
+        addBtn.addEventListener("click", () => cameras.addRig());
+      }
+      const viewBtn = document.getElementById("tool-view-camera");
+      if (viewBtn && !viewBtn.dataset.wired) {
+        viewBtn.dataset.wired = "true";
+        viewBtn.addEventListener("click", () => cameras.cycleViewThrough());
+      }
+      const frameBtn = document.getElementById("tool-frame-camera");
+      if (frameBtn && !frameBtn.dataset.wired) {
+        frameBtn.dataset.wired = "true";
+        frameBtn.addEventListener("click", () => cameras.frameCameraFromView());
+      }
+      const deleteBtn = document.getElementById("tool-delete-camera");
+      if (deleteBtn && !deleteBtn.dataset.wired) {
+        deleteBtn.dataset.wired = "true";
+        deleteBtn.addEventListener("click", () => cameras.deleteSelectedRig());
+      }
+      const timelineBtn = document.getElementById("tool-toggle-shot-timeline");
+      if (timelineBtn && !timelineBtn.dataset.wired) {
+        timelineBtn.dataset.wired = "true";
+        timelineBtn.addEventListener("click", () => this.app.staging.shotManager.toggleUI());
+      }
+      this.refreshCameraRigList();
+    }
+    refreshCameraRigList() {
+      const cameras = this.app.staging?.cameras;
+      if (!cameras) return;
+      const listDiv = document.getElementById("camera-rig-list");
+      if (!listDiv) return;
+      if (cameras.rigs.length === 0) {
+        listDiv.innerHTML = '<div class="camera-rig-empty">No virtual cameras. Click + to add.</div>';
+        return;
+      }
+      listDiv.innerHTML = cameras.rigs.map((rig) => `
+            <div class="camera-rig-item ${cameras.viewingRigId === rig.id ? "active-view" : ""} ${cameras.selectedRig?.id === rig.id ? "selected" : ""}" data-rig-id="${rig.id}">
+                <span class="camera-rig-color" style="background:#${rig.color.toString(16).padStart(6, "0")}"></span>
+                <span class="camera-rig-name">Cam ${rig.name}</span>
+                <span class="camera-rig-lens">${rig.lens.focalLength}mm ${rig.lens.sensor}</span>
+                <span class="camera-rig-aspect">${rig.aspect}</span>
+            </div>
+        `).join("");
+      listDiv.querySelectorAll(".camera-rig-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          const rigId = item.dataset.rigId;
+          const rig = cameras.get(rigId);
+          if (rig) {
+            this.app.selectObject(rig.group);
+          }
+        });
+        item.addEventListener("dblclick", () => {
+          const rigId = item.dataset.rigId;
+          cameras.viewingRigId = rigId;
+          if (this.app.orbit) this.app.orbit.enabled = false;
+          this.refreshCameraRigList();
+        });
+      });
     }
     // =============================================
     // PALETTE MANAGEMENT (from pixelArt)
@@ -36451,6 +36540,9 @@
         colorGroup.appendChild(colInput);
         this.propsContent.appendChild(colorGroup);
         this.addPhysicsControls(obj);
+        if (obj.userData.rigRef) {
+          this.addCameraRigControls(obj.userData.rigRef);
+        }
       }
       if (isLight) {
         const lightObj = obj.children[0];
@@ -36841,6 +36933,95 @@
       outlineRow.appendChild(outlineThickness);
       outlineGroup.appendChild(outlineRow);
       this.propsContent.appendChild(outlineGroup);
+    }
+    // Add Camera Rig Controls to Properties Panel
+    addCameraRigControls(rig) {
+      const group = document.createElement("div");
+      group.className = "property-group";
+      group.innerHTML = `<div class="property-label">Camera Rig: ${rig.name}</div>`;
+      const lensRow = document.createElement("div");
+      lensRow.className = "input-row";
+      lensRow.style.marginBottom = "8px";
+      lensRow.innerHTML = '<span style="width:70px;font-size:.75rem;color:var(--text-secondary)">Lens:</span>';
+      const lensSelect = document.createElement("select");
+      lensSelect.id = "camera-lens-preset";
+      lensSelect.style.cssText = "flex:1;background:var(--bg-light);border:1px solid var(--border-color);border-radius:4px;padding:5px 8px;color:var(--text-primary);font-size:.75rem";
+      lensSelect.innerHTML = "12,16,24,35,50,85,135".split(",").map((f) => `<option value="${f}"${f == rig.lens.focalLength ? " selected" : ""}>${f}mm</option>`).join("");
+      lensSelect.addEventListener("change", (e) => {
+        this.app.staging.cameras.setLens(rig, parseFloat(e.target.value), null);
+      });
+      lensRow.appendChild(lensSelect);
+      group.appendChild(lensRow);
+      const sensorRow = document.createElement("div");
+      sensorRow.className = "input-row";
+      sensorRow.style.marginBottom = "8px";
+      sensorRow.innerHTML = '<span style="width:70px;font-size:.75rem;color:var(--text-secondary)">Sensor:</span>';
+      const sensorSelect = document.createElement("select");
+      sensorSelect.id = "camera-sensor-preset";
+      sensorSelect.style.cssText = "flex:1;background:var(--bg-light);border:1px solid var(--border-color);border-radius:4px;padding:5px 8px;color:var(--text-primary);font-size:.75rem";
+      sensorSelect.innerHTML = Object.entries({ fullFrame: "Full Frame", super35: "Super 35", mft: "MFT" }).map(([k, v]) => `<option value="${k}"${k == rig.lens.sensor ? " selected" : ""}>${v}</option>`).join("");
+      sensorSelect.addEventListener("change", (e) => {
+        this.app.staging.cameras.setLens(rig, null, e.target.value);
+      });
+      sensorRow.appendChild(sensorSelect);
+      group.appendChild(sensorRow);
+      const aspectRow = document.createElement("div");
+      aspectRow.className = "input-row";
+      aspectRow.style.marginBottom = "8px";
+      aspectRow.innerHTML = '<span style="width:70px;font-size:.75rem;color:var(--text-secondary)">Aspect:</span>';
+      const aspectSelect = document.createElement("select");
+      aspectSelect.id = "camera-aspect-preset";
+      aspectSelect.style.cssText = "flex:1;background:var(--bg-light);border:1px solid var(--border-color);border-radius:4px;padding:5px 8px;color:var(--text-primary);font-size:.75rem";
+      aspectSelect.innerHTML = Object.entries({ "16:9": "16:9 (1.78)", "2.39:1": "2.39:1", "1.85:1": "1.85:1", "4:3": "4:3 (1.33)", "1:1": "1:1" }).map(([k, v]) => `<option value="${k}"${k == rig.aspect ? " selected" : ""}>${v}</option>`).join("");
+      aspectSelect.addEventListener("change", (e) => {
+        this.app.staging.cameras.setAspect(rig, e.target.value);
+      });
+      aspectRow.appendChild(aspectSelect);
+      group.appendChild(aspectRow);
+      const btnRow = document.createElement("div");
+      btnRow.className = "input-row";
+      btnRow.style.gap = "8px";
+      btnRow.style.marginTop = "8px";
+      const viewBtn = document.createElement("button");
+      viewBtn.className = "btn primary";
+      viewBtn.style.flex = "1";
+      viewBtn.style.fontSize = "0.75rem";
+      viewBtn.textContent = this.app.staging.cameras.viewingRigId === rig.id ? "Exit View" : "View Through";
+      viewBtn.onclick = () => {
+        if (this.app.staging.cameras.viewingRigId === rig.id) {
+          this.app.staging.cameras.cycleViewThrough();
+        } else {
+          this.app.staging.cameras.viewingRigId = rig.id;
+          if (this.app.orbit) this.app.orbit.enabled = false;
+          this.app.ui?.showNotification(`Viewing through Camera ${rig.name}`, "info");
+        }
+        this.renderPropertiesPanel(this.app.selectedObject);
+      };
+      btnRow.appendChild(viewBtn);
+      const frameBtn = document.createElement("button");
+      frameBtn.className = "btn";
+      frameBtn.style.flex = "1";
+      frameBtn.style.fontSize = "0.75rem";
+      frameBtn.textContent = "Frame from View";
+      frameBtn.onclick = () => {
+        this.app.staging.cameras.setFromCurrentView(rig);
+        this.app.ui?.showNotification(`Camera ${rig.name} framed from current view`, "success");
+      };
+      btnRow.appendChild(frameBtn);
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "btn";
+      deleteBtn.style.flex = "1";
+      deleteBtn.style.fontSize = "0.75rem";
+      deleteBtn.style.color = "#f66";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.onclick = () => {
+        if (confirm(`Delete Camera ${rig.name}?`)) {
+          this.app.staging.cameras.removeRig(rig.id);
+        }
+      };
+      btnRow.appendChild(deleteBtn);
+      group.appendChild(btnRow);
+      this.propsContent.appendChild(group);
     }
     // Add per-object Physics Controls to Properties Panel
     addPhysicsControls(obj) {
@@ -43259,7 +43440,6 @@ ${elements.join("\n")}
   }
 
   // js/staging/cameras/rigManager.js
-  var LENS_PRESETS = [12, 16, 24, 35, 50, 85, 135];
   var SENSOR_PRESETS = {
     fullFrame: { label: "Full Frame", width: 36, height: 24 },
     super35: { label: "Super 35", width: 24.89, height: 18.66 },
@@ -43279,7 +43459,6 @@ ${elements.join("\n")}
       this.rigs = [];
       this.viewingRigId = null;
       this.activeIndex = 0;
-      setTimeout(() => this.buildUI(), 100);
     }
     /** Derived vertical FOV (degrees) for a lens spec. */
     static vFov(lens) {
@@ -43414,93 +43593,11 @@ ${elements.join("\n")}
         rig.frustum.setVisible(rig.visibleInViewport && this.viewingRigId !== rig.id);
       }
     }
-    /** Build UI for camera rig controls in the toolbar. */
+    /** Build UI for camera rig controls - now handled by right panel Camera tab. */
     buildUI() {
-      const container = document.getElementById("camera-controls-container");
-      if (!container) return;
-      container.innerHTML = "";
-      const rigGroup = document.createElement("div");
-      rigGroup.className = "camera-rig-controls-group";
-      const addBtn = document.createElement("div");
-      addBtn.className = "tool-btn camera-rig-btn";
-      addBtn.id = "tool-add-camera-rig";
-      addBtn.innerHTML = `<span class="icon-svg">${Icons.add}</span>`;
-      addBtn.title = "Add Virtual Camera";
-      addBtn.dataset.tooltip = "**Add Virtual Camera**\nCreate a new movie camera for shot planning";
-      addBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.addRig();
-      });
-      rigGroup.appendChild(addBtn);
-      const viewBtn = document.createElement("div");
-      viewBtn.className = "tool-btn camera-rig-btn";
-      viewBtn.id = "tool-view-camera";
-      viewBtn.innerHTML = `<span class="icon-svg">${Icons.view}</span>`;
-      viewBtn.title = "View Through Camera";
-      viewBtn.dataset.tooltip = "**View Through Camera**\nCycle through virtual cameras (Layout \u2192 Cam A \u2192 Cam B \u2192 \u2026 \u2192 Layout)";
-      viewBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.cycleViewThrough();
-      });
-      rigGroup.appendChild(viewBtn);
-      const frameBtn = document.createElement("div");
-      frameBtn.className = "tool-btn camera-rig-btn";
-      frameBtn.id = "tool-frame-camera";
-      frameBtn.innerHTML = `<span class="icon-svg">${Icons.lock}</span>`;
-      frameBtn.title = "Frame Camera from View";
-      frameBtn.dataset.tooltip = "**Frame Camera from View**\nLock the selected camera to match the current editor view";
-      frameBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.frameCameraFromView();
-      });
-      rigGroup.appendChild(frameBtn);
-      const deleteBtn = document.createElement("div");
-      deleteBtn.className = "tool-btn camera-rig-btn";
-      deleteBtn.id = "tool-delete-camera";
-      deleteBtn.innerHTML = `<span class="icon-svg">${Icons.delete}</span>`;
-      deleteBtn.title = "Delete Camera";
-      deleteBtn.dataset.tooltip = "**Delete Camera**\nRemove the selected virtual camera";
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.deleteSelectedRig();
-      });
-      rigGroup.appendChild(deleteBtn);
-      const lensSelect = document.createElement("select");
-      lensSelect.id = "camera-lens-preset";
-      lensSelect.className = "camera-preset-select";
-      lensSelect.innerHTML = LENS_PRESETS.map((f) => `<option value="${f}">${f}mm</option>`).join("");
-      lensSelect.value = "50";
-      lensSelect.addEventListener("change", (e) => {
-        const rig = this.selectedRig || this.rigs[0];
-        if (rig) this.setLens(rig, parseFloat(e.target.value), null);
-      });
-      rigGroup.appendChild(lensSelect);
-      const sensorSelect = document.createElement("select");
-      sensorSelect.id = "camera-sensor-preset";
-      sensorSelect.className = "camera-preset-select";
-      sensorSelect.innerHTML = Object.entries(SENSOR_PRESETS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join("");
-      sensorSelect.value = "fullFrame";
-      sensorSelect.addEventListener("change", (e) => {
-        const rig = this.selectedRig || this.rigs[0];
-        if (rig) this.setLens(rig, null, e.target.value);
-      });
-      rigGroup.appendChild(sensorSelect);
-      const aspectSelect = document.createElement("select");
-      aspectSelect.id = "camera-aspect-preset";
-      aspectSelect.className = "camera-preset-select";
-      aspectSelect.innerHTML = Object.entries(ASPECT_PRESETS).map(([k, v]) => `<option value="${k}">${k} (${v.toFixed(2)})</option>`).join("");
-      aspectSelect.value = "16:9";
-      aspectSelect.addEventListener("change", (e) => {
-        const rig = this.selectedRig || this.rigs[0];
-        if (rig) this.setAspect(rig, e.target.value);
-      });
-      rigGroup.appendChild(aspectSelect);
-      const listDiv = document.createElement("div");
-      listDiv.id = "camera-rig-list";
-      listDiv.className = "camera-rig-list";
-      rigGroup.appendChild(listDiv);
-      container.appendChild(rigGroup);
-      this.refreshUI();
+      if (this.app.ui?.refreshCameraRigList) {
+        this.app.ui.refreshCameraRigList();
+      }
     }
     /** Refresh the camera rig list display. */
     refreshUI() {
@@ -44685,6 +44782,233 @@ ${elements.join("\n")}
     }
   };
 
+  // js/staging/scenes/sceneManager.js
+  var SceneManager = class {
+    constructor(app) {
+      this.app = app;
+      this.scenes = /* @__PURE__ */ new Map();
+      this.currentSceneName = "Main";
+      this.sceneIdCounter = 1;
+      this.createScene("Main", true);
+    }
+    createScene(name, makeCurrent = false) {
+      if (this.scenes.has(name)) {
+        let counter = 1;
+        let newName = `${name} ${counter}`;
+        while (this.scenes.has(newName)) {
+          counter++;
+          newName = `${name} ${counter}`;
+        }
+        name = newName;
+      }
+      const sceneData = {
+        id: "scene_" + Math.random().toString(36).slice(2, 9),
+        name,
+        objects: [],
+        cameraRigs: [],
+        shots: [],
+        settings: {
+          backgroundColor: "#2a2a4e",
+          fog: { enabled: true, color: "#2a2a4e", near: 30, far: 100 },
+          ambientLight: { enabled: true, color: "#ffffff", intensity: 0.6 },
+          directionalLight: { enabled: true, color: "#ffffff", intensity: 1.2, position: [10, 10, 5] }
+        },
+        createdAt: Date.now()
+      };
+      this.scenes.set(name, sceneData);
+      if (makeCurrent || this.scenes.size === 1) {
+        this.switchToScene(name);
+      }
+      this.app.ui?.showNotification(`Scene "${name}" created`, "success");
+      this.refreshUI();
+      return sceneData;
+    }
+    deleteScene(name) {
+      if (this.scenes.size <= 1) {
+        this.app.ui?.showNotification("Cannot delete the only scene", "error");
+        return false;
+      }
+      if (!this.scenes.has(name)) return false;
+      const wasCurrent = this.currentSceneName === name;
+      this.scenes.delete(name);
+      if (wasCurrent) {
+        const firstScene = this.scenes.keys().next().value;
+        this.switchToScene(firstScene);
+      }
+      this.app.ui?.showNotification(`Scene "${name}" deleted`, "info");
+      this.refreshUI();
+      return true;
+    }
+    duplicateScene(name) {
+      const source = this.scenes.get(name);
+      if (!source) return null;
+      const newName = `${name} (copy)`;
+      const newScene = this.createScene(newName, false);
+      newScene.settings = JSON.parse(JSON.stringify(source.settings));
+      this.refreshUI();
+      return newScene;
+    }
+    switchToScene(name) {
+      const sceneData = this.scenes.get(name);
+      if (!sceneData) return false;
+      if (this.currentSceneName && this.scenes.has(this.currentSceneName)) {
+        this.saveCurrentSceneState();
+      }
+      this.currentSceneName = name;
+      this.loadSceneState(sceneData);
+      this.app.ui?.showNotification(`Switched to scene "${name}"`, "info");
+      this.refreshUI();
+      return true;
+    }
+    saveCurrentSceneState() {
+      if (!this.currentSceneName) return;
+      const sceneData = this.scenes.get(this.currentSceneName);
+      if (!sceneData) return;
+      sceneData.objects = this.app.objects.map((obj) => ({
+        uuid: obj.uuid,
+        name: obj.name,
+        type: obj.userData?.type,
+        staging: obj.userData?.staging,
+        position: obj.position.toArray(),
+        rotation: obj.rotation.toArray(),
+        scale: obj.scale.toArray(),
+        visible: obj.visible,
+        // Store material colors for staging objects
+        materials: obj.userData?.type === "staging" ? this.extractMaterials(obj) : null
+      }));
+      if (this.app.staging?.cameras) {
+        sceneData.cameraRigs = this.app.staging.cameras.rigs.map((rig) => ({
+          id: rig.id,
+          name: rig.name,
+          position: rig.group.position.toArray(),
+          rotation: rig.group.rotation.toArray(),
+          lens: { ...rig.lens },
+          aspect: rig.aspect,
+          color: rig.color
+        }));
+      }
+      if (this.app.staging?.shotManager) {
+        sceneData.shots = this.app.staging.shotManager.shots.map((s) => ({ ...s }));
+      }
+    }
+    extractMaterials(object) {
+      const materials = [];
+      object.traverse((child) => {
+        if (child.isMesh && child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach((mat2) => {
+            if (mat2.color) {
+              materials.push({
+                color: "#" + mat2.color.getHexString(),
+                metalness: mat2.metalness,
+                roughness: mat2.roughness,
+                opacity: mat2.opacity
+              });
+            }
+          });
+        }
+      });
+      return materials;
+    }
+    loadSceneState(sceneData) {
+      this.clearCurrentScene();
+      this.applySceneSettings(sceneData.settings);
+      this.app.ui?.renderHierarchyPanel();
+    }
+    applySceneSettings(settings) {
+      if (settings.backgroundColor) {
+        this.app.setBackgroundColor(settings.backgroundColor);
+      }
+      if (settings.fog?.enabled) {
+        this.app.setFog(true, settings.fog.color, settings.fog.near, settings.fog.far);
+      } else {
+        this.app.setFog(false);
+      }
+    }
+    clearCurrentScene() {
+      this.app.deselect();
+      for (const object of [...this.app.objects]) {
+        if (object.userData?.rigRef) continue;
+        this.app.scene.remove(object);
+        const idx = this.app.objects.indexOf(object);
+        if (idx > -1) this.app.objects.splice(idx, 1);
+      }
+      if (this.app.staging?.shotManager) {
+        this.app.staging.shotManager.shots = [];
+        this.app.staging.shotManager.currentTime = 0;
+        this.app.staging.shotManager.refreshUI();
+      }
+    }
+    getCurrentScene() {
+      return this.scenes.get(this.currentSceneName);
+    }
+    getSceneNames() {
+      return Array.from(this.scenes.keys());
+    }
+    renameScene(oldName, newName) {
+      if (!this.scenes.has(oldName)) return false;
+      if (this.scenes.has(newName)) return false;
+      const sceneData = this.scenes.get(oldName);
+      this.scenes.delete(oldName);
+      sceneData.name = newName;
+      this.scenes.set(newName, sceneData);
+      if (this.currentSceneName === oldName) {
+        this.currentSceneName = newName;
+      }
+      this.refreshUI();
+      return true;
+    }
+    refreshUI() {
+      if (this.app.ui?.renderSceneList) {
+        this.app.ui.renderSceneList();
+      }
+    }
+    exportScenes() {
+      const data = {
+        format: "pixelstaging-scenes",
+        version: 1,
+        currentScene: this.currentSceneName,
+        scenes: {}
+      };
+      for (const [name, sceneData] of this.scenes) {
+        data.scenes[name] = {
+          name: sceneData.name,
+          settings: sceneData.settings,
+          shots: sceneData.shots,
+          cameraRigs: sceneData.cameraRigs.map((r) => ({ ...r })),
+          createdAt: sceneData.createdAt
+        };
+      }
+      return data;
+    }
+    importScenes(data) {
+      if (!data?.scenes) return false;
+      this.scenes.clear();
+      for (const [name, sceneData] of Object.entries(data.scenes)) {
+        this.scenes.set(name, {
+          id: "scene_" + Math.random().toString(36).slice(2, 9),
+          name: sceneData.name,
+          objects: [],
+          cameraRigs: sceneData.cameraRigs || [],
+          shots: sceneData.shots || [],
+          settings: sceneData.settings || {
+            backgroundColor: "#2a2a4e",
+            fog: { enabled: true, color: "#2a2a4e", near: 30, far: 100 },
+            ambientLight: { enabled: true, color: "#ffffff", intensity: 0.6 },
+            directionalLight: { enabled: true, color: "#ffffff", intensity: 1.2, position: [10, 10, 5] }
+          },
+          createdAt: sceneData.createdAt || Date.now()
+        });
+      }
+      this.currentSceneName = data.currentScene || this.scenes.keys().next().value || "Main";
+      if (this.scenes.has(this.currentSceneName)) {
+        this.loadSceneState(this.scenes.get(this.currentSceneName));
+      }
+      this.refreshUI();
+      return true;
+    }
+  };
+
   // js/main.js
   var StageApp = class {
     constructor() {
@@ -44726,6 +45050,7 @@ ${elements.join("\n")}
       this.staging.cameras = new CameraRigManager(this);
       this.staging.shots = new ShotBoard(this);
       this.staging.shotManager = new ShotManager(this);
+      this.staging.scenes = new SceneManager(this);
       this.tutorialConfig = new TutorialConfig();
       this.tutorialSystem = new TutorialSystem(this);
       this.aframeExporter = new AFrameExporter(this);
@@ -45061,6 +45386,34 @@ ${elements.join("\n")}
     importShotTimeline(data) {
       return this.staging.shotManager.importTimeline(data);
     }
+    // --- SCENE MANAGER ---
+    createScene(name) {
+      return this.staging.scenes.createScene(name);
+    }
+    deleteScene(name) {
+      return this.staging.scenes.deleteScene(name);
+    }
+    duplicateScene(name) {
+      return this.staging.scenes.duplicateScene(name);
+    }
+    switchScene(name) {
+      return this.staging.scenes.switchToScene(name);
+    }
+    renameScene(oldName, newName) {
+      return this.staging.scenes.renameScene(oldName, newName);
+    }
+    getSceneNames() {
+      return this.staging.scenes.getSceneNames();
+    }
+    getCurrentSceneName() {
+      return this.staging.scenes.currentSceneName;
+    }
+    exportScenes() {
+      return this.staging.scenes.exportScenes();
+    }
+    importScenes(data) {
+      return this.staging.scenes.importScenes(data);
+    }
     addToScene(obj) {
       this.scene.add(obj);
       if (["shape", "shape2d", "light", "staging"].includes(obj.userData.type)) {
@@ -45308,18 +45661,22 @@ ${elements.join("\n")}
       } else {
         this.selectedObject = obj;
       }
-      this.transformControl.attach(this.selectedObject);
-      this.transformControl.visible = true;
-      this.transformControl.setSize(APP_DEFAULTS2.transform.selectGizmoSize);
+      if (this.transformControl) {
+        this.transformControl.attach(this.selectedObject);
+        this.transformControl.visible = true;
+        this.transformControl.setSize(APP_DEFAULTS2.transform.selectGizmoSize);
+      }
       this.ui.resetPanelToDefault();
       this.ui.updateUI(this.selectedObject);
     }
     deselect() {
       this.selectedObject = null;
-      this.transformControl.detach();
-      this.transformControl.visible = false;
+      if (this.transformControl) {
+        this.transformControl.detach();
+        this.transformControl.visible = false;
+      }
       this.clearSnapGuides();
-      this.ui.updateUI(null);
+      if (this.ui) this.ui.updateUI(null);
     }
     setTransformMode(mode) {
       if (mode === "hand") {
@@ -45589,6 +45946,7 @@ ${elements.join("\n")}
     }
     // --- SCENE SETTINGS METHODS ---
     setBackgroundColor(colorHex) {
+      if (!this.scene) return;
       if (colorHex) {
         this.scene.background = new Color(colorHex);
       } else {
@@ -45596,6 +45954,7 @@ ${elements.join("\n")}
       }
     }
     setAmbientLight(enabled, colorHex) {
+      if (!this.scene) return;
       this.scene.traverse((obj) => {
         if (obj.type === "AmbientLight") {
           obj.visible = enabled;
@@ -45606,6 +45965,7 @@ ${elements.join("\n")}
       });
     }
     setFog(enabled, colorHex, near, far) {
+      if (!this.scene) return;
       if (enabled) {
         const color = colorHex ? new Color(colorHex) : new Color(2763342);
         this.scene.fog = new Fog(color, near ?? 30, far ?? 100);

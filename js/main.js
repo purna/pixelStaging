@@ -21,6 +21,7 @@ import { StagingManager } from './staging/stagingManager.js';
 import { CameraRigManager } from './staging/cameras/rigManager.js';
 import { ShotBoard } from './staging/shots/shotBoard.js';
 import { ShotManager } from './staging/shots/shotManager.js';
+import { SceneManager } from './staging/scenes/sceneManager.js';
 
 class StageApp {
     constructor() {
@@ -70,6 +71,7 @@ class StageApp {
         this.staging.cameras = new CameraRigManager(this); // Virtual movie cameras
         this.staging.shots = new ShotBoard(this); // Camera timeline / shot board (legacy)
         this.staging.shotManager = new ShotManager(this); // Enhanced shot manager with cinematic moves
+        this.staging.scenes = new SceneManager(this); // Multi-scene management
         this.tutorialConfig = new TutorialConfig(); // Init Tutorial Config
         this.tutorialSystem = new TutorialSystem(this); // Init Tutorial System
         this.aframeExporter = new AFrameExporter(this); // Init A-Frame Exporter
@@ -502,6 +504,44 @@ class StageApp {
         return this.staging.shotManager.importTimeline(data);
     }
 
+    // --- SCENE MANAGER ---
+
+    createScene(name) {
+        return this.staging.scenes.createScene(name);
+    }
+
+    deleteScene(name) {
+        return this.staging.scenes.deleteScene(name);
+    }
+
+    duplicateScene(name) {
+        return this.staging.scenes.duplicateScene(name);
+    }
+
+    switchScene(name) {
+        return this.staging.scenes.switchToScene(name);
+    }
+
+    renameScene(oldName, newName) {
+        return this.staging.scenes.renameScene(oldName, newName);
+    }
+
+    getSceneNames() {
+        return this.staging.scenes.getSceneNames();
+    }
+
+    getCurrentSceneName() {
+        return this.staging.scenes.currentSceneName;
+    }
+
+    exportScenes() {
+        return this.staging.scenes.exportScenes();
+    }
+
+    importScenes(data) {
+        return this.staging.scenes.importScenes(data);
+    }
+
     addToScene(obj) {
         this.scene.add(obj);
         // Add to interactable objects list if it's a root selectable item
@@ -830,9 +870,11 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
             this.selectedObject = obj;
         }
 
-        this.transformControl.attach(this.selectedObject);
-        this.transformControl.visible = true;
-        this.transformControl.setSize(APP_DEFAULTS.transform.selectGizmoSize);
+        if (this.transformControl) {
+            this.transformControl.attach(this.selectedObject);
+            this.transformControl.visible = true;
+            this.transformControl.setSize(APP_DEFAULTS.transform.selectGizmoSize);
+        }
 
         this.ui.resetPanelToDefault();
 
@@ -843,10 +885,12 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
     deselect() {
         this.selectedObject = null;
-        this.transformControl.detach();
-        this.transformControl.visible = false;
+        if (this.transformControl) {
+            this.transformControl.detach();
+            this.transformControl.visible = false;
+        }
         this.clearSnapGuides();
-        this.ui.updateUI(null);
+        if (this.ui) this.ui.updateUI(null);
     }
 
     setTransformMode(mode) {
@@ -1188,6 +1232,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
     // --- SCENE SETTINGS METHODS ---
     setBackgroundColor(colorHex) {
+        if (!this.scene) return;
         if (colorHex) {
             this.scene.background = new THREE.Color(colorHex);
         } else {
@@ -1197,6 +1242,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     }
 
     setAmbientLight(enabled, colorHex) {
+        if (!this.scene) return;
         // Find and update ambient light
         this.scene.traverse(obj => {
             if (obj.type === 'AmbientLight') {
@@ -1209,6 +1255,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     }
 
     setFog(enabled, colorHex, near, far) {
+        if (!this.scene) return;
         if (enabled) {
             const color = colorHex ? new THREE.Color(colorHex) : new THREE.Color(0x2a2a4e);
             this.scene.fog = new THREE.Fog(color, near ?? 30, far ?? 100);

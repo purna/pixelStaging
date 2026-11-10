@@ -263,13 +263,6 @@ Block actors, props and architecture">
 
 
 
-            <!-- Scene Settings Tool -->
-            <div class="tool-btn scene-settings-tool" id="tool-scene-settings" data-tooltip="**Scene Settings**
-            Configure background, lighting, and export options"><i class="fas fa-image"></i></div>
-
-            <!-- Camera controls will be added here dynamically -->
-            <div id="camera-controls-container"></div>
-
             <!-- Overlay Toggle Button -->
             <div class="tool-btn overlay-toggle-btn" id="tool-toggle-overlays" data-tooltip="**Toggle Overlays**
             Show/Hide all visual aids (Grid, Axes, Helpers)
@@ -349,10 +342,11 @@ Block actors, props and architecture">
         <!-- RIGHT PANEL - Unified scrollable panel -->
         <div class="right-panel" id="right-panel">
             <div class="right-panel-tabs">
-                <button class="right-tab active" data-right-tab="hierarchy">Hierarchy</button>
-                <button class="right-tab" data-right-tab="object-properties">Properties</button>
-                <button class="right-tab" data-right-tab="assets">Assets</button>
-                <button class="right-tab" data-right-tab="scene-settings">Scene</button>
+                <button class="right-tab active" data-right-tab="hierarchy" title="Hierarchy"><i class="fas fa-list"></i></button>
+                <button class="right-tab" data-right-tab="object-properties" title="Properties"><i class="fas fa-sliders-h"></i></button>
+                <button class="right-tab" data-right-tab="assets" title="Assets"><i class="fas fa-box"></i></button>
+                <button class="right-tab" data-right-tab="camera" title="Camera"><i class="fas fa-video"></i></button>
+                <button class="right-tab" data-right-tab="scene-settings" title="Scene"><i class="fas fa-globe"></i></button>
             </div>
             <div class="right-panel-scroll">
                 <!-- Hierarchy Tab -->
@@ -553,8 +547,59 @@ Block actors, props and architecture">
                         </div>
                     </div>
                 </div>
+                <div class="right-tab-content" id="tab-camera">
+                    <div class="panel-section" id="section-camera">
+                        <div class="panel-header">
+                            <div class="panel-header-title"><i class="fas fa-video"></i> Camera</div>
+                        </div>
+                        <div class="panel-content" id="camera-content">
+                            <div class="camera-toolbar">
+                                <button class="tool-btn camera-rig-btn" id="tool-add-camera-rig" title="Add Virtual Camera" data-tooltip="**Add Virtual Camera**\nCreate a new movie camera for shot planning">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="tool-btn camera-rig-btn" id="tool-view-camera" title="View Through Camera" data-tooltip="**View Through Camera**\nCycle through virtual cameras (Layout → Cam A → Cam B → … → Layout)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="tool-btn camera-rig-btn" id="tool-frame-camera" title="Frame Camera from View" data-tooltip="**Frame Camera from View**\nLock the selected camera to match the current editor view">
+                                    <i class="fas fa-lock"></i>
+                                </button>
+                                <button class="tool-btn camera-rig-btn" id="tool-delete-camera" title="Delete Camera" data-tooltip="**Delete Camera**\nRemove the selected virtual camera">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+
+                            <div class="camera-presets-group">
+                                <div class="preset-select-row">
+                                    <label for="camera-lens-preset" class="preset-label">Lens</label>
+                                    <select id="camera-lens-preset" class="camera-preset-select"></select>
+                                </div>
+                                <div class="preset-select-row">
+                                    <label for="camera-sensor-preset" class="preset-label">Sensor</label>
+                                    <select id="camera-sensor-preset" class="camera-preset-select"></select>
+                                </div>
+                                <div class="preset-select-row">
+                                    <label for="camera-aspect-preset" class="preset-label">Aspect</label>
+                                    <select id="camera-aspect-preset" class="camera-preset-select"></select>
+                                </div>
+                            </div>
+
+                            <div class="camera-rig-list-container">
+                                <div id="camera-rig-list" class="camera-rig-list"></div>
+                            </div>
+
+                            <!-- Shot Timeline Toggle -->
+                            <div class="shot-timeline-toggle">
+                                <button class="btn" id="tool-toggle-shot-timeline">
+                                    <i class="fas fa-film"></i> Shot Timeline
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+
 
         <!-- AI MODAL -->
         <div class="modal-overlay" id="ai-modal">

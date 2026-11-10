@@ -352,12 +352,21 @@ header {
     border: 1px solid var(--border-color);
     border-bottom: none;
     color: var(--text-secondary);
-    padding: 6px 10px;
+    padding: 8px 10px;
     border-radius: 4px 4px 0 0;
     cursor: pointer;
     font-size: 0.75rem;
     white-space: nowrap;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 36px;
+}
+
+.right-tab i {
+    font-size: 1rem;
 }
 
 .right-tab:hover {
@@ -367,10 +376,9 @@ header {
 
 .right-tab.active {
     background: var(--bg-dark);
-    color: var(--text-primary);
+    color: var(--accent-primary);
     border-color: var(--border-color);
     border-bottom: 1px solid var(--bg-dark);
-    font-weight: 600;
 }
 
 .right-panel-scroll {
@@ -4428,6 +4436,165 @@ input[type="number"].color-slider-value-compact {
 .camera-rig-aspect {
     color: var(--text-secondary);
     font-size: 0.7rem;
+}
+
+/* =============================================
+   CAMERA TAB (Right Panel)
+   ============================================= */
+
+.camera-toolbar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.camera-toolbar .camera-rig-btn {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: var(--text-primary);
+    min-width: 40px;
+    height: 40px;
+}
+
+.camera-toolbar .camera-rig-btn:hover {
+    background: var(--bg-medium);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.camera-toolbar .camera-rig-btn i {
+    font-size: 1.1rem;
+}
+
+.camera-presets-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.preset-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.preset-label {
+    width: 60px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.camera-preset-select {
+    flex: 1;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 10px;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.camera-preset-select:hover {
+    border-color: var(--accent-primary);
+}
+
+.camera-preset-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.camera-rig-list-container {
+    flex: 1;
+    min-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+
+.shot-timeline-toggle {
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.shot-timeline-toggle .btn {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+}
+
+#camera-rig-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#camera-rig-list .camera-rig-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+}
+
+#camera-rig-list .camera-rig-item:hover {
+    background: var(--bg-medium);
+    border-color: var(--accent-primary);
+}
+
+#camera-rig-list .camera-rig-item.selected {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+#camera-rig-list .camera-rig-item.active-view {
+    border-color: var(--accent-secondary);
+    background: rgba(255, 0, 110, 0.1);
+}
+
+#camera-rig-list .camera-rig-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+#camera-rig-list .camera-rig-name {
+    font-weight: 600;
+    flex: 1;
+    text-align: left;
+}
+
+#camera-rig-list .camera-rig-lens {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+}
+
+#camera-rig-list .camera-rig-aspect {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+}
+
+#camera-rig-list .camera-rig-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 20px;
+    font-size: 0.8rem;
 }
 
 /* =============================================
