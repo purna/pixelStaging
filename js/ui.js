@@ -955,13 +955,9 @@ export class UI {
         // Update button active state
         const overlayBtn = document.getElementById('tool-toggle-overlays');
         if (overlayBtn) {
-            if (shouldShow) {
-                overlayBtn.classList.add('active');
-                overlayBtn.querySelector('i').className = 'fas fa-eye';
-            } else {
-                overlayBtn.classList.remove('active');
-                overlayBtn.querySelector('i').className = 'fas fa-eye-slash';
-            }
+            overlayBtn.classList.toggle('active', shouldShow);
+            const icon = overlayBtn.querySelector('i');
+            if (icon) icon.className = shouldShow ? 'fas fa-eye' : 'fas fa-eye-slash';
         }
 
         // Show notification
@@ -2196,7 +2192,7 @@ export class UI {
                 this.app.cameraGuidesEnabled = !this.app.cameraGuidesEnabled;
                 guidesBtn.classList.toggle('active', this.app.cameraGuidesEnabled);
                 const guides = document.getElementById('camera-guides');
-                if (guides && !this.app.cameraGuidesEnabled) guides.classList.add('hidden');
+                if (guides) guides.classList.toggle('hidden', !this.app.cameraGuidesEnabled);
                 this.showNotification(`Camera guides ${this.app.cameraGuidesEnabled ? 'on' : 'off'}`, 'info');
             });
         }
@@ -2248,7 +2244,7 @@ export class UI {
                 <span class="camera-rig-chevron">${open ? '▾' : '▸'}</span>
             `;
             header.onclick = () => {
-                this.app.selectObject(rig.group);
+                // Camera rigs are edited here, not selected as scene objects.
                 this._openCameraRigId = open ? this._openCameraRigId : rig.id;
                 if (open) this._openCameraRigId = null;
                 this.refreshCameraRigList();
@@ -2999,8 +2995,12 @@ export class UI {
         const target = newGroup || defaultGroup;
         if (!target?.colors?.length) return;
 
+        const oldColors = (oldGroup?.colors || []).map(color => color.toLowerCase());
+        const extraColorIndex = new Map();
+        let nextExtraIndex = 0;
         const materials = new Set();
         const objects = this.app.getAllObjects ? this.app.getAllObjects() : this.app.objects;
+
         for (const root of objects) {
             root.traverse(child => {
                 if (!child.isMesh) return;
@@ -3010,16 +3010,18 @@ export class UI {
                     if (materials.has(material)) return;
                     materials.add(material);
 
-                    let index = material.userData?.paletteIndex;
-                    if (!Number.isInteger(index)) {
-                        const current = '#' + material.color.getHexString();
-                        index = (oldGroup?.colors || []).findIndex(color => color.toLowerCase() === current.toLowerCase());
-                        if (index < 0) index = (defaultGroup.colors || []).findIndex(color => color.toLowerCase() === current.toLowerCase());
-                        if (index < 0) index = 0;
-                        material.userData.paletteIndex = index;
+                    const current = ('#' + material.color.getHexString()).toLowerCase();
+                    let index = oldColors.indexOf(current);
+                    if (index < 0) {
+                        if (!extraColorIndex.has(current)) extraColorIndex.set(current, nextExtraIndex++);
+                        index = extraColorIndex.get(current);
                     }
 
-                    const next = target.colors[index] || defaultGroup.colors[index] || target.colors[0];
+                    material.userData.paletteIndex = index;
+                    const next = target.colors[index]
+                        || target.colors[index % target.colors.length]
+                        || defaultGroup.colors[index]
+                        || defaultGroup.colors[index % defaultGroup.colors.length];
                     if (next) material.color.set(next);
                 });
             });
@@ -3144,11 +3146,12 @@ export class UI {
                     let from;
                     try { from = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
                     if (from.groupIndex !== groupIndex || from.colorIndex === colorIndex) return;
+                    const oldOrder = [...group.colors];
                     const [moved] = group.colors.splice(from.colorIndex, 1);
                     group.colors.splice(colorIndex, 0, moved);
                     this.saveAssets();
+                    this.remapSceneColors({ colors: oldOrder }, group);
                     this.renderPalette();
-                    this.remapSceneColors(group, group);
                 });
 
                 colorsContainer.appendChild(swatch);

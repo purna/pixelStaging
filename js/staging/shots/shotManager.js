@@ -713,7 +713,10 @@ export class ShotManager {
             pathCheck,
             updateScrubber: () => {
                 if (label) label.textContent = `${formatTime(this.currentTime)} / ${formatTime(this.duration)}`;
-                if (pauseBtn) pauseBtn.style.display = this.playing ? 'inline-block' : 'none';
+                if (pauseBtn) {
+                    pauseBtn.style.display = 'inline-block';
+                    pauseBtn.classList.toggle('active', this.playing);
+                }
                 const indicator = document.getElementById('shot-time-indicator');
                 if (indicator) {
                     indicator.style.left = this.duration > 0 ? (this.currentTime / this.duration) * 100 + '%' : '0%';
@@ -741,7 +744,10 @@ export class ShotManager {
     }
 
     buildTimelineUI() {
-        if (this.ui.pauseBtn) this.ui.pauseBtn.style.display = this.playing ? 'inline-block' : 'none';
+        if (this.ui.pauseBtn) {
+            this.ui.pauseBtn.style.display = 'inline-block';
+            this.ui.pauseBtn.classList.toggle('active', this.playing);
+        }
         this.buildTimelineTrack(document.querySelector('.shot-timeline-track'));
     }
 
@@ -1352,11 +1358,15 @@ export class ShotManager {
             elapsed += shot.duration;
         });
         
-        // Current time indicator
-        const indicator = document.getElementById('shot-time-indicator');
-        if (indicator) {
-            indicator.style.left = total > 0 ? (this.currentTime / total) * 100 + '%' : '0%';
+        // Current time indicator (recreated because the track is rebuilt).
+        let indicator = document.getElementById('shot-time-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'shot-time-indicator';
+            indicator.className = 'shot-time-indicator';
         }
+        container.appendChild(indicator);
+        indicator.style.left = total > 0 ? (this.currentTime / total) * 100 + '%' : '0%';
         
         // Click/drag the ruler or empty track to seek.
         container.onmousedown = (e) => {

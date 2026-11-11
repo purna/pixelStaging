@@ -1044,6 +1044,7 @@ class StageApp {
         // Track hover for scene objects
         const allSceneObjects = [];
         this.scene.traverse((obj) => {
+            if (obj.userData?.rigRef) return;
             if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging' || obj.userData.type === 'character')) {
                 allSceneObjects.push(obj);
             }
@@ -1116,6 +1117,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
         const allSceneObjects = [];
         this.scene.traverse((obj) => {
+            if (obj.userData?.rigRef) return;
             if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging' || obj.userData.type === 'character')) {
                 allSceneObjects.push(obj);
             }
@@ -1185,6 +1187,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 // Not over gizmo, check if we clicked on an object
         const allSceneObjects = [];
         this.scene.traverse((obj) => {
+            if (obj.userData?.rigRef) return;
             if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging' || obj.userData.type === 'character')) {
                 allSceneObjects.push(obj);
             }
@@ -1730,7 +1733,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         const shotCam = this.staging.shotManager.update(delta);
         const rigCam = shotCam || this.staging.cameras.getRenderCamera();
         const guides = document.getElementById('camera-guides');
-        if (guides) guides.classList.toggle('hidden', !(this.cameraGuidesEnabled && rigCam));
+        if (guides) guides.classList.toggle('hidden', !this.cameraGuidesEnabled);
         this.axisGizmo?.update(rigCam || this.camera);
         if (rigCam) {
             const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);

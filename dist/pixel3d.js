@@ -33711,13 +33711,9 @@
       document.getElementById("axis-gizmo")?.classList.toggle("overlay-hidden", !shouldShow);
       const overlayBtn = document.getElementById("tool-toggle-overlays");
       if (overlayBtn) {
-        if (shouldShow) {
-          overlayBtn.classList.add("active");
-          overlayBtn.querySelector("i").className = "fas fa-eye";
-        } else {
-          overlayBtn.classList.remove("active");
-          overlayBtn.querySelector("i").className = "fas fa-eye-slash";
-        }
+        overlayBtn.classList.toggle("active", shouldShow);
+        const icon = overlayBtn.querySelector("i");
+        if (icon) icon.className = shouldShow ? "fas fa-eye" : "fas fa-eye-slash";
       }
       const action = shouldShow ? "shown" : "hidden";
       this.showNotification(`All overlays ${action}`, "success");
@@ -34814,7 +34810,7 @@
           this.app.cameraGuidesEnabled = !this.app.cameraGuidesEnabled;
           guidesBtn.classList.toggle("active", this.app.cameraGuidesEnabled);
           const guides = document.getElementById("camera-guides");
-          if (guides && !this.app.cameraGuidesEnabled) guides.classList.add("hidden");
+          if (guides) guides.classList.toggle("hidden", !this.app.cameraGuidesEnabled);
           this.showNotification(`Camera guides ${this.app.cameraGuidesEnabled ? "on" : "off"}`, "info");
         });
       }
@@ -34854,7 +34850,6 @@
                 <span class="camera-rig-chevron">${open ? "\u25BE" : "\u25B8"}</span>
             `;
         header.onclick = () => {
-          this.app.selectObject(rig.group);
           this._openCameraRigId = open ? this._openCameraRigId : rig.id;
           if (open) this._openCameraRigId = null;
           this.refreshCameraRigList();
@@ -35554,6 +35549,9 @@
       const defaultGroup = this.assets.paletteGroups[0];
       const target = newGroup || defaultGroup;
       if (!target?.colors?.length) return;
+      const oldColors = (oldGroup?.colors || []).map((color) => color.toLowerCase());
+      const extraColorIndex = /* @__PURE__ */ new Map();
+      let nextExtraIndex = 0;
       const materials = /* @__PURE__ */ new Set();
       const objects = this.app.getAllObjects ? this.app.getAllObjects() : this.app.objects;
       for (const root of objects) {
@@ -35564,15 +35562,14 @@
             if (!material?.color) return;
             if (materials.has(material)) return;
             materials.add(material);
-            let index = material.userData?.paletteIndex;
-            if (!Number.isInteger(index)) {
-              const current = "#" + material.color.getHexString();
-              index = (oldGroup?.colors || []).findIndex((color) => color.toLowerCase() === current.toLowerCase());
-              if (index < 0) index = (defaultGroup.colors || []).findIndex((color) => color.toLowerCase() === current.toLowerCase());
-              if (index < 0) index = 0;
-              material.userData.paletteIndex = index;
+            const current = ("#" + material.color.getHexString()).toLowerCase();
+            let index = oldColors.indexOf(current);
+            if (index < 0) {
+              if (!extraColorIndex.has(current)) extraColorIndex.set(current, nextExtraIndex++);
+              index = extraColorIndex.get(current);
             }
-            const next = target.colors[index] || defaultGroup.colors[index] || target.colors[0];
+            material.userData.paletteIndex = index;
+            const next = target.colors[index] || target.colors[index % target.colors.length] || defaultGroup.colors[index] || defaultGroup.colors[index % defaultGroup.colors.length];
             if (next) material.color.set(next);
           });
         });
@@ -35686,11 +35683,12 @@
               return;
             }
             if (from.groupIndex !== groupIndex || from.colorIndex === colorIndex) return;
+            const oldOrder = [...group.colors];
             const [moved] = group.colors.splice(from.colorIndex, 1);
             group.colors.splice(colorIndex, 0, moved);
             this.saveAssets();
+            this.remapSceneColors({ colors: oldOrder }, group);
             this.renderPalette();
-            this.remapSceneColors(group, group);
           });
           colorsContainer.appendChild(swatch);
         });
@@ -46564,7 +46562,10 @@ ${elements.join("\n")}
         pathCheck,
         updateScrubber: () => {
           if (label) label.textContent = `${formatTime(this.currentTime)} / ${formatTime(this.duration)}`;
-          if (pauseBtn) pauseBtn.style.display = this.playing ? "inline-block" : "none";
+          if (pauseBtn) {
+            pauseBtn.style.display = "inline-block";
+            pauseBtn.classList.toggle("active", this.playing);
+          }
           const indicator = document.getElementById("shot-time-indicator");
           if (indicator) {
             indicator.style.left = this.duration > 0 ? this.currentTime / this.duration * 100 + "%" : "0%";
@@ -46592,7 +46593,10 @@ ${elements.join("\n")}
       document.getElementById("align-frame-btn")?.addEventListener("click", () => this.alignFrameToView());
     }
     buildTimelineUI() {
-      if (this.ui.pauseBtn) this.ui.pauseBtn.style.display = this.playing ? "inline-block" : "none";
+      if (this.ui.pauseBtn) {
+        this.ui.pauseBtn.style.display = "inline-block";
+        this.ui.pauseBtn.classList.toggle("active", this.playing);
+      }
       this.buildTimelineTrack(document.querySelector(".shot-timeline-track"));
     }
     createShotCard(shot, index, currentRig) {
@@ -47121,10 +47125,14 @@ ${elements.join("\n")}
         }
         elapsed += shot.duration;
       });
-      const indicator = document.getElementById("shot-time-indicator");
-      if (indicator) {
-        indicator.style.left = total > 0 ? this.currentTime / total * 100 + "%" : "0%";
+      let indicator = document.getElementById("shot-time-indicator");
+      if (!indicator) {
+        indicator = document.createElement("div");
+        indicator.id = "shot-time-indicator";
+        indicator.className = "shot-time-indicator";
       }
+      container.appendChild(indicator);
+      indicator.style.left = total > 0 ? this.currentTime / total * 100 + "%" : "0%";
       container.onmousedown = (e) => {
         if (e.target !== container && !e.target.classList.contains("shot-timeline-ruler") && !e.target.parentElement?.classList.contains("shot-timeline-ruler")) return;
         const rect = container.getBoundingClientRect();
@@ -48989,6 +48997,7 @@ ${xrefOffset}
       }
       const allSceneObjects = [];
       this.scene.traverse((obj) => {
+        if (obj.userData?.rigRef) return;
         if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging" || obj.userData.type === "character")) {
           allSceneObjects.push(obj);
         }
@@ -49045,6 +49054,7 @@ ${xrefOffset}
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const allSceneObjects = [];
       this.scene.traverse((obj) => {
+        if (obj.userData?.rigRef) return;
         if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging" || obj.userData.type === "character")) {
           allSceneObjects.push(obj);
         }
@@ -49092,6 +49102,7 @@ ${xrefOffset}
       }
       const allSceneObjects = [];
       this.scene.traverse((obj) => {
+        if (obj.userData?.rigRef) return;
         if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging" || obj.userData.type === "character")) {
           allSceneObjects.push(obj);
         }
@@ -49516,7 +49527,7 @@ ${xrefOffset}
       const shotCam = this.staging.shotManager.update(delta);
       const rigCam = shotCam || this.staging.cameras.getRenderCamera();
       const guides = document.getElementById("camera-guides");
-      if (guides) guides.classList.toggle("hidden", !(this.cameraGuidesEnabled && rigCam));
+      if (guides) guides.classList.toggle("hidden", !this.cameraGuidesEnabled);
       this.axisGizmo?.update(rigCam || this.camera);
       if (rigCam) {
         const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);

@@ -7848,3 +7848,34 @@ body.overlays-hidden #camera-guides,
 body.overlays-hidden #floating-camera-controls {
     display: none !important;
 }
+
+/* Timeline playhead and pause button */
+.shot-time-indicator {
+    background: var(--accent-secondary) !important;
+    box-shadow: 0 0 8px rgba(255, 0, 110, 0.8) !important;
+    z-index: 20 !important;
+}
+.shot-time-indicator::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: var(--accent-secondary);
+    border: 2px solid #fff;
+    box-shadow: 0 0 8px rgba(255, 0, 110, 0.8);
+}
+#shot-timeline .timeline-icon-btn.active {
+    background: rgba(255, 0, 110, 0.2) !important;
+    border-color: var(--accent-secondary) !important;
+    color: var(--accent-secondary) !important;
+}
+#shot-timeline .timeline-play-btn:hover,
+#shot-timeline .timeline-play-btn:focus {
+    color: var(--bg-darkest) !important;
+    background: #7dff9a !important;
+    border-color: #7dff9a !important;
+}
