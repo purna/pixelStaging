@@ -7770,3 +7770,35 @@ input[type="number"].color-slider-value-compact {
     padding: 0 !important;
     backdrop-filter: none !important;
 }
+
+/* Pan mode button */
+.scene-nav-pad .nav-pan {
+    grid-area: 3 / 3;
+    font-size: 17px;
+}
+.scene-nav-pad .nav-pan.active {
+    background: rgba(0, 255, 65, 0.24) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+
+/* Keyboard shortcuts modal header position */
+#keyboard-shortcuts-modal .modal header {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 16px 52px 16px 20px !important;
+    margin-bottom: 0 !important;
+}
+#keyboard-shortcuts-modal .modal .modal-title {
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+#keyboard-shortcuts-modal .modal .modal-close-btn {
+    position: absolute !important;
+    top: 13px !important;
+    right: 14px !important;
+    margin: 0 !important;
+}

@@ -38,6 +38,7 @@ class StageApp {
         this.keyframeDragging = false;
         this.poseControls = null;
         this.poseEditState = null;
+        this.panModeActive = false;
         this.axisGizmo = null;
 
         this.raycaster = new THREE.Raycaster();
@@ -579,7 +580,7 @@ class StageApp {
         if (!this._orbitLeftSuppressed) return;
         this._orbitLeftSuppressed = false;
         if (this.orbit) {
-            this.orbit.mouseButtons.LEFT = this.controlMode === 'scene' ? THREE.MOUSE.ROTATE : THREE.MOUSE.ROTATE;
+            this.orbit.mouseButtons.LEFT = this.panModeActive ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
         }
     }
 
@@ -599,7 +600,7 @@ class StageApp {
 
             if (this.controlMode === 'camera') {
                 this.orbit.mouseButtons = {
-                    LEFT: THREE.MOUSE.ROTATE,
+                    LEFT: this.panModeActive ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
                     MIDDLE: THREE.MOUSE.DOLLY,
                     RIGHT: THREE.MOUSE.PAN
                 };
@@ -608,7 +609,7 @@ class StageApp {
                 // Blender/Unity style editing: left-drag empty space orbits,
                 // clicking an object selects it, middle orbits, right pans.
                 this.orbit.mouseButtons = {
-                    LEFT: THREE.MOUSE.ROTATE,
+                    LEFT: this.panModeActive ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
                     MIDDLE: THREE.MOUSE.ROTATE,
                     RIGHT: THREE.MOUSE.PAN
                 };

@@ -1723,6 +1723,13 @@ export class UI {
             button.onclick = () => this.applySceneView(button.dataset.viewAngle);
         });
 
+        document.querySelectorAll('[data-cam-mode="pan"]').forEach(button => {
+            if (button.dataset.modeWired) return;
+            button.dataset.modeWired = 'true';
+            button.classList.toggle('active', !!this.app.panModeActive);
+            button.onclick = () => this.setPanMode(!this.app.panModeActive);
+        });
+
         document.querySelectorAll('[data-cam-action]').forEach(button => {
             if (button.dataset.camWired) return;
             button.dataset.camWired = 'true';
@@ -1759,6 +1766,17 @@ export class UI {
                 this.setupShotDesignerTab();
             }
         });
+    }
+
+    setPanMode(active) {
+        this.app.panModeActive = !!active;
+        if (this.app.orbit) {
+            this.app.orbit.mouseButtons.LEFT = this.app.panModeActive ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
+        }
+        document.querySelectorAll('[data-cam-mode="pan"]').forEach(button => {
+            button.classList.toggle('active', this.app.panModeActive);
+        });
+        this.showNotification(this.app.panModeActive ? 'Pan mode: drag to pan' : 'Orbit mode: drag to orbit', 'info');
     }
 
     applyCameraNudge(action) {

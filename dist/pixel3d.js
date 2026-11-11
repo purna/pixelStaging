@@ -34390,6 +34390,12 @@
         button.dataset.viewWired = "true";
         button.onclick = () => this.applySceneView(button.dataset.viewAngle);
       });
+      document.querySelectorAll('[data-cam-mode="pan"]').forEach((button) => {
+        if (button.dataset.modeWired) return;
+        button.dataset.modeWired = "true";
+        button.classList.toggle("active", !!this.app.panModeActive);
+        button.onclick = () => this.setPanMode(!this.app.panModeActive);
+      });
       document.querySelectorAll("[data-cam-action]").forEach((button) => {
         if (button.dataset.camWired) return;
         button.dataset.camWired = "true";
@@ -34426,6 +34432,16 @@
           this.setupShotDesignerTab();
         }
       });
+    }
+    setPanMode(active) {
+      this.app.panModeActive = !!active;
+      if (this.app.orbit) {
+        this.app.orbit.mouseButtons.LEFT = this.app.panModeActive ? MOUSE.PAN : MOUSE.ROTATE;
+      }
+      document.querySelectorAll('[data-cam-mode="pan"]').forEach((button) => {
+        button.classList.toggle("active", this.app.panModeActive);
+      });
+      this.showNotification(this.app.panModeActive ? "Pan mode: drag to pan" : "Orbit mode: drag to orbit", "info");
     }
     applyCameraNudge(action) {
       const shotManager = this.app.staging?.shotManager;
@@ -48164,6 +48180,7 @@ ${xrefOffset}
       this.keyframeDragging = false;
       this.poseControls = null;
       this.poseEditState = null;
+      this.panModeActive = false;
       this.axisGizmo = null;
       this.raycaster = new Raycaster();
       this.mouse = new Vector2();
@@ -48605,7 +48622,7 @@ ${xrefOffset}
       if (!this._orbitLeftSuppressed) return;
       this._orbitLeftSuppressed = false;
       if (this.orbit) {
-        this.orbit.mouseButtons.LEFT = this.controlMode === "scene" ? MOUSE.ROTATE : MOUSE.ROTATE;
+        this.orbit.mouseButtons.LEFT = this.panModeActive ? MOUSE.PAN : MOUSE.ROTATE;
       }
     }
     /**
@@ -48622,14 +48639,14 @@ ${xrefOffset}
         this.orbit.screenSpacePanning = true;
         if (this.controlMode === "camera") {
           this.orbit.mouseButtons = {
-            LEFT: MOUSE.ROTATE,
+            LEFT: this.panModeActive ? MOUSE.PAN : MOUSE.ROTATE,
             MIDDLE: MOUSE.DOLLY,
             RIGHT: MOUSE.PAN
           };
           this.orbit.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
         } else {
           this.orbit.mouseButtons = {
-            LEFT: MOUSE.ROTATE,
+            LEFT: this.panModeActive ? MOUSE.PAN : MOUSE.ROTATE,
             MIDDLE: MOUSE.ROTATE,
             RIGHT: MOUSE.PAN
           };
