@@ -34342,6 +34342,11 @@
     setupCameraNudge() {
       const panel = document.getElementById("camera-nudge");
       if (!panel) return;
+      document.querySelectorAll("[data-view-angle]").forEach((button) => {
+        if (button.dataset.viewWired) return;
+        button.dataset.viewWired = "true";
+        button.onclick = () => this.applySceneView(button.dataset.viewAngle);
+      });
       document.querySelectorAll("[data-cam-action]").forEach((button) => {
         if (button.dataset.camWired) return;
         button.dataset.camWired = "true";
@@ -34396,6 +34401,25 @@
       const right = new Vector3().crossVectors(forward, camera.up).normalize();
       const up = new Vector3().crossVectors(right, forward).normalize();
       const worldUp = new Vector3(0, 1, 0);
+      if (action === "home") {
+        const rig = this.app.staging?.cameras?.defaultRig;
+        if (rig) {
+          camera.position.copy(rig.group.position);
+          camera.quaternion.copy(rig.group.quaternion);
+          target.copy(rig.target);
+        } else {
+          camera.position.set(10, 8, 10);
+          target.set(0, 1.5, 0);
+        }
+        camera.up.set(0, 1, 0);
+        camera.updateMatrixWorld(true);
+        if (framing?.controls) framing.controls.update();
+        else if (this.app.orbit) {
+          this.app.orbit.target.copy(target);
+          this.app.orbit.update();
+        }
+        return;
+      }
       switch (action) {
         case "left":
           camera.position.addScaledVector(right, -step);
@@ -34439,6 +34463,26 @@
       if (framing?.controls) {
         framing.controls.update();
       } else if (this.app.orbit) {
+        this.app.orbit.target.copy(target);
+        this.app.orbit.update();
+      }
+    }
+    applySceneView(view) {
+      const camera = this.app.camera;
+      const target = this.app.orbit?.target || new Vector3(0, 1.5, 0);
+      const distance = Math.max(1, camera.position.distanceTo(target));
+      const offset = new Vector3();
+      if (view === "front") offset.set(0, 0, distance);
+      else if (view === "side") offset.set(distance, 0, 0);
+      else if (view === "back") offset.set(0, 0, -distance);
+      else if (view === "top") offset.set(0, distance, 1e-3);
+      else return;
+      camera.up.set(0, 1, 0);
+      if (view === "top") camera.up.set(0, 0, -1);
+      camera.position.copy(target).add(offset);
+      camera.lookAt(target);
+      camera.updateMatrixWorld(true);
+      if (this.app.orbit) {
         this.app.orbit.target.copy(target);
         this.app.orbit.update();
       }
@@ -35105,7 +35149,7 @@
       ));
       const fov2 = shot.spec?.f?.[0] ?? 55;
       framing.appendChild(rangeRow("Zoom", fov2, 15, 120, 1, (v) => String(Math.round(v)), (value) => {
-        shot.spec.f = [value, value];
+        shotManager.setShotFov(shot, value);
       }));
       const customRow = document.createElement("div");
       customRow.className = "sd-custom-row";
@@ -39693,6 +39737,7 @@
       this.app.staging?.scenes?.saveCurrentSceneState?.();
       const sceneData = {
         ...this.serializeCurrentScene(),
+        customPoses: this.app.characterManager?.exportCustomPoses?.() || {},
         scenes: this.app.staging?.scenes?.exportScenes?.() || null
       };
       const blob = new Blob([JSON.stringify(sceneData)], { type: "application/json" });
@@ -40089,6 +40134,7 @@
       const sceneData = this.serializeCurrentScene();
       localStorage.setItem("pixel3d-scene", JSON.stringify(sceneData));
       this.saveFolderStructure();
+      this.app.characterManager?.persistCustomPoses?.();
       this.app.staging?.scenes?.persistScenes?.();
     }
     // Save folder structure
@@ -40169,6 +40215,9 @@
     }
     // New helper that accepts raw data (used by File Input AND Gemini AI)
     loadData(data) {
+      if (data && typeof data === "object" && data.customPoses) {
+        this.app.characterManager?.importCustomPoses?.(data.customPoses);
+      }
       if (data && typeof data === "object" && data.scenes && this.app.staging?.scenes) {
         const ok = this.app.staging.scenes.importScenes(data.scenes);
         if (ok) {
@@ -40221,6 +40270,18 @@
               }
             });
           }
+        } else if (item.type === "character") {
+          const characterType = item.characterType || item.userData?.characterType || "xbot";
+          this.app.characterManager.addCharacter(characterType).then((model) => {
+            if (!model) return;
+            this.app.addToScene(model);
+            if (item.position) model.position.set(item.position.x, item.position.y, item.position.z);
+            if (item.rotation) model.rotation.set(item.rotation.x, item.rotation.y, item.rotation.z);
+            if (item.scale) model.scale.set(item.scale.x, item.scale.y, item.scale.z);
+            if (item.pose) this.app.characterManager.setPose(model, item.pose, 0);
+            this.app.ui?.renderHierarchyPanel?.();
+          });
+          return;
         } else if (item.type === "staging") {
           const staging = item.staging || item.userData?.staging;
           if (staging) {
@@ -45805,6 +45866,18 @@ ${elements.join("\n")}
         this.app.renderer.domElement.style.filter = "";
       }
     }
+    setShotFov(shot, value) {
+      const fov2 = Math.min(120, Math.max(15, Number(value) || 55));
+      shot.spec.f = [fov2, fov2];
+      if (shot.startFrame) shot.startFrame.fov = fov2;
+      if (shot.endFrame) shot.endFrame.fov = fov2;
+      if (this.shots[this.selectedShotIndex] === shot) {
+        this.previewActive = true;
+        this.clearTransitionOverlay?.();
+        this.seek(this.currentTime);
+      }
+      this.refreshUI();
+    }
     jumpToFrame(shot, frameType) {
       const cameras = this.app.staging?.cameras;
       const rig = shot ? cameras?.get(shot.cameraId) : null;
@@ -48729,14 +48802,18 @@ ${xrefOffset}
     setTransformMode(mode) {
       if (mode === "hand") {
         if (this.orbit) {
+          this.orbit.enabled = true;
           this.orbit.enablePan = true;
           this.orbit.screenSpacePanning = true;
           this.orbit.panSpeed = APP_DEFAULTS2.transform.handPanSpeed;
           this.orbit.enableDamping = true;
           this.orbit.dampingFactor = APP_DEFAULTS2.transform.dampingFactor;
         }
-        this.setControlMode("camera");
-        this.ui.showNotification("Camera controls: drag to look, right-drag to pan", "info");
+        if (this.transformControl) {
+          this.transformControl.visible = false;
+          this.transformControl.detach();
+        }
+        this.ui.showNotification("Hand Tool: drag to survey the scene", "info");
       } else {
         this.setControlMode("scene");
         this.transformControl.setMode(mode);

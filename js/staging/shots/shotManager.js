@@ -269,6 +269,21 @@ export class ShotManager {
         }
     }
 
+    setShotFov(shot, value) {
+        const fov = Math.min(120, Math.max(15, Number(value) || 55));
+        shot.spec.f = [fov, fov];
+        if (shot.startFrame) shot.startFrame.fov = fov;
+        if (shot.endFrame) shot.endFrame.fov = fov;
+
+        // Show the change immediately in the shot camera.
+        if (this.shots[this.selectedShotIndex] === shot) {
+            this.previewActive = true;
+            this.clearTransitionOverlay?.();
+            this.seek(this.currentTime);
+        }
+        this.refreshUI();
+    }
+
     jumpToFrame(shot, frameType) {
         const cameras = this.app.staging?.cameras;
         const rig = shot ? cameras?.get(shot.cameraId) : null;

@@ -409,25 +409,24 @@ Block actors, props and architecture">
 
             <!-- Mobile scene navigation -->
             <div id="mobile-nav" class="mobile-nav">
-                <div class="mobile-nav-row">
-                    <span>Pan</span>
-                    <button data-cam-action="left" title="Pan left">◀</button>
-                    <button data-cam-action="up" title="Pan up">▲</button>
-                    <button data-cam-action="down" title="Pan down">▼</button>
-                    <button data-cam-action="right" title="Pan right">▶</button>
-                </div>
-                <div class="mobile-nav-row">
-                    <span>Orbit</span>
-                    <button data-cam-action="rot-left" title="Orbit left">◀</button>
-                    <button data-cam-action="rot-up" title="Orbit up">▲</button>
-                    <button data-cam-action="rot-down" title="Orbit down">▼</button>
-                    <button data-cam-action="rot-right" title="Orbit right">▶</button>
-                </div>
-                <div class="mobile-nav-row">
-                    <span>Zoom</span>
+                <div class="scene-nav-zoom">
                     <button data-cam-action="push" title="Zoom in">+</button>
                     <button data-cam-action="pull" title="Zoom out">−</button>
                 </div>
+                <div class="scene-nav-pad">
+                    <button class="nav-up" data-cam-action="rot-up" title="Orbit up">▲</button>
+                    <button class="nav-left" data-cam-action="rot-left" title="Orbit left">◀</button>
+                    <button class="nav-home" data-cam-action="home" title="Reset view">⌂</button>
+                    <button class="nav-right" data-cam-action="rot-right" title="Orbit right">▶</button>
+                    <button class="nav-down" data-cam-action="rot-down" title="Orbit down">▼</button>
+                </div>
+            </div>
+
+            <div id="scene-view-buttons" class="scene-view-buttons">
+                <button data-view-angle="front" title="Front view">F</button>
+                <button data-view-angle="side" title="Side view">S</button>
+                <button data-view-angle="back" title="Back view">B</button>
+                <button data-view-angle="top" title="Top view">T</button>
             </div>
 
             <!-- Shot Timeline Panel (bottom bar) -->

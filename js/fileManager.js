@@ -133,6 +133,7 @@ export class FileManager {
         this.app.staging?.scenes?.saveCurrentSceneState?.();
         const sceneData = {
             ...this.serializeCurrentScene(),
+            customPoses: this.app.characterManager?.exportCustomPoses?.() || {},
             scenes: this.app.staging?.scenes?.exportScenes?.() || null
         };
 
@@ -612,6 +613,7 @@ export class FileManager {
         const sceneData = this.serializeCurrentScene();
         localStorage.setItem('pixel3d-scene', JSON.stringify(sceneData));
         this.saveFolderStructure();
+        this.app.characterManager?.persistCustomPoses?.();
         this.app.staging?.scenes?.persistScenes?.();
     }
 
@@ -705,6 +707,10 @@ export class FileManager {
 
     // New helper that accepts raw data (used by File Input AND Gemini AI)
     loadData(data) {
+        if (data && typeof data === 'object' && data.customPoses) {
+            this.app.characterManager?.importCustomPoses?.(data.customPoses);
+        }
+
         // A project file can contain the multi-scene scene list. Let the scene
         // manager restore it and return; scene records already contain objects,
         // cameras, and shot timelines.
@@ -776,6 +782,19 @@ export class FileManager {
                         }
                     });
                 }
+            }
+            else if (item.type === 'character') {
+                const characterType = item.characterType || item.userData?.characterType || 'xbot';
+                this.app.characterManager.addCharacter(characterType).then(model => {
+                    if (!model) return;
+                    this.app.addToScene(model);
+                    if (item.position) model.position.set(item.position.x, item.position.y, item.position.z);
+                    if (item.rotation) model.rotation.set(item.rotation.x, item.rotation.y, item.rotation.z);
+                    if (item.scale) model.scale.set(item.scale.x, item.scale.y, item.scale.z);
+                    if (item.pose) this.app.characterManager.setPose(model, item.pose, 0);
+                    this.app.ui?.renderHierarchyPanel?.();
+                });
+                return;
             }
             else if (item.type === 'staging') {
                 const staging = item.staging || item.userData?.staging;

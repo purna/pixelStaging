@@ -7430,3 +7430,169 @@ input[type="number"].color-slider-value-compact {
 .export-option span { display: flex; flex-direction: column; gap: 3px; }
 .export-option b { font-size: 0.85rem; }
 .export-option small { color: var(--text-secondary); font-size: 0.68rem; line-height: 1.35; }
+
+/* Pose-editor style scene navigation controls */
+.mobile-nav {
+    display: flex !important;
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 150px;
+    z-index: 45;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    pointer-events: none;
+    backdrop-filter: none;
+}
+
+.mobile-nav > div { pointer-events: auto; }
+.scene-nav-zoom { display: flex; flex-direction: column; gap: 10px; }
+.scene-nav-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(3, 44px);
+    gap: 5px;
+}
+.scene-nav-zoom button,
+.scene-nav-pad button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(20, 20, 38, 0.82);
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+.scene-nav-zoom button:hover,
+.scene-nav-pad button:hover,
+.scene-nav-zoom button:active,
+.scene-nav-pad button:active {
+    background: rgba(0, 255, 65, 0.18);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+.scene-nav-pad .nav-up { grid-area: 1 / 2; }
+.scene-nav-pad .nav-left { grid-area: 2 / 1; }
+.scene-nav-pad .nav-home { grid-area: 2 / 2; font-size: 16px; }
+.scene-nav-pad .nav-right { grid-area: 2 / 3; }
+.scene-nav-pad .nav-down { grid-area: 3 / 2; }
+
+.scene-view-buttons {
+    position: absolute;
+    top: 112px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+    z-index: 42;
+}
+.scene-view-buttons button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(20, 20, 38, 0.82);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+}
+.scene-view-buttons button:hover {
+    background: rgba(0, 255, 65, 0.18);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+@media (max-width: 900px) {
+    .scene-nav-zoom button,
+    .scene-nav-pad button { width: 48px; height: 48px; }
+    .scene-nav-pad { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px); }
+}
+
+/* More breathing room in the Shot Designer controls */
+.sd-shot-body {
+    gap: 13px !important;
+    padding: 13px !important;
+}
+
+.sd-field {
+    grid-template-columns: 112px 1fr !important;
+    gap: 12px !important;
+    min-height: 34px;
+    align-items: center;
+}
+
+.sd-field > span:first-child {
+    line-height: 1.25;
+}
+
+.sd-range-wrap {
+    gap: 11px !important;
+    min-width: 0;
+}
+
+.sd-range-wrap input[type="range"] {
+    height: 6px;
+    margin: 6px 0;
+}
+
+.sd-value {
+    width: 46px !important;
+    flex: 0 0 46px;
+}
+
+.sd-fieldset {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 13px 11px 11px !important;
+    margin-bottom: 3px;
+}
+
+.sd-fieldset legend {
+    padding: 0 7px !important;
+}
+
+.sd-segmented {
+    margin-bottom: 3px !important;
+}
+
+.sd-custom-row {
+    margin-top: 4px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sd-field select,
+.sd-field input[type="text"],
+.sd-field textarea,
+.shot-designer-select,
+.sd-notes {
+    min-height: 34px;
+}
+
+.sd-notes {
+    padding: 9px 10px !important;
+    line-height: 1.45;
+}
+
+.sd-curve-toggle {
+    height: 38px;
+}
+
+.sd-curve-presets {
+    gap: 7px !important;
+    margin-top: 10px !important;
+}

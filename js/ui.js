@@ -1670,6 +1670,12 @@ export class UI {
         const panel = document.getElementById('camera-nudge');
         if (!panel) return;
 
+        document.querySelectorAll('[data-view-angle]').forEach(button => {
+            if (button.dataset.viewWired) return;
+            button.dataset.viewWired = 'true';
+            button.onclick = () => this.applySceneView(button.dataset.viewAngle);
+        });
+
         document.querySelectorAll('[data-cam-action]').forEach(button => {
             if (button.dataset.camWired) return;
             button.dataset.camWired = 'true';
@@ -1730,6 +1736,23 @@ export class UI {
         const up = new THREE.Vector3().crossVectors(right, forward).normalize();
         const worldUp = new THREE.Vector3(0, 1, 0);
 
+        if (action === 'home') {
+            const rig = this.app.staging?.cameras?.defaultRig;
+            if (rig) {
+                camera.position.copy(rig.group.position);
+                camera.quaternion.copy(rig.group.quaternion);
+                target.copy(rig.target);
+            } else {
+                camera.position.set(10, 8, 10);
+                target.set(0, 1.5, 0);
+            }
+            camera.up.set(0, 1, 0);
+            camera.updateMatrixWorld(true);
+            if (framing?.controls) framing.controls.update();
+            else if (this.app.orbit) { this.app.orbit.target.copy(target); this.app.orbit.update(); }
+            return;
+        }
+
         switch (action) {
             case 'left':
                 camera.position.addScaledVector(right, -step);
@@ -1775,6 +1798,28 @@ export class UI {
         if (framing?.controls) {
             framing.controls.update();
         } else if (this.app.orbit) {
+            this.app.orbit.target.copy(target);
+            this.app.orbit.update();
+        }
+    }
+
+    applySceneView(view) {
+        const camera = this.app.camera;
+        const target = this.app.orbit?.target || new THREE.Vector3(0, 1.5, 0);
+        const distance = Math.max(1, camera.position.distanceTo(target));
+        const offset = new THREE.Vector3();
+        if (view === 'front') offset.set(0, 0, distance);
+        else if (view === 'side') offset.set(distance, 0, 0);
+        else if (view === 'back') offset.set(0, 0, -distance);
+        else if (view === 'top') offset.set(0, distance, 0.001);
+        else return;
+
+        camera.up.set(0, 1, 0);
+        if (view === 'top') camera.up.set(0, 0, -1);
+        camera.position.copy(target).add(offset);
+        camera.lookAt(target);
+        camera.updateMatrixWorld(true);
+        if (this.app.orbit) {
             this.app.orbit.target.copy(target);
             this.app.orbit.update();
         }
@@ -2531,7 +2576,7 @@ export class UI {
 
         const fov = shot.spec?.f?.[0] ?? 55;
         framing.appendChild(rangeRow('Zoom', fov, 15, 120, 1, v => String(Math.round(v)), value => {
-            shot.spec.f = [value, value];
+            shotManager.setShotFov(shot, value);
         }));
 
         const customRow = document.createElement('div');

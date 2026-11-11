@@ -1258,14 +1258,20 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     setTransformMode(mode) {
         if (mode === 'hand') {
             if (this.orbit) {
+                this.orbit.enabled = true;
                 this.orbit.enablePan = true;
                 this.orbit.screenSpacePanning = true;
                 this.orbit.panSpeed = APP_DEFAULTS.transform.handPanSpeed;
                 this.orbit.enableDamping = true;
                 this.orbit.dampingFactor = APP_DEFAULTS.transform.dampingFactor;
             }
-            this.setControlMode('camera');
-            this.ui.showNotification('Camera controls: drag to look, right-drag to pan', 'info');
+            // Surveying the scene is not the same as switching to Camera mode.
+            // Keep the current Camera/Scene mode so objects remain editable.
+            if (this.transformControl) {
+                this.transformControl.visible = false;
+                this.transformControl.detach();
+            }
+            this.ui.showNotification('Hand Tool: drag to survey the scene', 'info');
         } else {
             this.setControlMode('scene');
             this.transformControl.setMode(mode);
