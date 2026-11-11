@@ -113,8 +113,9 @@ export class SceneManager {
             id: 'default_camera',
             name: 'Camera',
             isDefault: true,
-            position: [4, 1.5, 4],
-            rotation: [0, 0, 0],
+            position: [10, 8, 10],
+            target: [0, 1.5, 0],
+            rotation: null,
             lens: { focalLength: 50, sensor: 'fullFrame' },
             aspect: '16:9',
             color: 0x00e5ff
@@ -139,6 +140,7 @@ export class SceneManager {
                 name: rig.name,
                 isDefault: !!rig.isDefault,
                 position: rig.group.position.toArray(),
+                target: rig.target?.toArray?.() || [0, 1.5, 0],
                 rotation: rig.group.rotation.toArray(),
                 lens: { ...rig.lens },
                 aspect: rig.aspect,
@@ -244,6 +246,7 @@ export class SceneManager {
                 id: def.id,
                 name: def.name,
                 isDefault: !!def.isDefault,
+                target: def.target,
                 rotation: def.rotation,
                 lens: def.lens,
                 aspect: def.aspect,
@@ -308,6 +311,7 @@ export class SceneManager {
     }
 
     exportScenes() {
+        this.saveCurrentSceneState();
         const data = {
             format: 'pixelstaging-scenes',
             version: 1,

@@ -201,10 +201,15 @@ function renderFrame(app, rig, shot, shotManager, localT) {
     camera.updateProjectionMatrix();
 
     if (shot && shotManager) {
-        shotManager.applyShotMove(camera, rig.group, shot, localT, 0);
+        shotManager.applyShotMove(camera, rig, shot, localT, 0);
     } else {
-        camera.position.copy(rig.group.position);
-        camera.quaternion.copy(rig.group.quaternion);
+        rig.group.updateMatrixWorld(true);
+        const worldPosition = new THREE.Vector3();
+        const worldQuaternion = new THREE.Quaternion();
+        rig.group.getWorldPosition(worldPosition);
+        rig.group.getWorldQuaternion(worldQuaternion);
+        camera.position.copy(worldPosition);
+        camera.quaternion.copy(worldQuaternion);
     }
     camera.updateMatrixWorld(true);
 

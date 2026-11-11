@@ -40,7 +40,10 @@ export class CameraRigManager {
             return existing;
         }
 
-        const rig = this.addRig('Camera', null, { isDefault: true });
+        const rig = this.addRig('Camera', new THREE.Vector3(10, 8, 10), {
+            isDefault: true,
+            target: new THREE.Vector3(0, 1.5, 0)
+        });
         this.defaultRigId = rig.id;
         return rig;
     }
@@ -68,8 +71,16 @@ export class CameraRigManager {
 
         const group = new THREE.Group();
         group.name = options.name || (isDefault ? 'Camera' : `Camera ${name || letter}`);
-        group.position.copy(position || new THREE.Vector3(4, 1.5, 4));
-        if (options.rotation) group.rotation.fromArray(options.rotation);
+        group.position.copy(position || new THREE.Vector3(10, 8, 10));
+
+        // The group is the camera body. The aim target is kept separately so
+        // orbit moves never move the camera to its own look-at point.
+        const target = new THREE.Vector3().copy(options.target || new THREE.Vector3(0, 1.5, 0));
+        if (options.rotation) {
+            group.rotation.fromArray(options.rotation);
+        } else {
+            group.lookAt(target);
+        }
 
         const lens = options.lens ? { ...options.lens } : { focalLength: 50, sensor: 'fullFrame' };
         const aspect = options.aspect || '16:9';
@@ -102,9 +113,11 @@ export class CameraRigManager {
             color,
             group,
             camera,
+            target,
             frustum,
             lens,
             aspect,
+            previewCamera: null,
             visibleInViewport: true,
             isDefault,
             deletable: !isDefault
@@ -173,7 +186,9 @@ export class CameraRigManager {
     }
 
     aimAt(rig, target) {
-        rig.group.lookAt(new THREE.Vector3(target.x, target.y, target.z));
+        rig.target.set(target.x, target.y, target.z);
+        rig.group.lookAt(rig.target);
+        rig.camera.updateMatrixWorld(true);
     }
 
     /** Copy the current editing-camera view into a rig ("lock framing"). */
@@ -181,6 +196,16 @@ export class CameraRigManager {
         const cam = this.app.camera;
         rig.group.position.copy(cam.position);
         rig.group.quaternion.copy(cam.quaternion);
+        rig.camera.updateMatrixWorld(true);
+
+        const orbitTarget = this.app.orbit?.target;
+        if (orbitTarget) {
+            rig.target.copy(orbitTarget);
+        } else {
+            const direction = new THREE.Vector3();
+            cam.getWorldDirection(direction);
+            rig.target.copy(cam.position).addScaledVector(direction, 10);
+        }
         this.updateRigFrustum(rig);
     }
 
@@ -188,7 +213,9 @@ export class CameraRigManager {
     getRenderCamera() {
         if (!this.viewingRigId) return null;
         const rig = this.get(this.viewingRigId);
-        return rig ? rig.camera : null;
+        if (!rig) return null;
+        rig.camera.updateMatrixWorld(true);
+        return rig.camera;
     }
 
     /** Enter camera view / cycle through rigs / exit back to layout. */

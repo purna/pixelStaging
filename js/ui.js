@@ -706,8 +706,7 @@ export class UI {
             loadMoreBtn.addEventListener('click', () => this.loadMorePolyforkModels());
         }
 
-        // Initial load
-        this.searchPolyforkModels('');
+        // Load lazily when the 3D Models tab is opened, not on app startup.
     }
 
     async searchPolyforkModels(query) {
@@ -1764,6 +1763,18 @@ export class UI {
             deleteBtn.addEventListener('click', () => cameras.deleteSelectedRig());
         }
 
+        const guidesBtn = document.getElementById('tool-toggle-camera-guides');
+        if (guidesBtn && !guidesBtn.dataset.wired) {
+            guidesBtn.dataset.wired = 'true';
+            guidesBtn.addEventListener('click', () => {
+                this.app.cameraGuidesEnabled = !this.app.cameraGuidesEnabled;
+                guidesBtn.classList.toggle('active', this.app.cameraGuidesEnabled);
+                const guides = document.getElementById('camera-guides');
+                if (guides && !this.app.cameraGuidesEnabled) guides.classList.add('hidden');
+                this.showNotification(`Camera guides ${this.app.cameraGuidesEnabled ? 'on' : 'off'}`, 'info');
+            });
+        }
+
         // Shot timeline toggle
         const timelineBtn = document.getElementById('tool-toggle-shot-timeline');
         if (timelineBtn && !timelineBtn.dataset.wired) {
@@ -2047,6 +2058,35 @@ export class UI {
             const easeSelect = document.getElementById('sd-easing');
             easeSelect.innerHTML = ['io','in','out','lin','ramp'].map(e => `<option value="${e}"${e === shot.easing ? ' selected' : ''}>${e}</option>`).join('');
             easeSelect.onchange = (e) => { shot.easing = e.target.value; };
+
+            // FOV
+            const fovInput = document.getElementById('sd-fov');
+            const fovVal = document.getElementById('sd-fov-val');
+            const fov = shot.spec?.f?.[0] ?? 55;
+            fovInput.value = fov;
+            fovVal.textContent = `${Math.round(fov)}°`;
+            fovInput.oninput = (e) => {
+                const value = parseFloat(e.target.value);
+                shot.spec.f = [value, value];
+                fovVal.textContent = `${Math.round(value)}°`;
+            };
+
+            // Blur
+            const blurStart = document.getElementById('sd-blur-start');
+            const blurStartVal = document.getElementById('sd-blur-start-val');
+            const blurEnd = document.getElementById('sd-blur-end');
+            const blurEndVal = document.getElementById('sd-blur-end-val');
+            blurStart.value = shot.blurStart || 0;
+            blurStartVal.textContent = String(shot.blurStart || 0);
+            blurEnd.value = shot.blurEnd || 0;
+            blurEndVal.textContent = String(shot.blurEnd || 0);
+            blurStart.oninput = (e) => { shot.blurStart = parseFloat(e.target.value); blurStartVal.textContent = e.target.value; };
+            blurEnd.oninput = (e) => { shot.blurEnd = parseFloat(e.target.value); blurEndVal.textContent = e.target.value; };
+
+            // Camera notes
+            const notesInput = document.getElementById('sd-notes');
+            notesInput.value = shot.notes || '';
+            notesInput.oninput = (e) => { shot.notes = e.target.value; };
 
             // Camera select change
             cameraSelect.onchange = (e) => {

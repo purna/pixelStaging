@@ -323,6 +323,17 @@ Block actors, props and architecture">
             </div>
             <div id="canvas-container" style="width: 100%; height: 100%;"></div>
 
+            <!-- Camera framing guides -->
+            <div id="camera-guides" class="camera-guides hidden" aria-hidden="true">
+                <span class="guide-line guide-v guide-v1"></span>
+                <span class="guide-line guide-v guide-v2"></span>
+                <span class="guide-line guide-h guide-h1"></span>
+                <span class="guide-line guide-h guide-h2"></span>
+                <span class="guide-safe guide-action-safe"></span>
+                <span class="guide-safe guide-title-safe"></span>
+                <span class="guide-center"></span>
+            </div>
+
             <!-- Floating Info Box (bottom left) -->
             <div id="selection-info" class="selection-info-box hidden">
                 <p>Right click to deselect</p>
@@ -635,6 +646,9 @@ Block actors, props and architecture">
                                 <button class="tool-btn camera-rig-btn" id="tool-delete-camera" title="Delete Camera" data-tooltip="**Delete Camera**\nRemove the selected virtual camera">
                                     <i class="fas fa-trash"></i>
                                 </button>
+                                <button class="tool-btn camera-rig-btn" id="tool-toggle-camera-guides" title="Camera Guides" data-tooltip="**Camera Guides**\nShow thirds, centre and safe-area guides">
+                                    <i class="fas fa-border-all"></i>
+                                </button>
                             </div>
 
                             <div class="camera-presets-group">
@@ -726,6 +740,29 @@ Block actors, props and architecture">
                                 <div style="display:flex; gap:8px; margin-top:6px;">
                                     <label style="flex:1; font-size:10px; color:#aaa;">Easing:</label>
                                     <select id="sd-easing" class="shot-designer-select"></select>
+                                </div>
+
+                                <div style="display:flex; gap:8px; margin-top:6px;">
+                                    <label style="flex:1; font-size:10px; color:#aaa;">FOV:</label>
+                                    <input type="range" id="sd-fov" class="shot-designer-range" min="15" max="120" step="1">
+                                    <span id="sd-fov-val" style="width:40px; font-size:10px; color:#aaa;">55°</span>
+                                </div>
+
+                                <div style="display:flex; gap:8px; margin-top:6px;">
+                                    <label style="flex:1; font-size:10px; color:#aaa;">Blur start:</label>
+                                    <input type="range" id="sd-blur-start" class="shot-designer-range" min="0" max="20" step="0.5">
+                                    <span id="sd-blur-start-val" style="width:40px; font-size:10px; color:#aaa;">0</span>
+                                </div>
+
+                                <div style="display:flex; gap:8px; margin-top:6px;">
+                                    <label style="flex:1; font-size:10px; color:#aaa;">Blur end:</label>
+                                    <input type="range" id="sd-blur-end" class="shot-designer-range" min="0" max="20" step="0.5">
+                                    <span id="sd-blur-end-val" style="width:40px; font-size:10px; color:#aaa;">0</span>
+                                </div>
+
+                                <div style="margin-top:8px;">
+                                    <label class="shot-designer-label" for="sd-notes">Camera notes:</label>
+                                    <textarea id="sd-notes" rows="3" class="shot-designer-select" placeholder="Lens, movement, performance notes…"></textarea>
                                 </div>
 
                                 <div style="margin-top:8px; border-top:1px solid rgba(255,255,255,0.1); padding-top:6px;">

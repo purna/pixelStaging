@@ -33506,7 +33506,6 @@
       if (loadMoreBtn) {
         loadMoreBtn.addEventListener("click", () => this.loadMorePolyforkModels());
       }
-      this.searchPolyforkModels("");
     }
     async searchPolyforkModels(query) {
       const importer = this.app.polyforkImporter;
@@ -34414,6 +34413,17 @@
         deleteBtn.dataset.wired = "true";
         deleteBtn.addEventListener("click", () => cameras.deleteSelectedRig());
       }
+      const guidesBtn = document.getElementById("tool-toggle-camera-guides");
+      if (guidesBtn && !guidesBtn.dataset.wired) {
+        guidesBtn.dataset.wired = "true";
+        guidesBtn.addEventListener("click", () => {
+          this.app.cameraGuidesEnabled = !this.app.cameraGuidesEnabled;
+          guidesBtn.classList.toggle("active", this.app.cameraGuidesEnabled);
+          const guides = document.getElementById("camera-guides");
+          if (guides && !this.app.cameraGuidesEnabled) guides.classList.add("hidden");
+          this.showNotification(`Camera guides ${this.app.cameraGuidesEnabled ? "on" : "off"}`, "info");
+        });
+      }
       const timelineBtn = document.getElementById("tool-toggle-shot-timeline");
       if (timelineBtn && !timelineBtn.dataset.wired) {
         timelineBtn.dataset.wired = "true";
@@ -34650,6 +34660,37 @@
         easeSelect.innerHTML = ["io", "in", "out", "lin", "ramp"].map((e) => `<option value="${e}"${e === shot.easing ? " selected" : ""}>${e}</option>`).join("");
         easeSelect.onchange = (e) => {
           shot.easing = e.target.value;
+        };
+        const fovInput = document.getElementById("sd-fov");
+        const fovVal = document.getElementById("sd-fov-val");
+        const fov2 = shot.spec?.f?.[0] ?? 55;
+        fovInput.value = fov2;
+        fovVal.textContent = `${Math.round(fov2)}\xB0`;
+        fovInput.oninput = (e) => {
+          const value = parseFloat(e.target.value);
+          shot.spec.f = [value, value];
+          fovVal.textContent = `${Math.round(value)}\xB0`;
+        };
+        const blurStart = document.getElementById("sd-blur-start");
+        const blurStartVal = document.getElementById("sd-blur-start-val");
+        const blurEnd = document.getElementById("sd-blur-end");
+        const blurEndVal = document.getElementById("sd-blur-end-val");
+        blurStart.value = shot.blurStart || 0;
+        blurStartVal.textContent = String(shot.blurStart || 0);
+        blurEnd.value = shot.blurEnd || 0;
+        blurEndVal.textContent = String(shot.blurEnd || 0);
+        blurStart.oninput = (e) => {
+          shot.blurStart = parseFloat(e.target.value);
+          blurStartVal.textContent = e.target.value;
+        };
+        blurEnd.oninput = (e) => {
+          shot.blurEnd = parseFloat(e.target.value);
+          blurEndVal.textContent = e.target.value;
+        };
+        const notesInput = document.getElementById("sd-notes");
+        notesInput.value = shot.notes || "";
+        notesInput.oninput = (e) => {
+          shot.notes = e.target.value;
         };
         cameraSelect.onchange = (e) => {
           if (e.target.value) shot.cameraId = e.target.value;
@@ -38923,49 +38964,10 @@
       }
     }
     saveSceneJSON() {
-      const processObj = (obj) => {
-        if (obj.userData.type) {
-          const item = {
-            type: obj.userData.type,
-            position: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
-            rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
-            scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
-            userData: obj.userData
-          };
-          if (obj.userData.type === "shape" || obj.userData.type === "shape2d") {
-            item.shapeType = obj.userData.shapeType;
-            const firstMaterial = Array.isArray(obj.material) ? obj.material[0] : obj.material;
-            item.color = "#" + firstMaterial.color.getHexString();
-            item.materialSlots = this._serializeMaterialSlots(obj);
-          } else if (obj.userData.type === "light") {
-            const l = obj.children[0];
-            item.lightType = obj.userData.lightType;
-            item.color = "#" + l.color.getHexString();
-            item.intensity = l.intensity;
-          } else if (obj.userData.type === "figure") {
-            item.gender = obj.userData.gender;
-            item.joints = {};
-            obj.traverse((child) => {
-              if (child.userData.name && child.userData.name.includes("Joint")) {
-                item.joints[child.userData.name] = {
-                  x: child.rotation.x,
-                  y: child.rotation.y,
-                  z: child.rotation.z
-                };
-              }
-            });
-          }
-          data.push(item);
-        }
-      };
-      const data = [];
-      this.app.scene.children.forEach((child) => {
-        processObj(child);
-      });
+      this.app.staging?.scenes?.saveCurrentSceneState?.();
       const sceneData = {
-        version: 1,
-        objects: data,
-        animations: this.app.animationManager.toJSON()
+        ...this.serializeCurrentScene(),
+        scenes: this.app.staging?.scenes?.exportScenes?.() || null
       };
       const blob = new Blob([JSON.stringify(sceneData)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -39335,6 +39337,7 @@
       const sceneData = this.serializeCurrentScene();
       localStorage.setItem("pixel3d-scene", JSON.stringify(sceneData));
       this.saveFolderStructure();
+      this.app.staging?.scenes?.persistScenes?.();
     }
     // Save folder structure
     saveFolderStructure() {
@@ -39414,6 +39417,13 @@
     }
     // New helper that accepts raw data (used by File Input AND Gemini AI)
     loadData(data) {
+      if (data && typeof data === "object" && data.scenes && this.app.staging?.scenes) {
+        const ok = this.app.staging.scenes.importScenes(data.scenes);
+        if (ok) {
+          this.app.ui?.showNotification?.("Project scenes loaded", "success");
+          return;
+        }
+      }
       this.app._clearSceneNow();
       let objectsData = [];
       let animationData = null;
@@ -43969,7 +43979,10 @@ ${elements.join("\n")}
         this.defaultRigId = existing.id;
         return existing;
       }
-      const rig = this.addRig("Camera", null, { isDefault: true });
+      const rig = this.addRig("Camera", new Vector3(10, 8, 10), {
+        isDefault: true,
+        target: new Vector3(0, 1.5, 0)
+      });
       this.defaultRigId = rig.id;
       return rig;
     }
@@ -43992,8 +44005,13 @@ ${elements.join("\n")}
       const letter = options.letter || String.fromCharCode(65 + this.rigs.length);
       const group = new Group();
       group.name = options.name || (isDefault ? "Camera" : `Camera ${name || letter}`);
-      group.position.copy(position || new Vector3(4, 1.5, 4));
-      if (options.rotation) group.rotation.fromArray(options.rotation);
+      group.position.copy(position || new Vector3(10, 8, 10));
+      const target = new Vector3().copy(options.target || new Vector3(0, 1.5, 0));
+      if (options.rotation) {
+        group.rotation.fromArray(options.rotation);
+      } else {
+        group.lookAt(target);
+      }
       const lens = options.lens ? { ...options.lens } : { focalLength: 50, sensor: "fullFrame" };
       const aspect2 = options.aspect || "16:9";
       const camera = new PerspectiveCamera(
@@ -44021,9 +44039,11 @@ ${elements.join("\n")}
         color,
         group,
         camera,
+        target,
         frustum,
         lens,
         aspect: aspect2,
+        previewCamera: null,
         visibleInViewport: true,
         isDefault,
         deletable: !isDefault
@@ -44087,20 +44107,33 @@ ${elements.join("\n")}
       rig.frustum.update(rig.camera.fov, rig.camera.aspect, 2.5);
     }
     aimAt(rig, target) {
-      rig.group.lookAt(new Vector3(target.x, target.y, target.z));
+      rig.target.set(target.x, target.y, target.z);
+      rig.group.lookAt(rig.target);
+      rig.camera.updateMatrixWorld(true);
     }
     /** Copy the current editing-camera view into a rig ("lock framing"). */
     setFromCurrentView(rig) {
       const cam = this.app.camera;
       rig.group.position.copy(cam.position);
       rig.group.quaternion.copy(cam.quaternion);
+      rig.camera.updateMatrixWorld(true);
+      const orbitTarget = this.app.orbit?.target;
+      if (orbitTarget) {
+        rig.target.copy(orbitTarget);
+      } else {
+        const direction = new Vector3();
+        cam.getWorldDirection(direction);
+        rig.target.copy(cam.position).addScaledVector(direction, 10);
+      }
       this.updateRigFrustum(rig);
     }
     /** The camera used for rendering: viewing rig or null (editing camera). */
     getRenderCamera() {
       if (!this.viewingRigId) return null;
       const rig = this.get(this.viewingRigId);
-      return rig ? rig.camera : null;
+      if (!rig) return null;
+      rig.camera.updateMatrixWorld(true);
+      return rig.camera;
     }
     /** Enter camera view / cycle through rigs / exit back to layout. */
     cycleViewThrough() {
@@ -44430,12 +44463,16 @@ ${elements.join("\n")}
       this.timelineUI = null;
       this.isScrubbing = false;
       this.previewActive = false;
+      this._moveScale = 1;
+      this._moveScaleAt = 0;
       this.framingControls = null;
       this.framingState = {
         position: new V3(),
         quaternion: new Quaternion(),
+        target: new V3(),
         fov: 55
       };
+      this.framingRig = null;
       this.pathLine = null;
       this.pathMarkers = [];
       this.transitions = [];
@@ -44551,8 +44588,19 @@ ${elements.join("\n")}
     update(delta) {
       if (this.framingControls) {
         this.framingControls.update(delta);
+        if (this.framingRig) {
+          this.clearPreviewBlur();
+          this.framingRig.camera.updateMatrixWorld(true);
+          return this.framingRig.camera;
+        }
       }
-      if (!this.playing) return this.previewActive ? this.getPreviewCamera() : null;
+      if (!this.playing) {
+        if (!this.previewActive) {
+          this.clearPreviewBlur();
+          return null;
+        }
+        return this.getPreviewCamera();
+      }
       this.currentTime += delta * this.playbackRate;
       if (this.currentTime >= this.duration) {
         if (this.loop) {
@@ -44572,11 +44620,25 @@ ${elements.join("\n")}
       if (!active) return null;
       const rig = cameras.get(active.shot.cameraId);
       if (!rig) return null;
+      if (!rig.previewCamera) rig.previewCamera = rig.camera.clone();
+      const previewCamera = rig.previewCamera;
+      previewCamera.aspect = rig.camera.aspect;
+      previewCamera.up.copy(rig.camera.up);
       const globalTime = this.app?.clock?.getElapsedTime() || 0;
-      this.applyShotMove(rig.camera, rig.group, active.shot, active.localT, globalTime);
-      return rig.camera;
+      this.applyShotMove(previewCamera, rig, active.shot, active.localT, globalTime);
+      const u = clamp2(active.localT / active.shot.duration);
+      const blur = lerp2([active.shot.blurStart || 0, active.shot.blurEnd || 0], getEasing(active.shot.easing)(u));
+      if (this.app.renderer?.domElement) {
+        this.app.renderer.domElement.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : "";
+      }
+      return previewCamera;
     }
-    applyShotMove(camera, rigGroup, shot, localT, time) {
+    clearPreviewBlur() {
+      if (this.app.renderer?.domElement) {
+        this.app.renderer.domElement.style.filter = "";
+      }
+    }
+    applyShotMove(camera, rig, shot, localT, time) {
       const u = clamp2(localT / shot.duration);
       const easingFn = getEasing(shot.easing);
       const easedU = easingFn(u);
@@ -44594,39 +44656,60 @@ ${elements.join("\n")}
         camera.fov = lerp2([shot.startFrame.fov, shot.endFrame.fov], easedU);
         camera.updateProjectionMatrix();
       } else if (hasCustomStart) {
-        this.applyMoveRelativeToFrame(camera, rigGroup, shot, easedU, "start", time);
+        this.applyMoveRelativeToFrame(camera, rig, shot, easedU, "start", time);
       } else if (hasCustomEnd) {
-        this.applyMoveRelativeToFrame(camera, rigGroup, shot, 1 - easedU, "end", time);
+        this.applyMoveRelativeToFrame(camera, rig, shot, easedU, "end", time);
       } else {
-        this.applyMoveAuto(camera, rigGroup, shot, easedU, time);
+        this.applyMoveAuto(camera, rig, shot, easedU, time);
       }
       camera.updateMatrixWorld(true);
     }
-    applyMoveAuto(camera, rigGroup, shot, u, time) {
+    getMoveScale() {
+      const now2 = performance.now();
+      if (now2 - this._moveScaleAt < 500) return this._moveScale;
+      const box = new Box3();
+      let hasBounds = false;
+      for (const object of this.app.objects || []) {
+        if (object.userData?.rigRef) continue;
+        box.expandByObject(object);
+        hasBounds = true;
+      }
+      if (hasBounds) {
+        const size = box.getSize(new V3());
+        const span = Math.max(size.x, size.z, 2);
+        this._moveScale = clamp2(span / 35, 0.22, 1);
+      } else {
+        this._moveScale = 0.3;
+      }
+      this._moveScaleAt = now2;
+      return this._moveScale;
+    }
+    applyMoveAuto(camera, rig, shot, u, time) {
       const spec = shot.spec;
+      const moveScale = this.getMoveScale();
       const e = shot.easing === "lin" ? "lin" : shot.easing;
       const easingFn = getEasing(e);
       const ph = spec.ph || 0;
       const ua = easingFn(ph === 2 ? clamp2(2 * u - 1) : ph === 1 ? clamp2(2 * u) : u);
       const ub = easingFn(ph === 2 ? clamp2(2 * u) : ph === 1 ? clamp2(2 * u - 1) : u);
       const uu = easingFn(u);
-      const basePos = rigGroup.position.clone();
-      const baseTarget = basePos.clone();
+      const basePos = (rig.target || new V3(0, 1.5, 0)).clone();
       const a = lerpArray(spec.a || [0, 0], ua) * D2R2;
-      const r = lerpArray(spec.r || [40, 40], ua);
-      const h = lerpArray(spec.h || [7, 7], ub);
-      let x = spec.x ? lerpArray(spec.x, uu) : 0;
-      let v = spec.v ? lerpArray(spec.v, uu) : 0;
+      const r = lerpArray(spec.r || [40, 40], ua) * moveScale;
+      const rawHeight = lerpArray(spec.h || [7, 7], ub);
+      const h = basePos.y + (rawHeight - basePos.y) * moveScale;
+      let x = spec.x ? lerpArray(spec.x, uu) * moveScale : 0;
+      let v = spec.v ? lerpArray(spec.v, uu) * moveScale : 0;
       const s = spec.s || 0;
       const sf = spec.sf || 9;
       const sd = spec.sd || 0;
       const sa = s * Math.exp(-sd * u);
       const sn = (t, f2, s2 = 0) => Math.sin(t * f2 + s2);
       const nz = (k) => sa * (sn(time, sf, k) + 0.6 * sn(time, sf * 2.3, k * 1.7) + 0.4 * sn(time, sf * 0.43, k * 2.9));
-      if (spec.wv) x += sn(time, 2.2) * spec.wv;
+      if (spec.wv) x += sn(time, 2.2) * spec.wv * moveScale;
       const pos = new V3(
         basePos.x + Math.sin(a) * r + x + nz(1) * 0.25,
-        h + v + (spec.bob ? sn(time, spec.bf) * spec.bob : 0) + nz(2) * 0.25,
+        h + v + (spec.bob ? sn(time, spec.bf) * spec.bob * moveScale : 0) + nz(2) * 0.25,
         basePos.z + Math.cos(a) * r
       );
       const look = new V3(
@@ -44659,18 +44742,20 @@ ${elements.join("\n")}
         camera.updateProjectionMatrix();
       }
     }
-    applyMoveRelativeToFrame(camera, rigGroup, shot, u, frameType, time) {
+    applyMoveRelativeToFrame(camera, rig, shot, u, frameType, time) {
       const frame = shot[frameType === "start" ? "startFrame" : "endFrame"];
-      if (!frame) return this.applyMoveAuto(camera, rigGroup, shot, u, time);
-      const spec = shot.spec;
-      const easingFn = getEasing(shot.easing);
-      this.applyMoveAuto(camera, rigGroup, shot, u, time);
-      if (frameType === "end") {
-        const targetPos = new V3().fromArray(frame.position);
-        const targetQuat = new Quaternion().fromArray(frame.quaternion);
-        camera.position.lerp(targetPos, u * 0.3);
-        camera.quaternion.slerp(targetQuat, u * 0.3);
-      }
+      if (!frame) return this.applyMoveAuto(camera, rig, shot, u, time);
+      const autoAnchor = camera.clone();
+      const autoNow = camera.clone();
+      this.applyMoveAuto(autoAnchor, rig, shot, frameType === "start" ? 0 : 1, time);
+      this.applyMoveAuto(autoNow, rig, shot, u, time);
+      const anchorPos = new V3().fromArray(frame.position);
+      const anchorQuat = new Quaternion().fromArray(frame.quaternion);
+      const inverseAnchor = autoAnchor.quaternion.clone().invert();
+      camera.position.copy(anchorPos).add(autoNow.position).sub(autoAnchor.position);
+      camera.quaternion.copy(anchorQuat).multiply(inverseAnchor).multiply(autoNow.quaternion);
+      camera.fov = (frame.fov ?? autoNow.fov) + (autoNow.fov - autoAnchor.fov);
+      camera.updateProjectionMatrix();
     }
     setCustomFrame(frameType) {
       const active = this.getActiveShot();
@@ -44678,9 +44763,15 @@ ${elements.join("\n")}
       const cameras = this.app.staging?.cameras;
       const rig = cameras?.get(active.shot.cameraId);
       if (!rig) return;
+      rig.camera.updateMatrixWorld(true);
+      const worldPosition = new V3();
+      const worldQuaternion = new Quaternion();
+      rig.camera.getWorldPosition(worldPosition);
+      rig.camera.getWorldQuaternion(worldQuaternion);
       const frame = {
-        position: rig.group.position.toArray(),
-        quaternion: rig.group.quaternion.toArray(),
+        position: worldPosition.toArray(),
+        quaternion: worldQuaternion.toArray(),
+        target: rig.target?.toArray?.() || null,
         fov: rig.camera.fov
       };
       active.shot[frameType === "start" ? "startFrame" : "endFrame"] = frame;
@@ -44712,8 +44803,7 @@ ${elements.join("\n")}
       for (let i = 0; i <= steps; i++) {
         const u = i / steps;
         const tempCamera = rig.camera.clone();
-        const tempGroup = rig.group.clone();
-        this.applyShotMove(tempCamera, tempGroup, active.shot, u * active.shot.duration);
+        this.applyShotMove(tempCamera, rig, active.shot, u * active.shot.duration, 0);
         points.push(tempCamera.position.clone());
       }
       this.pathLine.geometry.setFromPoints(points);
@@ -44999,13 +45089,26 @@ ${elements.join("\n")}
       const cameras = this.app.staging?.cameras;
       const rig = cameras?.get(shot.cameraId);
       if (!rig) return;
+      rig.group.updateMatrixWorld(true);
       this.framingState.position.copy(rig.group.position);
       this.framingState.quaternion.copy(rig.group.quaternion);
+      this.framingState.target.copy(rig.target);
       this.framingState.fov = rig.camera.fov;
+      this.framingRig = rig;
+      this.clearPreviewBlur();
+      const worldPosition = new V3();
+      const worldQuaternion = new Quaternion();
+      rig.group.getWorldPosition(worldPosition);
+      rig.group.getWorldQuaternion(worldQuaternion);
+      if (rig.camera.parent !== this.app.scene) this.app.scene.add(rig.camera);
+      rig.camera.position.copy(worldPosition);
+      rig.camera.quaternion.copy(worldQuaternion);
+      rig.camera.scale.set(1, 1, 1);
+      rig.camera.updateMatrixWorld(true);
       if (this.app.orbit) this.app.orbit.enabled = false;
       if (this.framingControls) this.framingControls.dispose();
       this.framingControls = new OrbitControls(rig.camera, this.app.renderer.domElement);
-      this.framingControls.target.copy(rig.group.position);
+      this.framingControls.target.copy(rig.target);
       this.framingControls.enableDamping = true;
       this.framingControls.dampingFactor = 0.05;
       this.framingControls.enablePan = true;
@@ -45018,28 +45121,33 @@ ${elements.join("\n")}
     }
     commitFraming(frameType) {
       const shot = this.selectedShot;
-      if (!shot) return;
-      const cameras = this.app.staging?.cameras;
-      const rig = cameras?.get(shot.cameraId);
-      if (!rig) return;
+      const rig = this.framingRig;
+      if (!shot || !rig) return;
+      rig.camera.updateMatrixWorld(true);
+      const worldPosition = new V3();
+      const worldQuaternion = new Quaternion();
+      rig.camera.getWorldPosition(worldPosition);
+      rig.camera.getWorldQuaternion(worldQuaternion);
       const frame = {
-        position: rig.group.position.toArray(),
-        quaternion: rig.group.quaternion.toArray(),
+        position: worldPosition.toArray(),
+        quaternion: worldQuaternion.toArray(),
+        target: this.framingControls?.target?.toArray?.() || rig.target.toArray(),
         fov: rig.camera.fov
       };
       shot[frameType === "start" ? "startFrame" : "endFrame"] = frame;
+      rig.group.position.copy(worldPosition);
+      rig.group.quaternion.copy(worldQuaternion);
+      if (this.framingControls?.target) rig.target.copy(this.framingControls.target);
       this.exitFramingMode();
       this.refreshUI();
       this.app.ui?.showNotification(`${frameType} frame saved`, "success");
     }
     cancelFraming() {
-      const shot = this.selectedShot;
-      if (!shot) return;
-      const cameras = this.app.staging?.cameras;
-      const rig = cameras?.get(shot.cameraId);
+      const rig = this.framingRig;
       if (!rig) return;
       rig.group.position.copy(this.framingState.position);
       rig.group.quaternion.copy(this.framingState.quaternion);
+      rig.target.copy(this.framingState.target);
       rig.camera.fov = this.framingState.fov;
       rig.camera.updateProjectionMatrix();
       this.exitFramingMode();
@@ -45047,11 +45155,23 @@ ${elements.join("\n")}
       this.app.ui?.showNotification("Framing cancelled", "info");
     }
     exitFramingMode() {
+      const rig = this.framingRig;
       if (this.framingControls) {
         this.framingControls.dispose();
         this.framingControls = null;
       }
-      if (this.app.orbit) this.app.orbit.enabled = true;
+      if (rig) {
+        if (rig.camera.parent === this.app.scene) this.app.scene.remove(rig.camera);
+        rig.group.add(rig.camera);
+        rig.camera.position.set(0, 0, 0);
+        rig.camera.quaternion.identity();
+        rig.camera.scale.set(1, 1, 1);
+        rig.camera.updateMatrixWorld(true);
+        rig.group.updateMatrixWorld(true);
+      }
+      this.framingRig = null;
+      this.clearPreviewBlur();
+      if (this.app.orbit) this.app.orbit.enabled = this.app.controlMode === "camera";
     }
     buildTimelineTrack(container) {
       if (!container) return;
@@ -45186,7 +45306,8 @@ ${elements.join("\n")}
                 position: absolute;
                 left: ${left}%;
                 width: ${width}%;
-                top: ${i % 2 === 0 ? "20px" : "38px"};
+                top: ${i % 2 === 0 ? "22px" : "48px"};
+                height: 22px;
                 background: ${color}40;
                 border: 1px solid ${color}80;
                 border-radius: 3px;
@@ -45437,8 +45558,9 @@ ${elements.join("\n")}
         id: "default_camera",
         name: "Camera",
         isDefault: true,
-        position: [4, 1.5, 4],
-        rotation: [0, 0, 0],
+        position: [10, 8, 10],
+        target: [0, 1.5, 0],
+        rotation: null,
         lens: { focalLength: 50, sensor: "fullFrame" },
         aspect: "16:9",
         color: 58879
@@ -45457,6 +45579,7 @@ ${elements.join("\n")}
           name: rig.name,
           isDefault: !!rig.isDefault,
           position: rig.group.position.toArray(),
+          target: rig.target?.toArray?.() || [0, 1.5, 0],
           rotation: rig.group.rotation.toArray(),
           lens: { ...rig.lens },
           aspect: rig.aspect,
@@ -45531,6 +45654,7 @@ ${elements.join("\n")}
           id: def.id,
           name: def.name,
           isDefault: !!def.isDefault,
+          target: def.target,
           rotation: def.rotation,
           lens: def.lens,
           aspect: def.aspect,
@@ -45579,6 +45703,7 @@ ${elements.join("\n")}
       }
     }
     exportScenes() {
+      this.saveCurrentSceneState();
       const data = {
         format: "pixelstaging-scenes",
         version: 1,
@@ -45821,10 +45946,15 @@ ${xrefOffset}
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     if (shot && shotManager) {
-      shotManager.applyShotMove(camera, rig.group, shot, localT, 0);
+      shotManager.applyShotMove(camera, rig, shot, localT, 0);
     } else {
-      camera.position.copy(rig.group.position);
-      camera.quaternion.copy(rig.group.quaternion);
+      rig.group.updateMatrixWorld(true);
+      const worldPosition = new Vector3();
+      const worldQuaternion = new Quaternion();
+      rig.group.getWorldPosition(worldPosition);
+      rig.group.getWorldQuaternion(worldQuaternion);
+      camera.position.copy(worldPosition);
+      camera.quaternion.copy(worldQuaternion);
     }
     camera.updateMatrixWorld(true);
     renderer.render(app.scene, camera);
@@ -45947,6 +46077,7 @@ ${xrefOffset}
       this.gizmoDragJustEnded = false;
       this.originalColors = /* @__PURE__ */ new Map();
       this.controlMode = "camera";
+      this.cameraGuidesEnabled = false;
       this.APP_DEFAULTS = APP_DEFAULTS2;
       this.snapEnabled = APP_DEFAULTS2.snap.enabled;
       this.snapMode = APP_DEFAULTS2.snap.mode;
@@ -46984,6 +47115,8 @@ ${xrefOffset}
       }
       const shotCam = this.staging.shotManager.update(delta);
       const rigCam = shotCam || this.staging.cameras.getRenderCamera();
+      const guides = document.getElementById("camera-guides");
+      if (guides) guides.classList.toggle("hidden", !(this.cameraGuidesEnabled && rigCam));
       if (rigCam) {
         const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);
         if (vp) {

@@ -130,57 +130,10 @@ export class FileManager {
     }
 
     saveSceneJSON() {
-        // Helper to serialize an object
-        const processObj = (obj) => {
-            // Only process objects with our specific types
-            if (obj.userData.type) {
-                const item = {
-                    type: obj.userData.type,
-                    position: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
-                    rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
-                    scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
-                    userData: obj.userData
-                };
-
-                if (obj.userData.type === 'shape' || obj.userData.type === 'shape2d') {
-                    item.shapeType = obj.userData.shapeType;
-                    const firstMaterial = Array.isArray(obj.material) ? obj.material[0] : obj.material;
-                    item.color = '#' + firstMaterial.color.getHexString();
-                    item.materialSlots = this._serializeMaterialSlots(obj);
-                } else if (obj.userData.type === 'light') {
-                    const l = obj.children[0];
-                    item.lightType = obj.userData.lightType;
-                    item.color = '#' + l.color.getHexString();
-                    item.intensity = l.intensity;
-                } else if (obj.userData.type === 'figure') {
-                    item.gender = obj.userData.gender;
-                    // Save posing data (rotation of limbs)
-                    item.joints = {};
-                    obj.traverse(child => {
-                        if (child.userData.name && child.userData.name.includes('Joint')) {
-                            item.joints[child.userData.name] = {
-                                x: child.rotation.x,
-                                y: child.rotation.y,
-                                z: child.rotation.z
-                            };
-                        }
-                    });
-                }
-                data.push(item);
-            }
-        };
-
-        // Traverse only direct children of scene to find our managed roots
-        const data = [];
-        this.app.scene.children.forEach(child => {
-            processObj(child);
-        });
-
-        // Include animation data
+        this.app.staging?.scenes?.saveCurrentSceneState?.();
         const sceneData = {
-            version: 1,
-            objects: data,
-            animations: this.app.animationManager.toJSON()
+            ...this.serializeCurrentScene(),
+            scenes: this.app.staging?.scenes?.exportScenes?.() || null
         };
 
         const blob = new Blob([JSON.stringify(sceneData)], { type: 'application/json' });
@@ -632,6 +585,7 @@ export class FileManager {
         const sceneData = this.serializeCurrentScene();
         localStorage.setItem('pixel3d-scene', JSON.stringify(sceneData));
         this.saveFolderStructure();
+        this.app.staging?.scenes?.persistScenes?.();
     }
 
     // Save folder structure
@@ -724,6 +678,17 @@ export class FileManager {
 
     // New helper that accepts raw data (used by File Input AND Gemini AI)
     loadData(data) {
+        // A project file can contain the multi-scene scene list. Let the scene
+        // manager restore it and return; scene records already contain objects,
+        // cameras, and shot timelines.
+        if (data && typeof data === 'object' && data.scenes && this.app.staging?.scenes) {
+            const ok = this.app.staging.scenes.importScenes(data.scenes);
+            if (ok) {
+                this.app.ui?.showNotification?.('Project scenes loaded', 'success');
+                return;
+            }
+        }
+
         // Loading replaces the document and should not create undo entries for
         // either the previous scene or each reconstructed object.
         this.app._clearSceneNow();

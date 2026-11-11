@@ -45,6 +45,7 @@ class StageApp {
         this.originalColors = new Map();
         // 'camera' = drag/navigate the view; 'scene' = select and transform objects.
         this.controlMode = 'camera';
+        this.cameraGuidesEnabled = false;
 
         // Snap state
         this.APP_DEFAULTS = APP_DEFAULTS;
@@ -1394,6 +1395,8 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         // Staging: shot timeline (playing) > rig view-through > editing camera
         const shotCam = this.staging.shotManager.update(delta);
         const rigCam = shotCam || this.staging.cameras.getRenderCamera();
+        const guides = document.getElementById('camera-guides');
+        if (guides) guides.classList.toggle('hidden', !(this.cameraGuidesEnabled && rigCam));
         if (rigCam) {
             const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);
             if (vp) {

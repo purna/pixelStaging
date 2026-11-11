@@ -22,6 +22,8 @@ export class ShotManager {
         this.timelineUI = null;
         this.isScrubbing = false;
         this.previewActive = false;
+        this._moveScale = 1;
+        this._moveScaleAt = 0;
         
         // Framing camera controls (OrbitControls during frame editing)
         this.framingControls = null;
@@ -30,8 +32,10 @@ export class ShotManager {
         this.framingState = {
             position: new V3(),
             quaternion: new THREE.Quaternion(),
+            target: new V3(),
             fov: 55
         };
+        this.framingRig = null;
         
         // Camera path preview line
         this.pathLine = null;
@@ -163,9 +167,20 @@ export class ShotManager {
     update(delta) {
         if (this.framingControls) {
             this.framingControls.update(delta);
+            if (this.framingRig) {
+                this.clearPreviewBlur();
+                this.framingRig.camera.updateMatrixWorld(true);
+                return this.framingRig.camera;
+            }
         }
-        if (!this.playing) return this.previewActive ? this.getPreviewCamera() : null;
-        
+        if (!this.playing) {
+            if (!this.previewActive) {
+                this.clearPreviewBlur();
+                return null;
+            }
+            return this.getPreviewCamera();
+        }
+
         this.currentTime += delta * this.playbackRate;
         if (this.currentTime >= this.duration) {
             if (this.loop) {
@@ -188,15 +203,33 @@ export class ShotManager {
         
         const rig = cameras.get(active.shot.cameraId);
         if (!rig) return null;
-        
-        // Apply shot move to camera - pass the global time for noise functions
+
+        if (!rig.previewCamera) rig.previewCamera = rig.camera.clone();
+        const previewCamera = rig.previewCamera;
+        previewCamera.aspect = rig.camera.aspect;
+        previewCamera.up.copy(rig.camera.up);
+
+        // Apply shot move to a detached preview camera so the rig itself is not
+        // permanently moved by playback.
         const globalTime = this.app?.clock?.getElapsedTime() || 0;
-        this.applyShotMove(rig.camera, rig.group, active.shot, active.localT, globalTime);
-        
-        return rig.camera;
+        this.applyShotMove(previewCamera, rig, active.shot, active.localT, globalTime);
+
+        const u = clamp(active.localT / active.shot.duration);
+        const blur = lerp([active.shot.blurStart || 0, active.shot.blurEnd || 0], getEasing(active.shot.easing)(u));
+        if (this.app.renderer?.domElement) {
+            this.app.renderer.domElement.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '';
+        }
+
+        return previewCamera;
     }
 
-    applyShotMove(camera, rigGroup, shot, localT, time) {
+    clearPreviewBlur() {
+        if (this.app.renderer?.domElement) {
+            this.app.renderer.domElement.style.filter = '';
+        }
+    }
+
+    applyShotMove(camera, rig, shot, localT, time) {
         const u = clamp(localT / shot.duration);
         const easingFn = getEasing(shot.easing);
         const easedU = easingFn(u);
@@ -220,21 +253,45 @@ export class ShotManager {
             camera.fov = lerp([shot.startFrame.fov, shot.endFrame.fov], easedU);
             camera.updateProjectionMatrix();
         } else if (hasCustomStart) {
-            // Start from custom frame, apply move relative to it
-            this.applyMoveRelativeToFrame(camera, rigGroup, shot, easedU, 'start', time);
+            // Start from custom frame, apply the preset move relative to it.
+            this.applyMoveRelativeToFrame(camera, rig, shot, easedU, 'start', time);
         } else if (hasCustomEnd) {
-            // End at custom frame, apply move relative to it (reverse)
-            this.applyMoveRelativeToFrame(camera, rigGroup, shot, 1 - easedU, 'end', time);
+            // Finish on the custom frame, applying the preset move relative to it.
+            this.applyMoveRelativeToFrame(camera, rig, shot, easedU, 'end', time);
         } else {
-            // Auto framing - use rig group as base
-            this.applyMoveAuto(camera, rigGroup, shot, easedU, time);
+            // Auto framing - orbit around the rig's aim target.
+            this.applyMoveAuto(camera, rig, shot, easedU, time);
         }
         
         camera.updateMatrixWorld(true);
     }
 
-    applyMoveAuto(camera, rigGroup, shot, u, time) {
+    getMoveScale() {
+        const now = performance.now();
+        if (now - this._moveScaleAt < 500) return this._moveScale;
+
+        const box = new THREE.Box3();
+        let hasBounds = false;
+        for (const object of this.app.objects || []) {
+            if (object.userData?.rigRef) continue;
+            box.expandByObject(object);
+            hasBounds = true;
+        }
+
+        if (hasBounds) {
+            const size = box.getSize(new V3());
+            const span = Math.max(size.x, size.z, 2);
+            this._moveScale = clamp(span / 35, 0.22, 1);
+        } else {
+            this._moveScale = 0.3;
+        }
+        this._moveScaleAt = now;
+        return this._moveScale;
+    }
+
+    applyMoveAuto(camera, rig, shot, u, time) {
         const spec = shot.spec;
+        const moveScale = this.getMoveScale();
         const e = shot.easing === 'lin' ? 'lin' : shot.easing;
         const easingFn = getEasing(e);
         
@@ -244,17 +301,17 @@ export class ShotManager {
         const ub = easingFn(ph === 2 ? clamp(2 * u) : ph === 1 ? clamp(2 * u - 1) : u);
         const uu = easingFn(u);
         
-        // Base position from rig group
-        const basePos = rigGroup.position.clone();
-        const baseTarget = basePos.clone();
+        // The rig target is the point the camera orbits around.
+        const basePos = (rig.target || new V3(0, 1.5, 0)).clone();
         
         // Apply move parameters
         const a = lerpArray(spec.a || [0, 0], ua) * D2R;
-        const r = lerpArray(spec.r || [40, 40], ua);
-        const h = lerpArray(spec.h || [7, 7], ub);
-        
-        let x = spec.x ? lerpArray(spec.x, uu) : 0;
-        let v = spec.v ? lerpArray(spec.v, uu) : 0;
+        const r = lerpArray(spec.r || [40, 40], ua) * moveScale;
+        const rawHeight = lerpArray(spec.h || [7, 7], ub);
+        const h = basePos.y + (rawHeight - basePos.y) * moveScale;
+
+        let x = spec.x ? lerpArray(spec.x, uu) * moveScale : 0;
+        let v = spec.v ? lerpArray(spec.v, uu) * moveScale : 0;
         
         // Shake/wobble - use actual time for noise
         const s = (spec.s || 0);
@@ -266,11 +323,11 @@ export class ShotManager {
         const sn = (t, f, s = 0) => Math.sin(t * f + s);
         const nz = (k) => sa * (sn(time, sf, k) + 0.6 * sn(time, sf * 2.3, k * 1.7) + 0.4 * sn(time, sf * 0.43, k * 2.9));
         
-        if (spec.wv) x += sn(time, 2.2) * spec.wv;
+        if (spec.wv) x += sn(time, 2.2) * spec.wv * moveScale;
         
         const pos = new V3(
             basePos.x + Math.sin(a) * r + x + nz(1) * 0.25,
-            h + v + (spec.bob ? sn(time, spec.bf) * spec.bob : 0) + nz(2) * 0.25,
+            h + v + (spec.bob ? sn(time, spec.bf) * spec.bob * moveScale : 0) + nz(2) * 0.25,
             basePos.z + Math.cos(a) * r
         );
         
@@ -311,24 +368,25 @@ export class ShotManager {
         }
     }
 
-    applyMoveRelativeToFrame(camera, rigGroup, shot, u, frameType, time) {
-        // Similar to applyMoveAuto but relative to a custom frame
+    applyMoveRelativeToFrame(camera, rig, shot, u, frameType, time) {
         const frame = shot[frameType === 'start' ? 'startFrame' : 'endFrame'];
-        if (!frame) return this.applyMoveAuto(camera, rigGroup, shot, u, time);
-        
-        const spec = shot.spec;
-        const easingFn = getEasing(shot.easing);
-        
-        // This is a simplified version - in practice you'd want full relative move
-        this.applyMoveAuto(camera, rigGroup, shot, u, time);
-        
-        // Then blend toward the custom frame
-        if (frameType === 'end') {
-            const targetPos = new V3().fromArray(frame.position);
-            const targetQuat = new THREE.Quaternion().fromArray(frame.quaternion);
-            camera.position.lerp(targetPos, u * 0.3);
-            camera.quaternion.slerp(targetQuat, u * 0.3);
-        }
+        if (!frame) return this.applyMoveAuto(camera, rig, shot, u, time);
+
+        // Compute the same preset at the anchor and at the current u, then
+        // offset the whole move so the custom frame is preserved.
+        const autoAnchor = camera.clone();
+        const autoNow = camera.clone();
+        this.applyMoveAuto(autoAnchor, rig, shot, frameType === 'start' ? 0 : 1, time);
+        this.applyMoveAuto(autoNow, rig, shot, u, time);
+
+        const anchorPos = new V3().fromArray(frame.position);
+        const anchorQuat = new THREE.Quaternion().fromArray(frame.quaternion);
+        const inverseAnchor = autoAnchor.quaternion.clone().invert();
+
+        camera.position.copy(anchorPos).add(autoNow.position).sub(autoAnchor.position);
+        camera.quaternion.copy(anchorQuat).multiply(inverseAnchor).multiply(autoNow.quaternion);
+        camera.fov = (frame.fov ?? autoNow.fov) + (autoNow.fov - autoAnchor.fov);
+        camera.updateProjectionMatrix();
     }
 
     setCustomFrame(frameType) {
@@ -339,9 +397,15 @@ export class ShotManager {
         const rig = cameras?.get(active.shot.cameraId);
         if (!rig) return;
         
+        rig.camera.updateMatrixWorld(true);
+        const worldPosition = new V3();
+        const worldQuaternion = new THREE.Quaternion();
+        rig.camera.getWorldPosition(worldPosition);
+        rig.camera.getWorldQuaternion(worldQuaternion);
         const frame = {
-            position: rig.group.position.toArray(),
-            quaternion: rig.group.quaternion.toArray(),
+            position: worldPosition.toArray(),
+            quaternion: worldQuaternion.toArray(),
+            target: rig.target?.toArray?.() || null,
             fov: rig.camera.fov
         };
         
@@ -377,12 +441,11 @@ export class ShotManager {
         
         const points = [];
         const steps = 40;
-        
+
         for (let i = 0; i <= steps; i++) {
             const u = i / steps;
             const tempCamera = rig.camera.clone();
-            const tempGroup = rig.group.clone();
-            this.applyShotMove(tempCamera, tempGroup, active.shot, u * active.shot.duration);
+            this.applyShotMove(tempCamera, rig, active.shot, u * active.shot.duration, 0);
             points.push(tempCamera.position.clone());
         }
         
@@ -698,19 +761,34 @@ export class ShotManager {
         const cameras = this.app.staging?.cameras;
         const rig = cameras?.get(shot.cameraId);
         if (!rig) return;
-        
-        // Store current framing state (for cancel)
+
+        // Store the real camera transform and target so Cancel is lossless.
+        rig.group.updateMatrixWorld(true);
         this.framingState.position.copy(rig.group.position);
         this.framingState.quaternion.copy(rig.group.quaternion);
+        this.framingState.target.copy(rig.target);
         this.framingState.fov = rig.camera.fov;
-        
+        this.framingRig = rig;
+        this.clearPreviewBlur();
+
+        // Detach the real camera while orbiting, otherwise OrbitControls would
+        // treat the camera's local child transform as its world position.
+        const worldPosition = new V3();
+        const worldQuaternion = new THREE.Quaternion();
+        rig.group.getWorldPosition(worldPosition);
+        rig.group.getWorldQuaternion(worldQuaternion);
+        if (rig.camera.parent !== this.app.scene) this.app.scene.add(rig.camera);
+        rig.camera.position.copy(worldPosition);
+        rig.camera.quaternion.copy(worldQuaternion);
+        rig.camera.scale.set(1, 1, 1);
+        rig.camera.updateMatrixWorld(true);
+
         // Disable main orbit controls
         if (this.app.orbit) this.app.orbit.enabled = false;
-        
-        // Create framing orbit controls around the rig camera position
+
         if (this.framingControls) this.framingControls.dispose();
         this.framingControls = new OrbitControls(rig.camera, this.app.renderer.domElement);
-        this.framingControls.target.copy(rig.group.position);
+        this.framingControls.target.copy(rig.target);
         this.framingControls.enableDamping = true;
         this.framingControls.dampingFactor = 0.05;
         this.framingControls.enablePan = true;
@@ -719,55 +797,71 @@ export class ShotManager {
         this.framingControls.minDistance = 0.1;
         this.framingControls.maxDistance = 100;
         this.framingControls.update();
-        
+
         this.app.ui?.showNotification(`Framing ${frameType} frame. Move camera, then click Confirm or Cancel.`, 'info');
     }
 
     commitFraming(frameType) {
         const shot = this.selectedShot;
-        if (!shot) return;
-        
-        const cameras = this.app.staging?.cameras;
-        const rig = cameras?.get(shot.cameraId);
-        if (!rig) return;
-        
+        const rig = this.framingRig;
+        if (!shot || !rig) return;
+
+        rig.camera.updateMatrixWorld(true);
+        const worldPosition = new V3();
+        const worldQuaternion = new THREE.Quaternion();
+        rig.camera.getWorldPosition(worldPosition);
+        rig.camera.getWorldQuaternion(worldQuaternion);
         const frame = {
-            position: rig.group.position.toArray(),
-            quaternion: rig.group.quaternion.toArray(),
+            position: worldPosition.toArray(),
+            quaternion: worldQuaternion.toArray(),
+            target: this.framingControls?.target?.toArray?.() || rig.target.toArray(),
             fov: rig.camera.fov
         };
-        
+
         shot[frameType === 'start' ? 'startFrame' : 'endFrame'] = frame;
+
+        rig.group.position.copy(worldPosition);
+        rig.group.quaternion.copy(worldQuaternion);
+        if (this.framingControls?.target) rig.target.copy(this.framingControls.target);
+
         this.exitFramingMode();
         this.refreshUI();
         this.app.ui?.showNotification(`${frameType} frame saved`, 'success');
     }
-    
+
     cancelFraming() {
-        const shot = this.selectedShot;
-        if (!shot) return;
-        
-        const cameras = this.app.staging?.cameras;
-        const rig = cameras?.get(shot.cameraId);
+        const rig = this.framingRig;
         if (!rig) return;
-        
-        // Restore framing state
+
         rig.group.position.copy(this.framingState.position);
         rig.group.quaternion.copy(this.framingState.quaternion);
+        rig.target.copy(this.framingState.target);
         rig.camera.fov = this.framingState.fov;
         rig.camera.updateProjectionMatrix();
-        
+
         this.exitFramingMode();
         this.refreshUI();
         this.app.ui?.showNotification('Framing cancelled', 'info');
     }
-    
+
     exitFramingMode() {
+        const rig = this.framingRig;
         if (this.framingControls) {
             this.framingControls.dispose();
             this.framingControls = null;
         }
-        if (this.app.orbit) this.app.orbit.enabled = true;
+        if (rig) {
+            if (rig.camera.parent === this.app.scene) this.app.scene.remove(rig.camera);
+            rig.group.add(rig.camera);
+            rig.camera.position.set(0, 0, 0);
+            rig.camera.quaternion.identity();
+            rig.camera.scale.set(1, 1, 1);
+            rig.camera.updateMatrixWorld(true);
+            rig.group.updateMatrixWorld(true);
+        }
+        this.framingRig = null;
+        this.clearPreviewBlur();
+        if (this.app.orbit) this.app.orbit.enabled = this.app.controlMode === 'camera';
     }
 
     buildTimelineTrack(container) {
@@ -930,7 +1024,8 @@ export class ShotManager {
                 position: absolute;
                 left: ${left}%;
                 width: ${width}%;
-                top: ${i % 2 === 0 ? '20px' : '38px'};
+                top: ${i % 2 === 0 ? '22px' : '48px'};
+                height: 22px;
                 background: ${color}40;
                 border: 1px solid ${color}80;
                 border-radius: 3px;
