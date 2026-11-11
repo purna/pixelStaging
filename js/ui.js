@@ -265,6 +265,33 @@ export class UI {
             this.openUnifiedSettingsModal('general');
         });
 
+        // Keyboard shortcuts modal
+        const shortcutsModal = document.getElementById('keyboard-shortcuts-modal');
+        const openShortcuts = () => shortcutsModal?.classList.add('open');
+        const closeShortcuts = () => shortcutsModal?.classList.remove('open');
+        document.getElementById('tool-keyboard-shortcuts')?.addEventListener('click', openShortcuts);
+        document.getElementById('keyboard-shortcuts-close')?.addEventListener('click', closeShortcuts);
+        document.getElementById('keyboard-shortcuts-done')?.addEventListener('click', closeShortcuts);
+        shortcutsModal?.addEventListener('click', (event) => {
+            if (event.target === shortcutsModal) closeShortcuts();
+        });
+        document.querySelectorAll('[data-shortcuts-tab]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('[data-shortcuts-tab]').forEach(item => item.classList.remove('active'));
+                document.querySelectorAll('.shortcuts-panel').forEach(panel => panel.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`shortcuts-${tab.dataset.shortcutsTab}`)?.classList.add('active');
+            });
+        });
+        document.getElementById('keyboard-shortcuts-print')?.addEventListener('click', () => {
+            const content = document.querySelector('.shortcuts-content')?.innerHTML || '';
+            const win = window.open('', '_blank');
+            if (!win) return;
+            win.document.write(`<html><head><title>Keyboard Shortcuts</title><style>body{font-family:Inter,sans-serif;padding:24px;color:#111}h2{font-size:14px;text-transform:uppercase;color:#555}.shortcut-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.shortcut-item{display:flex;gap:10px;border-bottom:1px solid #ddd;padding:6px 0}.shortcut-key{font-weight:700;min-width:110px}.shortcuts-panel{display:block!important;margin-bottom:20px}</style></head><body><h1>Keyboard Shortcuts</h1>${content}</body></html>`);
+            win.document.close();
+            win.print();
+        });
+
         // Overlay toggle toolbar button
         document.getElementById('tool-toggle-overlays')?.addEventListener('click', () => {
             this.toggleAllOverlays();
@@ -319,12 +346,27 @@ export class UI {
                             this.app.fileManager.saveToBrowser();
                             this.showNotification('Scene saved to browser!', 'success');
                         }
+                    } else if (e.shiftKey) {
+                        this.applySceneView('side');
                     } else {
                         document.getElementById('mode-scale').click();
                     }
                     break;
+                case 'f':
+                    this.applySceneView('front');
+                    break;
+                case 'b':
+                    this.applySceneView('back');
+                    break;
+                case 't':
+                    this.applySceneView('top');
+                    break;
+                case 'home':
+                    e.preventDefault();
+                    this.applyCameraNudge('home');
+                    break;
                 case 'c':
-                    if (this.app.clearScene) this.app.clearScene();
+                    document.getElementById('scene-clear-button')?.click();
                     break;
                 case 'escape':
                     if (this.app.deselect) this.app.deselect();
