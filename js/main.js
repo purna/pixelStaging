@@ -1215,6 +1215,39 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         }
     }
 
+    focusObject(obj) {
+        if (!obj || !this.camera) return;
+        obj.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(obj);
+        if (box.isEmpty()) return;
+
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const radius = Math.max(size.length() * 0.5, 0.5);
+        const direction = new THREE.Vector3(1, 0.75, 1).normalize();
+
+        if (this.camera.isPerspectiveCamera) {
+            const fov = THREE.MathUtils.degToRad(this.camera.fov || 55);
+            const distance = (radius / Math.max(0.05, Math.sin(fov * 0.5))) * 1.15;
+            this.camera.position.copy(center).addScaledVector(direction, distance);
+        } else {
+            const distance = radius * 4;
+            this.camera.position.copy(center).addScaledVector(direction, distance);
+            if (this.camera.isOrthographicCamera) {
+                this.camera.zoom = Math.min(8, Math.max(0.2, 10 / Math.max(0.5, radius)));
+                this.camera.updateProjectionMatrix();
+            }
+        }
+
+        this.camera.up.set(0, 1, 0);
+        this.camera.lookAt(center);
+        this.camera.updateMatrixWorld(true);
+        if (this.orbit) {
+            this.orbit.target.copy(center);
+            this.orbit.update();
+        }
+    }
+
     selectObject(obj) {
         // Always resolve a character mesh/bone up to the character root so the
         // pose controls in the properties panel are available.

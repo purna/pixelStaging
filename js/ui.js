@@ -1783,19 +1783,25 @@ export class UI {
         const worldUp = new THREE.Vector3(0, 1, 0);
 
         if (action === 'home') {
-            const rig = this.app.staging?.cameras?.defaultRig;
-            if (rig) {
-                camera.position.copy(rig.group.position);
-                camera.quaternion.copy(rig.group.quaternion);
-                target.copy(rig.target);
-            } else {
-                camera.position.set(10, 8, 10);
-                target.set(0, 1.5, 0);
+            this.exitPreviewForEditorNavigation();
+            const box = new THREE.Box3();
+            let hasBounds = false;
+            for (const object of this.app.objects || []) {
+                if (object.userData?.rigRef) continue;
+                box.expandByObject(object);
+                hasBounds = true;
             }
+            const center = hasBounds ? box.getCenter(new THREE.Vector3()) : new THREE.Vector3(0, 1.5, 0);
+            const size = hasBounds ? box.getSize(new THREE.Vector3()) : new THREE.Vector3(10, 3, 10);
+            const dist = Math.max(size.x, size.y, size.z, 4) * 1.35;
+            camera.position.set(center.x + dist * 0.65, center.y + dist * 0.75, center.z + dist);
             camera.up.set(0, 1, 0);
+            camera.lookAt(center);
             camera.updateMatrixWorld(true);
+            target.copy(center);
+            if (framing?.controls) framing.controls.target.copy(center);
             if (framing?.controls) framing.controls.update();
-            else if (this.app.orbit) { this.app.orbit.target.copy(target); this.app.orbit.update(); }
+            else if (this.app.orbit) { this.app.orbit.target.copy(center); this.app.orbit.update(); }
             return;
         }
 
@@ -1849,7 +1855,18 @@ export class UI {
         }
     }
 
+    exitPreviewForEditorNavigation() {
+        const shotManager = this.app.staging?.shotManager;
+        if (shotManager) {
+            shotManager.previewActive = false;
+            shotManager.clearPreviewBlur?.();
+            shotManager.clearTransitionOverlay?.();
+        }
+        if (this.app.staging?.cameras) this.app.staging.cameras.viewingRigId = null;
+    }
+
     applySceneView(view) {
+        this.exitPreviewForEditorNavigation();
         const camera = this.app.camera;
         const target = this.app.orbit?.target || new THREE.Vector3(0, 1.5, 0);
         const distance = Math.max(1, camera.position.distanceTo(target));

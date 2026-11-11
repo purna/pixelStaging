@@ -346,6 +346,7 @@ export class LayerManager {
         el.addEventListener('click', (e) => {
             if(e.target.tagName === 'I' || e.target.tagName === 'INPUT') return;
             this.app.selectObject(obj);
+            this.app.focusObject?.(obj);
         });
 
         // Rename Object

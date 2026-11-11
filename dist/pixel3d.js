@@ -34444,20 +34444,26 @@
       const up = new Vector3().crossVectors(right, forward).normalize();
       const worldUp = new Vector3(0, 1, 0);
       if (action === "home") {
-        const rig = this.app.staging?.cameras?.defaultRig;
-        if (rig) {
-          camera.position.copy(rig.group.position);
-          camera.quaternion.copy(rig.group.quaternion);
-          target.copy(rig.target);
-        } else {
-          camera.position.set(10, 8, 10);
-          target.set(0, 1.5, 0);
+        this.exitPreviewForEditorNavigation();
+        const box = new Box3();
+        let hasBounds = false;
+        for (const object of this.app.objects || []) {
+          if (object.userData?.rigRef) continue;
+          box.expandByObject(object);
+          hasBounds = true;
         }
+        const center = hasBounds ? box.getCenter(new Vector3()) : new Vector3(0, 1.5, 0);
+        const size = hasBounds ? box.getSize(new Vector3()) : new Vector3(10, 3, 10);
+        const dist = Math.max(size.x, size.y, size.z, 4) * 1.35;
+        camera.position.set(center.x + dist * 0.65, center.y + dist * 0.75, center.z + dist);
         camera.up.set(0, 1, 0);
+        camera.lookAt(center);
         camera.updateMatrixWorld(true);
+        target.copy(center);
+        if (framing?.controls) framing.controls.target.copy(center);
         if (framing?.controls) framing.controls.update();
         else if (this.app.orbit) {
-          this.app.orbit.target.copy(target);
+          this.app.orbit.target.copy(center);
           this.app.orbit.update();
         }
         return;
@@ -34509,7 +34515,17 @@
         this.app.orbit.update();
       }
     }
+    exitPreviewForEditorNavigation() {
+      const shotManager = this.app.staging?.shotManager;
+      if (shotManager) {
+        shotManager.previewActive = false;
+        shotManager.clearPreviewBlur?.();
+        shotManager.clearTransitionOverlay?.();
+      }
+      if (this.app.staging?.cameras) this.app.staging.cameras.viewingRigId = null;
+    }
     applySceneView(view) {
+      this.exitPreviewForEditorNavigation();
       const camera = this.app.camera;
       const target = this.app.orbit?.target || new Vector3(0, 1.5, 0);
       const distance = Math.max(1, camera.position.distanceTo(target));
@@ -41391,6 +41407,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       el.addEventListener("click", (e) => {
         if (e.target.tagName === "I" || e.target.tagName === "INPUT") return;
         this.app.selectObject(obj);
+        this.app.focusObject?.(obj);
       });
       const input = el.querySelector(".layer-name");
       input.addEventListener("change", (e) => {
@@ -48930,6 +48947,35 @@ ${xrefOffset}
         }
       } else {
         this.deselect();
+      }
+    }
+    focusObject(obj) {
+      if (!obj || !this.camera) return;
+      obj.updateMatrixWorld(true);
+      const box = new Box3().setFromObject(obj);
+      if (box.isEmpty()) return;
+      const center = box.getCenter(new Vector3());
+      const size = box.getSize(new Vector3());
+      const radius = Math.max(size.length() * 0.5, 0.5);
+      const direction = new Vector3(1, 0.75, 1).normalize();
+      if (this.camera.isPerspectiveCamera) {
+        const fov2 = MathUtils.degToRad(this.camera.fov || 55);
+        const distance = radius / Math.max(0.05, Math.sin(fov2 * 0.5)) * 1.15;
+        this.camera.position.copy(center).addScaledVector(direction, distance);
+      } else {
+        const distance = radius * 4;
+        this.camera.position.copy(center).addScaledVector(direction, distance);
+        if (this.camera.isOrthographicCamera) {
+          this.camera.zoom = Math.min(8, Math.max(0.2, 10 / Math.max(0.5, radius)));
+          this.camera.updateProjectionMatrix();
+        }
+      }
+      this.camera.up.set(0, 1, 0);
+      this.camera.lookAt(center);
+      this.camera.updateMatrixWorld(true);
+      if (this.orbit) {
+        this.orbit.target.copy(center);
+        this.orbit.update();
       }
     }
     selectObject(obj) {

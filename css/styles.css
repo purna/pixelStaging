@@ -7723,3 +7723,12 @@ input[type="number"].color-slider-value-compact {
 @media (max-width: 700px) {
     .shortcut-grid { grid-template-columns: 1fr; }
 }
+
+/* Navigation pads float without a backing panel */
+.mobile-nav {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    backdrop-filter: none !important;
+}
