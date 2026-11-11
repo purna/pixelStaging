@@ -63,8 +63,8 @@
             <button id="redoBtn" class="btn icon-only" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
             <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
             <input type="file" id="file-input" accept=".json" style="display:none">
-            <button class="btn" id="btn-load"><i class="fas fa-folder-open"></i> Load</button>
             <button class="btn primary" id="btn-save"><i class="fas fa-save"></i> Save to Browser</button>
+            <button class="btn" id="btn-load"><i class="fas fa-folder-open"></i> Import</button>
             <button class="btn" id="btn-export"><i class="fas fa-download"></i> Export</button>
             <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
             <button class="btn icon-only" id="tool-settings" title="Settings"><i class="fas fa-cog"></i></button>
@@ -469,7 +469,6 @@ Block actors, props and architecture">
                 <button class="right-tab active" data-right-tab="hierarchy" title="Hierarchy"><i class="fas fa-list"></i></button>
                 <button class="right-tab" data-right-tab="object-properties" title="Properties"><i class="fas fa-sliders-h"></i></button>
                 <button class="right-tab" data-right-tab="assets" title="Assets"><i class="fas fa-box"></i></button>
-                <button class="right-tab" data-right-tab="camera" title="Camera"><i class="fas fa-video"></i></button>
                 <button class="right-tab" data-right-tab="shot-designer" title="Shot Designer"><i class="fas fa-film"></i></button>
                 <button class="right-tab" data-right-tab="scene-settings" title="Scene"><i class="fas fa-globe"></i></button>
             </div>
@@ -599,6 +598,27 @@ Block actors, props and architecture">
                                     </div>
                                 </div>
                             </div>
+                            <div class="collapsible-section">
+                                <div class="collapsible-header collapsed" data-target="camera-panel-section">
+                                    <span>Camera</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="collapsible-content hidden" id="camera-panel-section">
+                                    <div class="panel-content" id="camera-content">
+                                        <div class="camera-toolbar">
+                                            <button class="tool-btn camera-rig-btn" id="tool-add-camera-rig" title="Add Camera" data-tooltip="**Add Camera**\nCreate a new camera for shot planning">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                            <button class="tool-btn camera-rig-btn" id="tool-toggle-camera-guides" title="Camera Guides" data-tooltip="**Camera Guides**\nShow thirds, centre and safe-area guides">
+                                                <i class="fas fa-border-all"></i>
+                                            </button>
+                                        </div>
+                                        <div class="camera-rig-list-container">
+                                            <div id="camera-rig-list" class="camera-rig-list"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -664,28 +684,6 @@ Block actors, props and architecture">
                         </div>
                     </div>
                 </div>
-                <div class="right-tab-content" id="tab-camera">
-                    <div class="panel-section" id="section-camera">
-                        <div class="panel-header">
-                            <div class="panel-header-title"><i class="fas fa-video"></i> Camera</div>
-                        </div>
-                        <div class="panel-content" id="camera-content">
-                            <div class="camera-toolbar">
-                                <button class="tool-btn camera-rig-btn" id="tool-add-camera-rig" title="Add Camera" data-tooltip="**Add Camera**\nCreate a new camera for shot planning">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                                <button class="tool-btn camera-rig-btn" id="tool-toggle-camera-guides" title="Camera Guides" data-tooltip="**Camera Guides**\nShow thirds, centre and safe-area guides">
-                                    <i class="fas fa-border-all"></i>
-                                </button>
-                            </div>
-
-                            <div class="camera-rig-list-container">
-                                <div id="camera-rig-list" class="camera-rig-list"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Shot Designer Tab -->
                 <div class="right-tab-content" id="tab-shot-designer">
                     <div class="panel-section" id="section-shot-designer">

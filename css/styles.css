@@ -7639,3 +7639,25 @@ input[type="number"].color-slider-value-compact {
     color: var(--accent-secondary) !important;
 }
 .scene-clear-confirm:hover { background: rgba(255, 0, 110, 0.3) !important; }
+
+/* Export / clear modal headers */
+#export-modal .modal header,
+#clear-scene-modal .modal header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border-color);
+}
+#export-modal .modal-title,
+#clear-scene-modal .modal-title {
+    width: auto;
+    margin: 0;
+    padding: 0;
+}
+#export-modal .modal-close-btn,
+#clear-scene-modal .modal-close-btn {
+    margin-left: auto;
+    flex: 0 0 auto;
+}

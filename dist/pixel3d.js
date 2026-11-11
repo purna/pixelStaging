@@ -32987,6 +32987,7 @@
         ["floating camera controls", () => this.setupFloatingCameraControls()],
         ["camera nudge", () => this.setupCameraNudge()],
         ["pose editor bridge", () => this.setupPoseEditorBridge()],
+        ["camera panel", () => this.setupCameraTab()],
         ["scene list", () => this.setupSceneList()],
         ["color editor", () => this.setupColorEditor()],
         ["hierarchy", () => this.renderHierarchyPanel()],
@@ -33266,7 +33267,7 @@
             this.renderAssetsPanel("colors");
           } else if (tab.dataset.rightTab === "hierarchy") {
             this.renderHierarchyPanel();
-          } else if (tab.dataset.rightTab === "camera") {
+          } else if (tab.dataset.rightTab === "scene-settings") {
             this.setupCameraTab();
           } else if (tab.dataset.rightTab === "shot-designer") {
             this.setupShotDesignerTab();
