@@ -872,12 +872,6 @@ class StageApp {
     // --- MANIPULATION ---
 
     onPointerMove(event) {
-        // In camera mode the canvas is only for looking around, not selecting.
-        if (this.controlMode === 'camera') {
-            this.renderer.domElement.style.cursor = 'grab';
-            return;
-        }
-
         const rect = this.renderer.domElement.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -899,7 +893,7 @@ class StageApp {
         // Track hover for scene objects
         const allSceneObjects = [];
         this.scene.traverse((obj) => {
-            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure')) {
+            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging')) {
                 allSceneObjects.push(obj);
             }
         });
@@ -959,7 +953,7 @@ class StageApp {
     // --- POINTER EVENTS ---
 
     onPointerUpForDeselect(event) {
-        if (this.controlMode === 'camera' || this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
+        if (this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
             return;
         }
         
@@ -971,7 +965,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
         const allSceneObjects = [];
         this.scene.traverse((obj) => {
-            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure')) {
+            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging')) {
                 allSceneObjects.push(obj);
             }
         });
@@ -987,11 +981,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         // Let the keyframe gizmo handle its own drag.
         if (this.keyframeControls?.axis) return;
 
-        // Camera mode: let OrbitControls handle the drag on the canvas.
-        if (this.controlMode === 'camera') {
-            this.renderer.domElement.style.cursor = 'grabbing';
-            return;
-        }
+        if (this.controlMode === 'camera') this.renderer.domElement.style.cursor = 'grabbing';
 
         // Calculate mouse position
         const rect = this.renderer.domElement.getBoundingClientRect();
@@ -1029,7 +1019,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 // Not over gizmo, check if we clicked on an object
         const allSceneObjects = [];
         this.scene.traverse((obj) => {
-            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure')) {
+            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging')) {
                 allSceneObjects.push(obj);
             }
         });
@@ -1041,7 +1031,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
             // Walk up hierarchy to find root selectable object
             while (target.parent && target.parent !== this.scene) {
-                if (target.userData && (target.userData.type === 'shape' || target.userData.type === 'shape2d' || target.userData.type === 'light' || target.userData.type === 'figure')) {
+                if (target.userData && (target.userData.type === 'shape' || target.userData.type === 'shape2d' || target.userData.type === 'light' || target.userData.type === 'figure' || target.userData.type === 'staging')) {
                     break;
                 }
                 target = target.parent;

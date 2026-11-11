@@ -506,33 +506,6 @@ Block actors, props and architecture">
                                 </div>
                             </div>
                             <div class="collapsible-section">
-                                <div class="collapsible-header collapsed" data-target="play-camera-section">
-                                    <span>Play Camera</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="collapsible-content hidden" id="play-camera-section">
-                                    <div class="property-group">
-                                        <label class="property-label"><input type="checkbox" id="play-camera-enabled"
-                                                checked> Enable Play Camera</label>
-                                    </div>
-                                    <div class="property-group">
-                                        <label class="property-label">Camera Position X: <input type="number"
-                                                id="play-cam-x" value="0" step="0.1"
-                                                style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; font-size: 0.75rem; color: var(--text-primary); width: 100%; margin-top: 6px;"></label>
-                                    </div>
-                                    <div class="property-group">
-                                        <label class="property-label">Camera Position Y: <input type="number"
-                                                id="play-cam-y" value="5" step="0.1"
-                                                style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; font-size: 0.75rem; color: var(--text-primary); width: 100%; margin-top: 6px;"></label>
-                                    </div>
-                                    <div class="property-group">
-                                        <label class="property-label">Camera Position Z: <input type="number"
-                                                id="play-cam-z" value="10" step="0.1"
-                                                style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px; font-size: 0.75rem; color: var(--text-primary); width: 100%; margin-top: 6px;"></label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="collapsible-section">
                                 <div class="collapsible-header collapsed" data-target="light-section">
                                     <span>Light</span>
                                     <i class="fas fa-chevron-down"></i>
@@ -560,8 +533,12 @@ Block actors, props and architecture">
                                 </div>
                                 <div class="collapsible-content hidden" id="sky-section">
                                     <div class="property-group">
-                                        <label class="property-label">Sky Color: <input type="color" id="sky-color"
+                                        <label class="property-label">Sky Top Color: <input type="color" id="sky-color"
                                                 value="#2a2a4e" style="width: 100%; margin-top: 6px;"></label>
+                                    </div>
+                                    <div class="property-group">
+                                        <label class="property-label">Sky Bottom Color: <input type="color" id="sky-color-bottom"
+                                                value="#0f0f1b" style="width: 100%; margin-top: 6px;"></label>
                                     </div>
                                     <div class="property-group">
                                         <label class="property-label"><input type="checkbox" id="sky-gradient" checked>
@@ -583,19 +560,6 @@ Block actors, props and architecture">
                                         <label class="property-label">Shadow Intensity: <input type="range"
                                                 id="shadow-intensity" min="0" max="1" step="0.1" value="0.5"
                                                 style="width: 100%;"></label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="collapsible-section">
-                                <div class="collapsible-header collapsed" data-target="color-section">
-                                    <span>Color</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </div>
-                                <div class="collapsible-content hidden" id="color-section">
-                                    <div class="property-group">
-                                        <label class="property-label">Background Color: <input type="color"
-                                                id="bg-color" value="#2a2a4e"
-                                                style="width: 100%; margin-top: 6px;"></label>
                                     </div>
                                 </div>
                             </div>

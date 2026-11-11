@@ -33350,12 +33350,6 @@
       this.setupSceneSettingsListeners();
     }
     setupSceneSettingsListeners() {
-      const bgColor = document.getElementById("bg-color");
-      if (bgColor) {
-        bgColor.addEventListener("input", (e) => {
-          this.app.setBackgroundColor(e.target.value);
-        });
-      }
       const ambientLight = document.getElementById("scene-ambient-light");
       if (ambientLight) {
         ambientLight.addEventListener("change", (e) => {
@@ -33427,9 +33421,21 @@
         skyColor.addEventListener("input", (e) => {
           const useGradient = document.getElementById("sky-gradient")?.checked ?? true;
           if (useGradient) {
-            this.app.setGradientBackground?.(e.target.value, document.getElementById("bg-color")?.value || "#2a2a4e");
+            this.app.setGradientBackground?.(e.target.value, document.getElementById("sky-color-bottom")?.value || "#0f0f1b");
           } else {
             this.app.setBackgroundColor(e.target.value);
+          }
+        });
+      }
+      const skyBottom = document.getElementById("sky-color-bottom");
+      if (skyBottom) {
+        skyBottom.addEventListener("input", (e) => {
+          const useGradient = document.getElementById("sky-gradient")?.checked ?? true;
+          if (useGradient) {
+            this.app.setGradientBackground?.(
+              document.getElementById("sky-color")?.value || "#2a2a4e",
+              e.target.value
+            );
           }
         });
       }
@@ -33437,9 +33443,9 @@
       if (skyGradient) {
         skyGradient.addEventListener("change", (e) => {
           if (e.target.checked) {
-            this.app.setGradientBackground?.(document.getElementById("sky-color")?.value || "#2a2a4e", document.getElementById("bg-color")?.value || "#2a2a4e");
+            this.app.setGradientBackground?.(document.getElementById("sky-color")?.value || "#2a2a4e", document.getElementById("sky-color-bottom")?.value || "#0f0f1b");
           } else {
-            this.app.setBackgroundColor(document.getElementById("bg-color")?.value || "#2a2a4e");
+            this.app.setBackgroundColor(document.getElementById("sky-color")?.value || "#2a2a4e");
           }
         });
       }
@@ -34506,7 +34512,11 @@
       const addBtn = document.getElementById("tool-add-camera-rig");
       if (addBtn && !addBtn.dataset.wired) {
         addBtn.dataset.wired = "true";
-        addBtn.addEventListener("click", () => cameras.addRig());
+        addBtn.addEventListener("click", () => {
+          const rig = cameras.addRig();
+          this._openCameraRigId = rig?.id || null;
+          this.refreshCameraRigList();
+        });
       }
       const viewBtn = document.getElementById("tool-view-camera");
       if (viewBtn && !viewBtn.dataset.wired) {
@@ -34550,28 +34560,124 @@
         listDiv.innerHTML = '<div class="camera-rig-empty">No virtual cameras. Click + to add.</div>';
         return;
       }
-      listDiv.innerHTML = cameras.rigs.map((rig) => `
-            <div class="camera-rig-item ${cameras.viewingRigId === rig.id ? "active-view" : ""} ${cameras.selectedRig?.id === rig.id ? "selected" : ""}" data-rig-id="${rig.id}">
-                <span class="camera-rig-color" style="background:#${rig.color.toString(16).padStart(6, "0")}"></span>
-                <span class="camera-rig-name">Cam ${rig.name}</span>
-                <span class="camera-rig-lens">${rig.lens.focalLength}mm ${rig.lens.sensor}</span>
-                <span class="camera-rig-aspect">${rig.aspect}</span>
-            </div>
-        `).join("");
-      listDiv.querySelectorAll(".camera-rig-item").forEach((item) => {
-        item.addEventListener("click", () => {
-          const rigId = item.dataset.rigId;
-          const rig = cameras.get(rigId);
-          if (rig) {
-            this.app.selectObject(rig.group);
-          }
-        });
-        item.addEventListener("dblclick", () => {
-          const rigId = item.dataset.rigId;
-          cameras.viewingRigId = rigId;
-          if (this.app.orbit) this.app.orbit.enabled = false;
+      const selectedId = cameras.selectedRig?.id || cameras.defaultRig?.id || cameras.rigs[0].id;
+      if (!this._openCameraRigId) this._openCameraRigId = selectedId;
+      if (!cameras.get(this._openCameraRigId)) this._openCameraRigId = selectedId;
+      listDiv.innerHTML = "";
+      cameras.rigs.forEach((rig) => {
+        const open = this._openCameraRigId === rig.id;
+        const selected = selectedId === rig.id;
+        const color = "#" + rig.color.toString(16).padStart(6, "0");
+        const item = document.createElement("div");
+        item.className = `camera-rig-accordion${open ? " open" : ""}${selected ? " selected" : ""}`;
+        item.dataset.rigId = rig.id;
+        const header = document.createElement("div");
+        header.className = "camera-rig-accordion-header";
+        header.innerHTML = `
+                <span class="camera-rig-color" style="background:${color}"></span>
+                <span class="camera-rig-name">${rig.isDefault ? "Default Camera" : `Cam ${rig.name}`}</span>
+                <span class="camera-rig-summary">${rig.lens.focalLength}mm ${rig.lens.sensor} \xB7 ${rig.aspect}</span>
+                <span class="camera-rig-chevron">${open ? "\u25BE" : "\u25B8"}</span>
+            `;
+        header.onclick = () => {
+          this.app.selectObject(rig.group);
+          this._openCameraRigId = open ? this._openCameraRigId : rig.id;
+          if (open) this._openCameraRigId = null;
           this.refreshCameraRigList();
-        });
+        };
+        item.appendChild(header);
+        if (open) {
+          const body = document.createElement("div");
+          body.className = "camera-rig-accordion-body";
+          const lensRow = document.createElement("label");
+          lensRow.className = "camera-rig-field";
+          lensRow.innerHTML = "<span>Lens</span>";
+          const lens = document.createElement("select");
+          lens.className = "camera-preset-select";
+          lens.innerHTML = [12, 16, 24, 35, 50, 85, 135].map(
+            (value) => `<option value="${value}"${value === rig.lens.focalLength ? " selected" : ""}>${value}mm</option>`
+          ).join("");
+          lens.onchange = () => {
+            cameras.setLens(rig, parseFloat(lens.value), null);
+            this.refreshCameraRigList();
+          };
+          lensRow.appendChild(lens);
+          const sensorRow = document.createElement("label");
+          sensorRow.className = "camera-rig-field";
+          sensorRow.innerHTML = "<span>Sensor</span>";
+          const sensor = document.createElement("select");
+          sensor.className = "camera-preset-select";
+          sensor.innerHTML = Object.entries({ fullFrame: "Full Frame", super35: "Super 35", mft: "MFT" }).map(([value, label]) => `<option value="${value}"${value === rig.lens.sensor ? " selected" : ""}>${label}</option>`).join("");
+          sensor.onchange = () => {
+            cameras.setLens(rig, null, sensor.value);
+            this.refreshCameraRigList();
+          };
+          sensorRow.appendChild(sensor);
+          const aspectRow = document.createElement("label");
+          aspectRow.className = "camera-rig-field";
+          aspectRow.innerHTML = "<span>Aspect</span>";
+          const aspect2 = document.createElement("select");
+          aspect2.className = "camera-preset-select";
+          aspect2.innerHTML = Object.keys({ "16:9": 1, "2.39:1": 1, "1.85:1": 1, "4:3": 1, "1:1": 1 }).map((value) => `<option value="${value}"${value === rig.aspect ? " selected" : ""}>${value}</option>`).join("");
+          aspect2.onchange = () => {
+            cameras.setAspect(rig, aspect2.value);
+            this.refreshCameraRigList();
+          };
+          aspectRow.appendChild(aspect2);
+          const actions = document.createElement("div");
+          actions.className = "camera-rig-actions";
+          const view = document.createElement("button");
+          view.textContent = cameras.viewingRigId === rig.id ? "Exit view" : "View";
+          view.className = cameras.viewingRigId === rig.id ? "active" : "";
+          view.onclick = () => {
+            cameras.viewingRigId = cameras.viewingRigId === rig.id ? null : rig.id;
+            if (this.app.orbit) this.app.orbit.enabled = cameras.viewingRigId === null && this.app.controlMode === "camera";
+            this.refreshCameraRigList();
+          };
+          const frame = document.createElement("button");
+          frame.textContent = "Frame";
+          frame.onclick = () => {
+            this.app.selectObject(rig.group);
+            cameras.frameCameraFromView();
+            this.refreshCameraRigList();
+          };
+          const remove = document.createElement("button");
+          remove.textContent = "Delete";
+          remove.className = "danger";
+          remove.disabled = !!rig.isDefault;
+          remove.title = rig.isDefault ? "The default camera cannot be deleted" : "Delete camera";
+          remove.onclick = () => {
+            if (rig.isDefault) return;
+            cameras.removeRig(rig.id);
+            this._openCameraRigId = cameras.defaultRig?.id || null;
+            this.refreshCameraRigList();
+          };
+          actions.append(view, frame, remove);
+          const moveMode = document.createElement("div");
+          moveMode.className = "camera-rig-move-mode";
+          const orbit = document.createElement("button");
+          orbit.textContent = "Orbit";
+          orbit.className = this._cameraMoveMode !== "pan" ? "active" : "";
+          const pan = document.createElement("button");
+          pan.textContent = "Pan";
+          pan.className = this._cameraMoveMode === "pan" ? "active" : "";
+          const setMode = (mode) => {
+            this._cameraMoveMode = mode;
+            if (this.app.orbit) {
+              this.app.orbit.enableRotate = mode !== "pan";
+              this.app.orbit.enablePan = mode === "pan";
+              this.app.orbit.enabled = this.app.controlMode === "camera";
+            }
+            orbit.classList.toggle("active", mode !== "pan");
+            pan.classList.toggle("active", mode === "pan");
+          };
+          orbit.onclick = () => setMode("orbit");
+          pan.onclick = () => setMode("pan");
+          moveMode.append(orbit, pan);
+          body.append(lensRow, sensorRow, aspectRow, actions, moveMode);
+          item.appendChild(body);
+        }
+        listDiv.appendChild(item);
       });
     }
     // =============================================
@@ -37252,16 +37358,7 @@
           infoBox.classList.add("hidden");
         }
       }
-      const camControls = document.getElementById("floating-camera-controls");
-      const isCameraRig = selectedObject && selectedObject.userData?.rigRef;
-      if (camControls) {
-        if (isCameraRig) {
-          camControls.classList.remove("hidden");
-          this.updateFloatingCameraControls(selectedObject.userData.rigRef);
-        } else {
-          camControls.classList.add("hidden");
-        }
-      }
+      document.getElementById("floating-camera-controls")?.classList.add("hidden");
       this.renderPropertiesPanel(selectedObject);
       if (!selectedObject) {
         return;
@@ -47450,10 +47547,6 @@ ${xrefOffset}
     }
     // --- MANIPULATION ---
     onPointerMove(event) {
-      if (this.controlMode === "camera") {
-        this.renderer.domElement.style.cursor = "grab";
-        return;
-      }
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
       this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -47469,7 +47562,7 @@ ${xrefOffset}
       }
       const allSceneObjects = [];
       this.scene.traverse((obj) => {
-        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure")) {
+        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging")) {
           allSceneObjects.push(obj);
         }
       });
@@ -47516,7 +47609,7 @@ ${xrefOffset}
     }
     // --- POINTER EVENTS ---
     onPointerUpForDeselect(event) {
-      if (this.controlMode === "camera" || this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
+      if (this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
         return;
       }
       const rect = this.renderer.domElement.getBoundingClientRect();
@@ -47525,7 +47618,7 @@ ${xrefOffset}
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const allSceneObjects = [];
       this.scene.traverse((obj) => {
-        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure")) {
+        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging")) {
           allSceneObjects.push(obj);
         }
       });
@@ -47536,10 +47629,7 @@ ${xrefOffset}
     }
     onPointerDown(event) {
       if (this.keyframeControls?.axis) return;
-      if (this.controlMode === "camera") {
-        this.renderer.domElement.style.cursor = "grabbing";
-        return;
-      }
+      if (this.controlMode === "camera") this.renderer.domElement.style.cursor = "grabbing";
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
       this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -47562,7 +47652,7 @@ ${xrefOffset}
       }
       const allSceneObjects = [];
       this.scene.traverse((obj) => {
-        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure")) {
+        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging")) {
           allSceneObjects.push(obj);
         }
       });
@@ -47570,7 +47660,7 @@ ${xrefOffset}
       if (intersects2.length > 0) {
         let target = intersects2[0].object;
         while (target.parent && target.parent !== this.scene) {
-          if (target.userData && (target.userData.type === "shape" || target.userData.type === "shape2d" || target.userData.type === "light" || target.userData.type === "figure")) {
+          if (target.userData && (target.userData.type === "shape" || target.userData.type === "shape2d" || target.userData.type === "light" || target.userData.type === "figure" || target.userData.type === "staging")) {
             break;
           }
           target = target.parent;

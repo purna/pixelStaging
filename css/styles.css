@@ -6497,3 +6497,126 @@ input[type="number"].color-slider-value-compact {
     overflow: hidden;
     font-size: 0.82rem !important;
 }
+
+/* Camera tab accordion and full-height right panels */
+.right-tab-content.active {
+    min-height: 100%;
+}
+
+#tab-camera.active .panel-section,
+#tab-shot-designer.active .panel-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#tab-camera #camera-content,
+#tab-shot-designer #shot-designer-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+#camera-content .camera-presets-group {
+    display: none;
+}
+
+.camera-rig-accordion {
+    border: 1px solid #34304a;
+    border-radius: 8px;
+    background: #171427;
+    margin-bottom: 7px;
+    overflow: hidden;
+}
+
+.camera-rig-accordion.selected,
+.camera-rig-accordion.open {
+    border-color: var(--accent-primary);
+}
+
+.camera-rig-accordion-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px;
+    cursor: pointer;
+}
+
+.camera-rig-accordion-header:hover {
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.camera-rig-summary {
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: 9px;
+    white-space: nowrap;
+}
+
+.camera-rig-chevron {
+    color: var(--text-secondary);
+    font-size: 10px;
+}
+
+.camera-rig-accordion-body {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 9px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.camera-rig-field {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.camera-rig-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 2px;
+}
+
+.camera-rig-actions button,
+.camera-rig-move-mode button {
+    flex: 1;
+    border: 1px solid #403a55;
+    background: #241f35;
+    color: var(--text-primary);
+    border-radius: 5px;
+    padding: 5px 6px;
+    font-size: 9px;
+    cursor: pointer;
+}
+
+.camera-rig-actions button:hover,
+.camera-rig-move-mode button:hover {
+    border-color: var(--accent-primary);
+}
+
+.camera-rig-actions button.active,
+.camera-rig-move-mode button.active {
+    background: var(--accent-primary);
+    color: #07110a;
+    border-color: var(--accent-primary);
+}
+
+.camera-rig-actions button.danger {
+    color: #ff8b8b;
+}
+
+.camera-rig-actions button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.camera-rig-move-mode {
+    display: flex;
+    gap: 5px;
+}
