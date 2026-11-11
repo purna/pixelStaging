@@ -65,6 +65,7 @@ export class UI {
             ['floating camera controls', () => this.setupFloatingCameraControls()],
             ['camera nudge', () => this.setupCameraNudge()],
             ['pose editor bridge', () => this.setupPoseEditorBridge()],
+            ['palette colour restriction', () => this.setupPaletteColorRestriction()],
             ['camera panel', () => this.setupCameraTab()],
             ['scene list', () => this.setupSceneList()],
             ['color editor', () => this.setupColorEditor()],
@@ -1888,6 +1889,37 @@ export class UI {
         }
     }
 
+    setupPaletteColorRestriction() {
+        const parseColor = (hex) => {
+            const value = String(hex || '').replace('#', '');
+            if (value.length !== 6) return null;
+            return [parseInt(value.slice(0, 2), 16), parseInt(value.slice(2, 4), 16), parseInt(value.slice(4, 6), 16)];
+        };
+
+        document.addEventListener('change', (event) => {
+            const input = event.target;
+            if (!(input instanceof HTMLInputElement) || input.type !== 'color') return;
+            // Palette editing itself must keep full colour access.
+            if (input.closest('#tab-assets, .palette-groups, .palette-color-picker, #material-asset-modal, #texture-asset-modal')) return;
+
+            const colors = (this.getActivePaletteGroup()?.colors || []).filter(color => /^#[0-9a-f]{6}$/i.test(color));
+            const rgb = parseColor(input.value);
+            if (!colors.length || !rgb) return;
+
+            let nearest = colors[0];
+            let best = Infinity;
+            for (const color of colors) {
+                const candidate = parseColor(color);
+                const distance = (candidate[0] - rgb[0]) ** 2 + (candidate[1] - rgb[1]) ** 2 + (candidate[2] - rgb[2]) ** 2;
+                if (distance < best) { best = distance; nearest = color; }
+            }
+            if (nearest.toLowerCase() !== input.value.toLowerCase()) {
+                input.value = nearest;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }, true);
+    }
+
     setupSceneList() {
         const scenes = this.app.staging?.scenes;
         if (!scenes) return;
@@ -2921,34 +2953,93 @@ export class UI {
     // PALETTE MANAGEMENT (from pixelArt)
     // =============================================
 
-    renderPalette() {
-        const container = document.getElementById('palette-container');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        // Initialize palette groups if not exist
-        if (!this.assets.paletteGroups || this.assets.paletteGroups.length === 0) {
+    ensurePaletteGroups() {
+        if (!this.assets.paletteGroups || !this.assets.paletteGroups.length) {
             this.assets.paletteGroups = [
                 { name: 'Default', colors: ['#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'], collapsed: false },
                 { name: 'StageCut', colors: ['#00ff41', '#ff006e', '#00d9ff', '#ffd700', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'], collapsed: false },
             ];
         }
+        if (!Number.isInteger(this.assets.activePaletteGroup) || !this.assets.paletteGroups[this.assets.activePaletteGroup]) {
+            this.assets.activePaletteGroup = 0;
+        }
+    }
+
+    getActivePaletteGroup() {
+        this.ensurePaletteGroups();
+        return this.assets.paletteGroups[this.assets.activePaletteGroup] || this.assets.paletteGroups[0];
+    }
+
+    remapSceneColors(oldGroup, newGroup) {
+        this.ensurePaletteGroups();
+        const defaultGroup = this.assets.paletteGroups[0];
+        const target = newGroup || defaultGroup;
+        if (!target?.colors?.length) return;
+
+        const materials = new Set();
+        const objects = this.app.getAllObjects ? this.app.getAllObjects() : this.app.objects;
+        for (const root of objects) {
+            root.traverse(child => {
+                if (!child.isMesh) return;
+                const slots = Array.isArray(child.material) ? child.material : [child.material];
+                slots.forEach(material => {
+                    if (!material?.color) return;
+                    if (materials.has(material)) return;
+                    materials.add(material);
+
+                    let index = material.userData?.paletteIndex;
+                    if (!Number.isInteger(index)) {
+                        const current = '#' + material.color.getHexString();
+                        index = (oldGroup?.colors || []).findIndex(color => color.toLowerCase() === current.toLowerCase());
+                        if (index < 0) index = (defaultGroup.colors || []).findIndex(color => color.toLowerCase() === current.toLowerCase());
+                        if (index < 0) index = 0;
+                        material.userData.paletteIndex = index;
+                    }
+
+                    const next = target.colors[index] || defaultGroup.colors[index] || target.colors[0];
+                    if (next) material.color.set(next);
+                });
+            });
+        }
+        if (this.app.selectedObject) this.renderPropertiesPanel(this.app.selectedObject);
+    }
+
+    setActivePalette(index) {
+        this.ensurePaletteGroups();
+        if (index === this.assets.activePaletteGroup) return;
+        const oldGroup = this.getActivePaletteGroup();
+        const newGroup = this.assets.paletteGroups[index];
+        if (!newGroup) return;
+        this.assets.activePaletteGroup = index;
+        this.remapSceneColors(oldGroup, newGroup);
+        this.saveAssets();
+        this.renderPalette();
+        this.showNotification(`Palette “${newGroup.name}” is active`, 'success');
+    }
+
+    renderPalette() {
+        const container = document.getElementById('palette-container');
+        if (!container) return;
+        this.ensurePaletteGroups();
+        container.innerHTML = '';
 
         this.assets.paletteGroups.forEach((group, groupIndex) => {
+            const isActive = groupIndex === this.assets.activePaletteGroup;
             const groupContainer = document.createElement('div');
-            groupContainer.className = `palette-group ${group.collapsed ? 'collapsed' : ''}`;
+            groupContainer.className = `palette-group ${group.collapsed ? 'collapsed' : ''} ${isActive ? 'active-palette' : ''}`;
             
             const groupHeader = document.createElement('div');
             groupHeader.className = 'palette-group-header';
             groupHeader.innerHTML = `
                 <span class="palette-group-toggle">${group.collapsed ? '▶' : '▼'}</span>
                 <span class="palette-group-name">${group.name}</span>
-                <button class="palette-group-delete" data-group="${groupIndex}" title="Delete group">&times;</button>
+                ${isActive ? '<span class="palette-active-badge">Active</span>' : ''}
+                <button class="palette-group-delete" data-group="${groupIndex}" title="Delete palette" ${groupIndex === 0 ? 'style="display:none"' : ''}>&times;</button>
             `;
 
             const toggle = groupHeader.querySelector('.palette-group-toggle');
             const deleteBtn = groupHeader.querySelector('.palette-group-delete');
+            const nameEl = groupHeader.querySelector('.palette-group-name');
 
             toggle.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -2956,22 +3047,36 @@ export class UI {
                 this.renderPalette();
             });
 
-            deleteBtn.addEventListener('click', (e) => {
+            nameEl.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
-                if (this.assets.paletteGroups.length <= 1) return;
-                if (confirm(`Delete group "${group.name}"?`)) {
-                    this.assets.paletteGroups.splice(groupIndex, 1);
+                const name = prompt('Palette name:', group.name);
+                if (name?.trim()) {
+                    group.name = name.trim();
                     this.saveAssets();
                     this.renderPalette();
                 }
             });
 
-            groupHeader.addEventListener('click', () => {
-                // Select this group
-                this.assets.activePaletteGroup = groupIndex;
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (groupIndex === 0) {
+                    this.showNotification('The default palette cannot be deleted', 'error');
+                    return;
+                }
+                if (!confirm(`Delete palette "${group.name}"? The default palette will be applied.`)) return;
+                const wasActive = groupIndex === this.assets.activePaletteGroup;
+                this.assets.paletteGroups.splice(groupIndex, 1);
+                if (wasActive) {
+                    this.assets.activePaletteGroup = 0;
+                    this.remapSceneColors(group, this.assets.paletteGroups[0]);
+                } else if (this.assets.activePaletteGroup > groupIndex) {
+                    this.assets.activePaletteGroup -= 1;
+                }
+                this.saveAssets();
                 this.renderPalette();
             });
 
+            groupHeader.addEventListener('click', () => this.setActivePalette(groupIndex));
             groupContainer.appendChild(groupHeader);
 
             const colorsContainer = document.createElement('div');
@@ -2981,26 +3086,46 @@ export class UI {
                 const swatch = document.createElement('div');
                 swatch.className = 'swatch';
                 swatch.style.backgroundColor = color;
-                swatch.title = color;
-                
-                const isActive = this.app?.selectedObject?.userData?.color === color || 
-                                 (groupIndex === this.assets.activePaletteGroup && color === document.getElementById('colorPicker')?.value);
-                if (isActive) swatch.classList.add('active');
-                if (groupIndex === this.assets.activePaletteGroup) swatch.classList.add('active-group');
+                swatch.title = `${color} — click to apply, right-click to remove, drag to reorder`;
+                swatch.draggable = true;
+                swatch.dataset.groupIndex = groupIndex;
+                swatch.dataset.colorIndex = colorIndex;
+
+                const selectedColor = document.getElementById('colorPicker')?.value?.toLowerCase();
+                if (groupIndex === this.assets.activePaletteGroup && color.toLowerCase() === selectedColor) {
+                    swatch.classList.add('active');
+                }
+                if (isActive) swatch.classList.add('active-group');
 
                 swatch.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this.setPaletteColor(color);
                 });
 
-                // Right-click to remove
                 swatch.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
-                    if (confirm(`Remove ${color} from ${group.name}?`)) {
-                        group.colors.splice(colorIndex, 1);
-                        this.saveAssets();
-                        this.renderPalette();
-                    }
+                    if (!confirm(`Remove ${color} from ${group.name}?`)) return;
+                    group.colors.splice(colorIndex, 1);
+                    this.saveAssets();
+                    this.renderPalette();
+                    this.remapSceneColors(this.assets.paletteGroups[0], this.getActivePaletteGroup());
+                });
+
+                swatch.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({ groupIndex, colorIndex }));
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                swatch.addEventListener('dragover', (e) => e.preventDefault());
+                swatch.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    let from;
+                    try { from = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+                    if (from.groupIndex !== groupIndex || from.colorIndex === colorIndex) return;
+                    const [moved] = group.colors.splice(from.colorIndex, 1);
+                    group.colors.splice(colorIndex, 0, moved);
+                    this.saveAssets();
+                    this.renderPalette();
+                    this.remapSceneColors(group, group);
                 });
 
                 colorsContainer.appendChild(swatch);
@@ -3018,8 +3143,19 @@ export class UI {
         if (colorPicker) colorPicker.value = hex;
         if (colorHex) colorHex.value = hex;
         
-        // Apply to selected object
+        // Apply to selected object and remember its palette slot.
         this.app.applyColorToSelected?.(hex);
+        const group = this.getActivePaletteGroup();
+        const index = group.colors.findIndex(color => color.toLowerCase() === hex.toLowerCase());
+        if (index >= 0 && this.app.selectedObject) {
+            this.app.selectedObject.traverse(child => {
+                if (!child.isMesh) return;
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                materials.forEach(material => {
+                    if (material?.userData) material.userData.paletteIndex = index;
+                });
+            });
+        }
         
         // Re-render to update active state
         this.renderPalette();
@@ -3030,11 +3166,15 @@ export class UI {
             this.assets.paletteGroups = [{ name: 'Default', colors: [], collapsed: false }];
         }
         
-        const group = this.assets.paletteGroups[this.assets.activePaletteGroup || 0];
-        if (!group.colors.includes(hex)) {
-            group.colors.unshift(hex);
-            // Limit to 20 colors per group
-            if (group.colors.length > 20) group.colors.pop();
+        this.ensurePaletteGroups();
+        const group = this.getActivePaletteGroup();
+        if (!group.colors.some(color => color.toLowerCase() === hex.toLowerCase())) {
+            if (group.colors.length >= 20) {
+                this.showNotification('This palette already has 20 colours', 'info');
+                return;
+            }
+            // Append so existing palette-index mappings stay stable.
+            group.colors.push(hex);
             this.saveAssets();
             this.renderPalette();
         }
@@ -3060,24 +3200,23 @@ export class UI {
         };
 
         this.assets.paletteGroups.push(newGroup);
-        this.assets.activePaletteGroup = this.assets.paletteGroups.length - 1;
         this.saveAssets();
-        this.renderPalette();
+        this.setActivePalette(this.assets.paletteGroups.length - 1);
         
         // Set first color as active
         if (hexCodes.length > 0) this.setPaletteColor(hexCodes[0]);
     }
 
     addPaletteGroup(name) {
+        const current = this.getActivePaletteGroup();
         const newGroup = {
-            name: name,
-            colors: [],
+            name,
+            colors: [...(current.colors || [])],
             collapsed: false
         };
         this.assets.paletteGroups.push(newGroup);
-        this.assets.activePaletteGroup = this.assets.paletteGroups.length - 1;
         this.saveAssets();
-        this.renderPalette();
+        this.setActivePalette(this.assets.paletteGroups.length - 1);
     }
 
     saveAssets() {

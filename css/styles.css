@@ -7732,3 +7732,41 @@ input[type="number"].color-slider-value-compact {
     padding: 0 !important;
     backdrop-filter: none !important;
 }
+
+/* Active palette styling */
+.palette-group.active-palette {
+    border-color: var(--accent-primary) !important;
+    box-shadow: 0 0 0 1px rgba(0, 255, 65, 0.18);
+}
+.palette-active-badge {
+    margin-left: auto;
+    margin-right: 6px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(0, 255, 65, 0.14);
+    border: 1px solid rgba(0, 255, 65, 0.35);
+    color: var(--accent-primary);
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.palette-group-header .palette-group-delete {
+    margin-left: 0;
+}
+.palette-group-colors .swatch {
+    cursor: grab;
+}
+.palette-group-colors .swatch:active {
+    cursor: grabbing;
+}
+
+/* Hard override: navigation controls are transparent overlays */
+#mobile-nav,
+#mobile-nav.mobile-nav {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    backdrop-filter: none !important;
+}
