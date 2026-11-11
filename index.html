@@ -1270,6 +1270,11 @@ Block actors, props and architecture">
                         <span>Bone</span>
                         <select id="pose-bone-select"></select>
                     </label>
+                    <div class="pose-editor-mode">
+                        <button id="pose-mode-rotate" class="active" type="button">Rotate</button>
+                        <button id="pose-mode-translate" type="button">Move</button>
+                    </div>
+                    <p class="pose-editor-help">Click a body part on the 3D model to select its bone. Drag the gizmo to rotate or move it. The panel can stay open while you work.</p>
                     <div class="pose-editor-axis">
                         <label>X</label>
                         <input type="range" id="pose-bone-x" min="-180" max="180" step="1" value="0">

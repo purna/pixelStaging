@@ -6982,3 +6982,51 @@ input[type="number"].color-slider-value-compact {
     padding: 12px 18px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Pose editor is docked so the 3D model stays interactive */
+.pose-editor-modal {
+    pointer-events: none;
+    background: transparent;
+}
+
+.pose-editor-window {
+    position: fixed;
+    right: 390px;
+    top: 88px;
+    pointer-events: auto;
+    width: min(380px, calc(100vw - 420px));
+}
+
+.pose-editor-mode {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1px solid #454560;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.pose-editor-mode button {
+    border: 0;
+    border-right: 1px solid #454560;
+    background: #1e1e34;
+    color: #cfd8e8;
+    padding: 8px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.pose-editor-mode button:last-child { border-right: 0; }
+
+.pose-editor-mode button.active {
+    background: #00ff41;
+    color: #07110a;
+    font-weight: 700;
+}
+
+@media (max-width: 1000px) {
+    .pose-editor-window {
+        right: 16px;
+        width: min(360px, calc(100vw - 32px));
+    }
+}

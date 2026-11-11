@@ -35,6 +35,8 @@ class StageApp {
         this.keyframeControls = null;
         this.keyframeGizmos = new Map();
         this.keyframeDragging = false;
+        this.poseControls = null;
+        this.poseEditState = null;
 
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
@@ -348,6 +350,7 @@ class StageApp {
             this.scene.add(this.transformControl);
             this.transformControl.setMode('translate');
             this.setupKeyframeGizmos();
+            this.setupPoseControls();
             this.setControlMode('camera');
         }, APP_DEFAULTS.init.uiInitDelay);
     }
@@ -391,6 +394,99 @@ class StageApp {
             this.scene.add(group);
             this.keyframeGizmos.set(type, { group, frustum });
         }
+    }
+
+    setupPoseControls() {
+        this.poseControls = new TransformControls(this.camera, this.renderer.domElement);
+        this.poseControls.setSize(0.6);
+        this.poseControls.visible = false;
+        this.poseControls.enabled = false;
+        this.scene.add(this.poseControls);
+
+        this.poseControls.addEventListener('dragging-changed', (event) => {
+            if (this.orbit) this.orbit.enabled = !event.value && this.controlMode === 'camera';
+        });
+        this.poseControls.addEventListener('change', () => {
+            const bone = this.poseControls.object;
+            if (bone && this.poseEditState) this.ui?.syncPoseEditorFromBone?.(bone);
+        });
+    }
+
+    beginPoseEditing(model) {
+        this.poseEditState = { model, bone: null };
+        if (this.transformControl) this.transformControl.detach();
+        if (this.keyframeControls) this.keyframeControls.detach();
+        const firstBone = this.findPoseBoneByName('Hips') || this.findPoseBoneByName('Spine') || this.firstPoseBone();
+        if (firstBone) this.selectPoseBone(firstBone.name);
+    }
+
+    endPoseEditing() {
+        this.poseEditState = null;
+        if (this.poseControls) {
+            this.poseControls.detach();
+            this.poseControls.visible = false;
+            this.poseControls.enabled = false;
+        }
+        if (this.orbit) this.orbit.enabled = this.controlMode === 'camera';
+    }
+
+    firstPoseBone() {
+        let found = null;
+        this.poseEditState?.model?.traverse?.(object => {
+            if (!found && object.isBone) found = object;
+        });
+        return found;
+    }
+
+    findPoseBoneByName(name) {
+        const short = (value) => String(value).replace(/^mixamorig:?/, '');
+        let found = null;
+        this.poseEditState?.model?.traverse?.(object => {
+            if (!found && object.isBone && short(object.name) === short(name)) found = object;
+        });
+        return found;
+    }
+
+    selectPoseBone(name) {
+        const bone = this.findPoseBoneByName(name);
+        if (!bone || !this.poseControls) return false;
+        this.poseEditState.bone = bone;
+        this.poseControls.attach(bone);
+        this.poseControls.setMode(this.poseControls.mode || 'rotate');
+        this.poseControls.visible = true;
+        this.poseControls.enabled = true;
+        this.ui?.syncPoseEditorFromBone?.(bone);
+        return true;
+    }
+
+    setPoseControlMode(mode) {
+        if (!this.poseControls) return;
+        this.poseControls.setMode(mode === 'translate' ? 'translate' : 'rotate');
+    }
+
+    pickPoseBone(event) {
+        if (!this.poseEditState?.model) return null;
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        const hits = this.raycaster.intersectObject(this.poseEditState.model, true);
+        if (!hits.length) return null;
+
+        const point = hits[0].point;
+        const world = new THREE.Vector3();
+        let best = null;
+        let bestDistance = Infinity;
+        this.poseEditState.model.traverse(object => {
+            if (!object.isBone) return;
+            object.getWorldPosition(world);
+            const distance = world.distanceToSquared(point);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = object;
+            }
+        });
+        return best;
     }
 
     updateKeyframeGizmos() {
@@ -989,8 +1085,14 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     }
 
     onPointerDown(event) {
-        // Let the keyframe gizmo handle its own drag.
-        if (this.keyframeControls?.axis) return;
+        // Let editor gizmos handle their own drag.
+        if (this.keyframeControls?.axis || this.poseControls?.axis) return;
+
+        if (this.poseEditState) {
+            const bone = this.pickPoseBone(event);
+            if (bone) this.selectPoseBone(bone.name);
+            return;
+        }
 
         if (this.controlMode === 'camera') this.renderer.domElement.style.cursor = 'grabbing';
 

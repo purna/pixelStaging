@@ -29,7 +29,11 @@ export class CharacterPoser {
 
     // rest state, captured now (so create the poser before animations move the bones)
     this.rest = new Map();
-    for (const [n, b] of this.bones) this.rest.set(n, b.quaternion.clone());
+    this.restPositions = new Map();
+    for (const [n, b] of this.bones) {
+      this.rest.set(n, b.quaternion.clone());
+      this.restPositions.set(n, b.position.clone());
+    }
     this.restHipsY = this.hips ? this.hips.position.y : 0;
 
     this.poses = new Map();               // name -> { rotations: Map(bone -> Quaternion), hipsScale }
@@ -76,13 +80,23 @@ export class CharacterPoser {
   /** Apply a pose object as returned by getPose(). */
   applyPose(pose, { duration = 0 } = {}) {
     const rotations = new Map(Object.entries(pose.rotations).map(([n, q]) => [short(n), new Quaternion().fromArray(q)]));
+    if (pose.positions) {
+      for (const [name, pos] of Object.entries(pose.positions)) {
+        const bone = this.bones.get(short(name));
+        if (bone) bone.position.fromArray(pos);
+      }
+    }
     return this._blendTo(this._targetFrom({ rotations, hipsScale: pose.hipsScale ?? 1 }), duration);
   }
   /** Current pose as plain JSON (save it, then pass it to applyPose later). */
   getPose() {
     const rotations = {};
-    for (const [n, b] of this.bones) rotations[n] = b.quaternion.toArray();
-    return { rotations, hipsScale: this.hips && this.restHipsY ? this.hips.position.y / this.restHipsY : 1 };
+    const positions = {};
+    for (const [n, b] of this.bones) {
+      rotations[n] = b.quaternion.toArray();
+      positions[n] = b.position.toArray();
+    }
+    return { rotations, positions, hipsScale: this.hips && this.restHipsY ? this.hips.position.y / this.restHipsY : 1 };
   }
   /** Pose a single bone in degrees (X first, then Y, then Z, on top of the rest rotation). Instant. */
   setBone(boneName, x = 0, y = 0, z = 0) {
@@ -93,6 +107,17 @@ export class CharacterPoser {
   }
   /** Lower/raise the hips by a fraction of their rest height (e.g. -0.4 for sitting). Instant. */
   setHipsDrop(fraction) { if (this.hips) { this._cancel(); this.hips.position.y = this.restHipsY * (1 + fraction); } return this; }
+
+  resetBone(name) {
+    const key = short(name);
+    const bone = this.bones.get(key);
+    if (!bone) return this;
+    this._cancel();
+    bone.quaternion.copy(this.rest.get(key));
+    const restPos = this.restPositions.get(key);
+    if (restPos) bone.position.copy(restPos);
+    return this;
+  }
 
   /** Call every frame with the frame time in seconds. */
   update(dt) {

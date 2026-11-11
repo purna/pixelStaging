@@ -1857,6 +1857,21 @@ export class UI {
         nameInput.value = '';
         modal.classList.add('open');
         modal.style.display = 'flex';
+        this.app.beginPoseEditing?.(char.model);
+        this.app.setPoseControlMode?.('rotate');
+
+        document.getElementById('pose-mode-rotate').classList.add('active');
+        document.getElementById('pose-mode-translate').classList.remove('active');
+        document.getElementById('pose-mode-rotate').onclick = () => {
+            this.app.setPoseControlMode?.('rotate');
+            document.getElementById('pose-mode-rotate').classList.add('active');
+            document.getElementById('pose-mode-translate').classList.remove('active');
+        };
+        document.getElementById('pose-mode-translate').onclick = () => {
+            this.app.setPoseControlMode?.('translate');
+            document.getElementById('pose-mode-translate').classList.add('active');
+            document.getElementById('pose-mode-rotate').classList.remove('active');
+        };
 
         const selectBone = (name) => {
             this.poseEditor.boneName = name;
@@ -1876,6 +1891,7 @@ export class UI {
             document.getElementById('pose-bone-x-val').textContent = `${values.x}°`;
             document.getElementById('pose-bone-y-val').textContent = `${values.y}°`;
             document.getElementById('pose-bone-z-val').textContent = `${values.z}°`;
+            this.app.selectPoseBone?.(name);
         };
 
         boneSelect.onchange = () => selectBone(boneSelect.value);
@@ -1908,7 +1924,7 @@ export class UI {
             document.getElementById('pose-bone-x-val').textContent = '0°';
             document.getElementById('pose-bone-y-val').textContent = '0°';
             document.getElementById('pose-bone-z-val').textContent = '0°';
-            this.poseEditor.poser.setBone(this.poseEditor.boneName, 0, 0, 0);
+            this.poseEditor.poser.resetBone(this.poseEditor.boneName);
         };
 
         document.getElementById('pose-editor-save').onclick = () => {
@@ -1943,6 +1959,33 @@ export class UI {
             modal.style.display = 'none';
         }
         this.poseEditor = null;
+        this.app.endPoseEditing?.();
+    }
+
+    syncPoseEditorFromBone(bone) {
+        if (!this.poseEditor || !bone || !this.poseEditor.poser) return;
+        const shortName = String(bone.name).replace(/^mixamorig:?/, '');
+        const boneSelect = document.getElementById('pose-bone-select');
+        if (boneSelect && [...boneSelect.options].some(option => option.value === shortName)) {
+            boneSelect.value = shortName;
+        }
+        this.poseEditor.boneName = shortName;
+        const rest = this.poseEditor.poser.rest.get(shortName);
+        if (!rest) return;
+        const delta = bone.quaternion.clone().multiply(rest.clone().invert());
+        const euler = new THREE.Euler().setFromQuaternion(delta, 'ZYX');
+        const values = {
+            x: Math.round(THREE.MathUtils.radToDeg(euler.x)),
+            y: Math.round(THREE.MathUtils.radToDeg(euler.y)),
+            z: Math.round(THREE.MathUtils.radToDeg(euler.z))
+        };
+        this.poseEditor.values.set(shortName, values);
+        document.getElementById('pose-bone-x').value = values.x;
+        document.getElementById('pose-bone-y').value = values.y;
+        document.getElementById('pose-bone-z').value = values.z;
+        document.getElementById('pose-bone-x-val').textContent = `${values.x}°`;
+        document.getElementById('pose-bone-y-val').textContent = `${values.y}°`;
+        document.getElementById('pose-bone-z-val').textContent = `${values.z}°`;
     }
 
     setupCameraTab() {

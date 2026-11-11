@@ -34503,6 +34503,20 @@
       nameInput.value = "";
       modal.classList.add("open");
       modal.style.display = "flex";
+      this.app.beginPoseEditing?.(char.model);
+      this.app.setPoseControlMode?.("rotate");
+      document.getElementById("pose-mode-rotate").classList.add("active");
+      document.getElementById("pose-mode-translate").classList.remove("active");
+      document.getElementById("pose-mode-rotate").onclick = () => {
+        this.app.setPoseControlMode?.("rotate");
+        document.getElementById("pose-mode-rotate").classList.add("active");
+        document.getElementById("pose-mode-translate").classList.remove("active");
+      };
+      document.getElementById("pose-mode-translate").onclick = () => {
+        this.app.setPoseControlMode?.("translate");
+        document.getElementById("pose-mode-translate").classList.add("active");
+        document.getElementById("pose-mode-rotate").classList.remove("active");
+      };
       const selectBone = (name) => {
         this.poseEditor.boneName = name;
         const bone = char.poser.bones.get(name);
@@ -34521,6 +34535,7 @@
         document.getElementById("pose-bone-x-val").textContent = `${values.x}\xB0`;
         document.getElementById("pose-bone-y-val").textContent = `${values.y}\xB0`;
         document.getElementById("pose-bone-z-val").textContent = `${values.z}\xB0`;
+        this.app.selectPoseBone?.(name);
       };
       boneSelect.onchange = () => selectBone(boneSelect.value);
       const applyBone = () => {
@@ -34549,7 +34564,7 @@
         document.getElementById("pose-bone-x-val").textContent = "0\xB0";
         document.getElementById("pose-bone-y-val").textContent = "0\xB0";
         document.getElementById("pose-bone-z-val").textContent = "0\xB0";
-        this.poseEditor.poser.setBone(this.poseEditor.boneName, 0, 0, 0);
+        this.poseEditor.poser.resetBone(this.poseEditor.boneName);
       };
       document.getElementById("pose-editor-save").onclick = () => {
         const name = nameInput.value.trim();
@@ -34580,6 +34595,32 @@
         modal.style.display = "none";
       }
       this.poseEditor = null;
+      this.app.endPoseEditing?.();
+    }
+    syncPoseEditorFromBone(bone) {
+      if (!this.poseEditor || !bone || !this.poseEditor.poser) return;
+      const shortName = String(bone.name).replace(/^mixamorig:?/, "");
+      const boneSelect = document.getElementById("pose-bone-select");
+      if (boneSelect && [...boneSelect.options].some((option) => option.value === shortName)) {
+        boneSelect.value = shortName;
+      }
+      this.poseEditor.boneName = shortName;
+      const rest = this.poseEditor.poser.rest.get(shortName);
+      if (!rest) return;
+      const delta = bone.quaternion.clone().multiply(rest.clone().invert());
+      const euler = new Euler().setFromQuaternion(delta, "ZYX");
+      const values = {
+        x: Math.round(MathUtils.radToDeg(euler.x)),
+        y: Math.round(MathUtils.radToDeg(euler.y)),
+        z: Math.round(MathUtils.radToDeg(euler.z))
+      };
+      this.poseEditor.values.set(shortName, values);
+      document.getElementById("pose-bone-x").value = values.x;
+      document.getElementById("pose-bone-y").value = values.y;
+      document.getElementById("pose-bone-z").value = values.z;
+      document.getElementById("pose-bone-x-val").textContent = `${values.x}\xB0`;
+      document.getElementById("pose-bone-y-val").textContent = `${values.y}\xB0`;
+      document.getElementById("pose-bone-z-val").textContent = `${values.z}\xB0`;
     }
     setupCameraTab() {
       const cameras = this.app.staging?.cameras;
@@ -42227,7 +42268,11 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       if (!this.bones.size) throw new Error("CharacterPoser: no bones found");
       this.hips = this.bones.get("Hips") ?? null;
       this.rest = /* @__PURE__ */ new Map();
-      for (const [n, b] of this.bones) this.rest.set(n, b.quaternion.clone());
+      this.restPositions = /* @__PURE__ */ new Map();
+      for (const [n, b] of this.bones) {
+        this.rest.set(n, b.quaternion.clone());
+        this.restPositions.set(n, b.position.clone());
+      }
       this.restHipsY = this.hips ? this.hips.position.y : 0;
       this.poses = /* @__PURE__ */ new Map();
       this._clips = /* @__PURE__ */ new Map();
@@ -42282,13 +42327,23 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
     /** Apply a pose object as returned by getPose(). */
     applyPose(pose, { duration = 0 } = {}) {
       const rotations = new Map(Object.entries(pose.rotations).map(([n, q]) => [short(n), new Quaternion().fromArray(q)]));
+      if (pose.positions) {
+        for (const [name, pos] of Object.entries(pose.positions)) {
+          const bone = this.bones.get(short(name));
+          if (bone) bone.position.fromArray(pos);
+        }
+      }
       return this._blendTo(this._targetFrom({ rotations, hipsScale: pose.hipsScale ?? 1 }), duration);
     }
     /** Current pose as plain JSON (save it, then pass it to applyPose later). */
     getPose() {
       const rotations = {};
-      for (const [n, b] of this.bones) rotations[n] = b.quaternion.toArray();
-      return { rotations, hipsScale: this.hips && this.restHipsY ? this.hips.position.y / this.restHipsY : 1 };
+      const positions = {};
+      for (const [n, b] of this.bones) {
+        rotations[n] = b.quaternion.toArray();
+        positions[n] = b.position.toArray();
+      }
+      return { rotations, positions, hipsScale: this.hips && this.restHipsY ? this.hips.position.y / this.restHipsY : 1 };
     }
     /** Pose a single bone in degrees (X first, then Y, then Z, on top of the rest rotation). Instant. */
     setBone(boneName, x = 0, y = 0, z = 0) {
@@ -42304,6 +42359,16 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
         this._cancel();
         this.hips.position.y = this.restHipsY * (1 + fraction);
       }
+      return this;
+    }
+    resetBone(name) {
+      const key = short(name);
+      const bone = this.bones.get(key);
+      if (!bone) return this;
+      this._cancel();
+      bone.quaternion.copy(this.rest.get(key));
+      const restPos = this.restPositions.get(key);
+      if (restPos) bone.position.copy(restPos);
       return this;
     }
     /** Call every frame with the frame time in seconds. */
@@ -47479,6 +47544,8 @@ ${xrefOffset}
       this.keyframeControls = null;
       this.keyframeGizmos = /* @__PURE__ */ new Map();
       this.keyframeDragging = false;
+      this.poseControls = null;
+      this.poseEditState = null;
       this.raycaster = new Raycaster();
       this.mouse = new Vector2();
       this.clock = new Clock();
@@ -47720,6 +47787,7 @@ ${xrefOffset}
         this.scene.add(this.transformControl);
         this.transformControl.setMode("translate");
         this.setupKeyframeGizmos();
+        this.setupPoseControls();
         this.setControlMode("camera");
       }, APP_DEFAULTS2.init.uiInitDelay);
     }
@@ -47758,6 +47826,89 @@ ${xrefOffset}
         this.scene.add(group);
         this.keyframeGizmos.set(type, { group, frustum });
       }
+    }
+    setupPoseControls() {
+      this.poseControls = new TransformControls(this.camera, this.renderer.domElement);
+      this.poseControls.setSize(0.6);
+      this.poseControls.visible = false;
+      this.poseControls.enabled = false;
+      this.scene.add(this.poseControls);
+      this.poseControls.addEventListener("dragging-changed", (event) => {
+        if (this.orbit) this.orbit.enabled = !event.value && this.controlMode === "camera";
+      });
+      this.poseControls.addEventListener("change", () => {
+        const bone = this.poseControls.object;
+        if (bone && this.poseEditState) this.ui?.syncPoseEditorFromBone?.(bone);
+      });
+    }
+    beginPoseEditing(model) {
+      this.poseEditState = { model, bone: null };
+      if (this.transformControl) this.transformControl.detach();
+      if (this.keyframeControls) this.keyframeControls.detach();
+      const firstBone = this.findPoseBoneByName("Hips") || this.findPoseBoneByName("Spine") || this.firstPoseBone();
+      if (firstBone) this.selectPoseBone(firstBone.name);
+    }
+    endPoseEditing() {
+      this.poseEditState = null;
+      if (this.poseControls) {
+        this.poseControls.detach();
+        this.poseControls.visible = false;
+        this.poseControls.enabled = false;
+      }
+      if (this.orbit) this.orbit.enabled = this.controlMode === "camera";
+    }
+    firstPoseBone() {
+      let found = null;
+      this.poseEditState?.model?.traverse?.((object) => {
+        if (!found && object.isBone) found = object;
+      });
+      return found;
+    }
+    findPoseBoneByName(name) {
+      const short2 = (value) => String(value).replace(/^mixamorig:?/, "");
+      let found = null;
+      this.poseEditState?.model?.traverse?.((object) => {
+        if (!found && object.isBone && short2(object.name) === short2(name)) found = object;
+      });
+      return found;
+    }
+    selectPoseBone(name) {
+      const bone = this.findPoseBoneByName(name);
+      if (!bone || !this.poseControls) return false;
+      this.poseEditState.bone = bone;
+      this.poseControls.attach(bone);
+      this.poseControls.setMode(this.poseControls.mode || "rotate");
+      this.poseControls.visible = true;
+      this.poseControls.enabled = true;
+      this.ui?.syncPoseEditorFromBone?.(bone);
+      return true;
+    }
+    setPoseControlMode(mode) {
+      if (!this.poseControls) return;
+      this.poseControls.setMode(mode === "translate" ? "translate" : "rotate");
+    }
+    pickPoseBone(event) {
+      if (!this.poseEditState?.model) return null;
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
+      this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const hits = this.raycaster.intersectObject(this.poseEditState.model, true);
+      if (!hits.length) return null;
+      const point = hits[0].point;
+      const world = new Vector3();
+      let best = null;
+      let bestDistance = Infinity;
+      this.poseEditState.model.traverse((object) => {
+        if (!object.isBone) return;
+        object.getWorldPosition(world);
+        const distance = world.distanceToSquared(point);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = object;
+        }
+      });
+      return best;
     }
     updateKeyframeGizmos() {
       if (!this.keyframeControls) return;
@@ -48227,7 +48378,12 @@ ${xrefOffset}
       }
     }
     onPointerDown(event) {
-      if (this.keyframeControls?.axis) return;
+      if (this.keyframeControls?.axis || this.poseControls?.axis) return;
+      if (this.poseEditState) {
+        const bone = this.pickPoseBone(event);
+        if (bone) this.selectPoseBone(bone.name);
+        return;
+      }
       if (this.controlMode === "camera") this.renderer.domElement.style.cursor = "grabbing";
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
