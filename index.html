@@ -378,7 +378,6 @@ Block actors, props and architecture">
 
             <!-- Floating camera nudge menu -->
             <div id="camera-nudge" class="camera-nudge">
-                <div class="camera-nudge-title">Camera</div>
                 <div class="camera-nudge-group">
                     <span>Move</span>
                     <button data-cam-action="left" title="Move left">◀</button>
@@ -388,19 +387,15 @@ Block actors, props and architecture">
                 </div>
                 <div class="camera-nudge-group">
                     <span>Rotate</span>
-                    <button data-cam-action="rot-left" title="Rotate left">↺</button>
-                    <button data-cam-action="rot-up" title="Tilt up">⤒</button>
-                    <button data-cam-action="rot-down" title="Tilt down">⤓</button>
-                    <button data-cam-action="rot-right" title="Rotate right">↻</button>
+                    <button data-cam-action="rot-left" title="Rotate left">◀</button>
+                    <button data-cam-action="rot-up" title="Tilt up">▲</button>
+                    <button data-cam-action="rot-down" title="Tilt down">▼</button>
+                    <button data-cam-action="rot-right" title="Rotate right">▶</button>
                 </div>
-                <div class="camera-nudge-group">
+                <div class="camera-nudge-group camera-nudge-zoom">
                     <span>Zoom</span>
-                    <button data-cam-action="push" title="Push in">＋</button>
-                    <button data-cam-action="pull" title="Pull out">－</button>
-                </div>
-                <div class="camera-nudge-frame-actions">
-                    <button id="camera-nudge-set-frame" title="Set the current framing as this shot keyframe">Set keyframe</button>
-                    <button id="camera-nudge-cancel-frame" title="Cancel framing">Cancel</button>
+                    <button data-cam-action="push" title="Zoom in">+</button>
+                    <button data-cam-action="pull" title="Zoom out">−</button>
                 </div>
             </div>
 
