@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Shot Designer — Moses</title>
+<!--
+  SCENE DIRECTOR NOTES — Moses (Exodus 1–40; Numbers; Deuteronomy 34)
+  10 scenes. Descriptions follow the biblical account and give
+  staging direction for the scene designer: setting, characters, key props,
+  light and mood. Reference board for iconic biblical compositions: the
+  "famous bible scenes" ideas board on Pinterest.
+
+  1. The Child in the River
+     The mother hides the child for three months, then sets him in a basket of bulrushes among the reeds, where Pharaoh's daughter finds him. Stage: a river bank at dawn, tall reeds, a floating basket, a woman and her sister watching from the distance; mist on the water, a child's cry.
+
+  2. The Burning Bush
+     Moses keeps the flock of Jethro in the wilderness of Horeb, and the angel of the Lord appears in a flame of fire out of the bush. Stage: a desert slope at noon, a shepherd's staff, a bush burning without burning up; the light of the flame on a man's face, sandals coming off.
+
+  3. Before the Throne
+     Moses stands before Pharaoh, and the plagues come: water to blood, frogs, gnats, flies, and the rest, until the firstborn cry out. Stage: a throne room with gold and lapis, a staff on the floor, a river turning red, the city in darkness; the court hardening, scene by scene.
+
+  4. Passover Night
+     The people eat the lamb in haste, with loins girded, and the blood marks the doorposts; the destroyer passes over. Stage: a night house with a meal of lamb and unleavened bread, a door marked with a bunch of hyssop; a family waiting, a city holding its breath.
+
+  5. Through the Sea
+     The pillar of cloud goes behind, the sea is divided, and the people cross on dry ground; the waters return over the chariots. Stage: a sea with walls of water, a people walking on the seabed at night, the cloud lighting the way, the horses and the chariots drowned in the morning; a world of water held back.
+
+  6. Bread in the Wilderness
+     The Lord gives manna in the morning and quails in the evening; the people gather only enough for the day. Stage: a wilderness camp at dawn, a white ground like frost, small round things lying all around, a jar of manna kept for the testimony; a people learning to trust the day.
+
+  7. Sinai
+     The Lord comes down on Mount Sinai in fire, the mountain smokes, and the people stand at the foot, hearing the voice of the trumpet. Stage: a mountain wrapped in smoke and fire, the people at its foot, the covenant being spoken; thunder, lightning, a trumpet's long call.
+
+  8. The Golden Calf
+     The people make a molten calf and worship it, and Moses breaks the tablets at the foot of the mountain. Stage: a camp of gold and fire, a calf of gold, a man running down the mountain, two tablets of stone in his hands; the silence after the shattering.
+
+  9. Forty Years
+     The people wander in the wilderness, and the Lord sends manna, water from the rock, and the bronze serpent to save. Stage: a desert of tents and wandering, a rock giving water, a serpent of bronze on a pole, a generation passing and a new one rising; the long road to the border.
+
+  10. Mount Nebo
+     Moses goes up to Mount Nebo and sees the whole land, and the Lord buries him in the valley; a prophet without equal in Israel. Stage: a mountain at sunset, a man looking over the land of promise, the light on the far hills; the last view, a grave no one knows, the road ending.
+  -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Lets the js/ ES modules import three; js/three.js prefers the UMD
+         global when present so only one three.js instance is ever created. -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <div id="app">
+        <aside id="side">
+            <div class="hd"><b>Shots</b><button id="add" class="pr">+ Add shot</button></div>
+            <div class="scn">
+                <label for="scn">Scene</label>
+                <select id="scn"></select>
+                <button id="scnload" class="pr" disabled>Load</button>
+                <small id="scne"></small>
+            </div>
+            <div id="shots"></div>
+            <div class="exp"><button id="xo" class="pr">Import / Export…</button></div>
+        </aside>
+        <main id="vp">
+            <div id="frm"><span id="pl"></span></div>
+            <div id="fc">
+                <div id="fg">
+                    <div class="g">
+                        <b>Move</b><button data-k="mL">◀</button><button data-k="mU">▲</button><button
+                            data-k="mD">▼</button><button data-k="mR">▶</button>
+                    </div>
+                    <div class="g">
+                        <b>Rotate</b><button data-k="rL">◀</button><button data-k="rU">▲</button><button
+                            data-k="rD">▼</button><button data-k="rR">▶</button>
+                    </div>
+                    <div class="g"><b>Zoom</b><button data-k="zI">＋</button><button data-k="zO">－</button></div>
+                </div>
+                <button id="al" class="pr" hidden>Align frame to this view</button>
+            </div>
+        </main>
+        <footer id="tl">
+            <div class="tr">
+                <button id="stp" title="Stop and return to edit view">⏹</button><button id="pp"
+                    class="pr">▶</button><button id="pc">Play shot</button><button id="pa">Play all</button><span
+                    id="tcd">0:00.0</span><span>/ <span id="tt"></span></span><label><input type="checkbox" id="lp"
+                        checked /> Loop</label><label><input type="checkbox" id="shp" /> Show path</label>
+            </div>
+            <div id="tk">
+                <div id="rl"></div>
+                <div id="bl"></div>
+                <div id="ph"></div>
+            </div>
+        </footer>
+    </div>
+    <div id="xm" hidden>
+        <div class="mb">
+            <div class="hd" style="padding: 0 0 8px"><b>Import / Export</b><button id="xc">✕ Close</button></div>
+            <h4>Export scene</h4>
+            <div class="xl">
+                <button data-x="sj"><b>Scene 3D JSON</b><small>3D scene only (three.js format)</small></button><button
+                    data-x="sJ"><b>3D JS file</b><small>initScene1(group) function, Pixel3D style</small></button>
+                <button data-x="tj"><b>Scene + timeline JSON</b><small>3D scene, shots, transitions,
+                        curves</small></button><button data-x="tJ"><b>Scene + timeline JS</b><small>Same data as a .js
+                        file</small></button>
+            </div>
+            <h4>Render</h4>
+            <div class="xl">
+                <button data-x="png"><b>Stills (PNG .zip)</b><small>Frames at the current viewport
+                        size</small></button>
+                <button data-x="mp4"><b>Video (MP4)</b><small>H.264 via WebCodecs +
+                        mp4-muxer</small></button>
+                <label class="f">Stills rate<select id="sf">
+                        <option value="1">Every 1 second</option>
+                        <option value="12">12 per second</option>
+                    </select></label><label class="f">Video fps<select id="vf">
+                        <option>24</option>
+                        <option selected>30</option>
+                    </select></label>
+            </div>
+            <h4>Timeline only</h4>
+            <div class="ed"><button id="ex">Timeline JSON</button>
+                <button id="es">Each shot (separate files)</button>
+            </div>
+            <h4>Import</h4>
+            <div class="ed">
+                <button id="ld">Load JSON…</button><button id="ld2">Load 3D JS…</button><button id="pj">Paste
+                    JSON</button>
+            </div>
+            <div id="xp"></div>
+            <input type="file" id="fi" accept=".json" multiple hidden /><input type="file" id="fj" accept=".js" multiple
+                hidden />
+        </div>
+    </div>
+    <div id="jm" hidden>
+        <textarea id="jt"></textarea>
+        <div class="ed"><button id="jl" class="pr">Load this JSON</button><button id="jx">Close</button></div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5/build/mp4-muxer.js"></script>
+
+    <!-- three.js also arrives as a UMD global for js/three.js to reuse. -->
+    <script type="module" src="js/app.js"></script>
+</body>
+
+</html>

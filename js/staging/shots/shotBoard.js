@@ -106,15 +106,22 @@ export class ShotBoard {
     /** Build / rebuild the timeline bottom bar. */
     buildUI() {
         if (this.ui) return;
-        const bar = document.createElement('div');
-        bar.id = 'shot-timeline';
-        bar.style.cssText = 'position:absolute;left:0;right:0;bottom:0;display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(15,15,30,0.92);border-top:1px solid rgba(255,255,255,0.12);z-index:50;font-size:12px;color:#e8e8f0;';
-        document.getElementById('canvas-container').appendChild(bar);
+        const bar = document.getElementById('shot-timeline');
+        if (!bar) return;
+        bar.style.display = 'none';
+
+        const playBtn = document.getElementById('timeline-play');
+        const pauseBtn = document.getElementById('timeline-pause');
+        const scrub = document.getElementById('shot-scrub');
+        const label = document.getElementById('shot-time-label');
+        const addBtn = document.getElementById('timeline-add-shot');
+        const loopBtn = document.getElementById('timeline-loop');
+        const cardsContainer = document.getElementById('shot-cards');
+
         this.ui = {
             root: bar,
+            playBtn, pauseBtn, scrub, label, addBtn, loopBtn, cardsContainer,
             updateScrubber: () => {
-                const scrub = bar.querySelector('#shot-scrub');
-                const label = bar.querySelector('#shot-label');
                 if (scrub) scrub.value = this.duration ? (this.currentTime / this.duration) * 1000 : 0;
                 if (label) {
                     const a = this.getActiveShot();
@@ -122,14 +129,37 @@ export class ShotBoard {
                         ? `${a.shot.name} — ${a.shot.duration.toFixed(1)}s — ${a.shot.cutType}   ${this.currentTime.toFixed(1)}/${this.duration.toFixed(1)}s`
                         : `No shots — add camera shots   ${this.duration.toFixed(1)}s`;
                 }
+                if (playBtn) playBtn.style.display = this.playing ? 'none' : 'inline-block';
+                if (pauseBtn) pauseBtn.style.display = this.playing ? 'inline-block' : 'none';
             },
             rebuild: () => this.refreshUI()
         };
+
+        if (playBtn) playBtn.onclick = () => this.toggle();
+        if (pauseBtn) pauseBtn.onclick = () => this.toggle();
+        if (loopBtn) loopBtn.onclick = () => { this.loop = !this.loop; this.refreshUI(); };
+        if (scrub) {
+            scrub.oninput = e => this.seek((e.target.value / 1000) * this.duration);
+        }
+        if (addBtn) {
+            addBtn.onclick = () => {
+                const cams = this.app.staging.cameras;
+                if (cams.rigs.length === 0) {
+                    this.app.notifications.show('Add a virtual camera first', 'error');
+                    return;
+                }
+                const rig = cams.rigs[this.shots.length % cams.rigs.length];
+                this.addShot(rig.id);
+                this.refreshUI();
+            };
+        }
+
         this.refreshUI();
     }
 
     toggleUI() {
         this.buildUI();
+        if (!this.ui) return;
         const bar = this.ui.root;
         const show = bar.style.display === 'none';
         bar.style.display = show ? 'flex' : 'none';
@@ -138,56 +168,27 @@ export class ShotBoard {
 
     refreshUI() {
         if (!this.ui) return;
-        const bar = this.ui.root;
-        bar.innerHTML = '';
-        const mk = (txt, fn, extra = '') => {
-            const b = document.createElement('button');
-            b.textContent = txt;
-            b.style.cssText = 'padding:4px 10px;background:#2a2a4e;border:1px solid rgba(255,255,255,0.2);border-radius:4px;color:inherit;cursor:pointer;' + extra;
-            b.onclick = fn;
-            return b;
-        };
-
-        bar.appendChild(mk(this.playing ? '❚❚' : '▶', () => this.toggle()));
-        const scrub = document.createElement('input');
-        scrub.id = 'shot-scrub';
-        scrub.type = 'range';
-        scrub.min = 0; scrub.max = 1000; scrub.value = this.duration ? (this.currentTime / this.duration) * 1000 : 0;
-        scrub.style.cssText = 'flex:1;cursor:pointer;';
-        scrub.oninput = e => this.seek((e.target.value / 1000) * this.duration);
-        bar.appendChild(scrub);
-
-        const label = document.createElement('span');
-        label.id = 'shot-label';
-        label.style.cssText = 'min-width:220px;text-align:center;';
-        bar.appendChild(label);
-
-        bar.appendChild(mk('+ Shot', () => {
-            const cams = this.app.staging.cameras;
-            if (cams.rigs.length === 0) {
-                this.app.notifications.show('Add a virtual camera first', 'error');
-                return;
-            }
-            const rig = cams.rigs[this.shots.length % cams.rigs.length];
-            this.addShot(rig.id);
-        }));
-
-        this.shots.forEach(shot => {
-            const rig = this.app.staging.cameras.get(shot.cameraId);
-            const el = document.createElement('div');
-            el.style.cssText = `padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.25);background:#1a1a34;cursor:pointer;user-select:none;`;
-            el.innerHTML = `<b style="color:#${(rig?.color || 0x888888).toString(16).padStart(6, '0')}">CAM ${rig?.name || '?'}</b> ${shot.duration.toFixed(1)}s <small>${shot.cutType}</small>`;
-            el.title = 'Click: preview this shot · ←/→ move · ✕ remove';
-            el.onclick = () => {
-                this.app.staging.cameras.viewingRigId = shot.cameraId;
-                if (this.app.orbit) this.app.orbit.enabled = false;
-                this.seek(this.shots.slice(0, this.shots.indexOf(shot)).reduce((t, s) => t + s.duration, 0));
-                this.refreshUI();
-            };
-            el.oncontextmenu = e => { e.preventDefault(); this.removeShot(shot.id); };
-            bar.appendChild(el);
-        });
-
-        this.ui.updateScrubber();
+        const { cardsContainer, loopBtn } = this.ui;
+        if (cardsContainer) {
+            cardsContainer.innerHTML = '';
+            this.shots.forEach((shot, i) => {
+                const rig = this.app.staging.cameras.get(shot.cameraId);
+                const color = rig ? '#' + rig.color.toString(16).padStart(6, '0') : '#888888';
+                const el = document.createElement('div');
+                el.style.cssText = `padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.25);background:#1a1a34;cursor:pointer;user-select:none;color:${color};`;
+                el.innerHTML = `<b style="color:${color}">CAM ${rig?.name || '?'}</b> ${shot.duration.toFixed(1)}s <small>${shot.cutType}</small>`;
+                el.title = 'Click: preview this shot · right-click remove';
+                el.onclick = () => {
+                    this.app.staging.cameras.viewingRigId = shot.cameraId;
+                    if (this.app.orbit) this.app.orbit.enabled = false;
+                    this.seek(this.shots.slice(0, i).reduce((t, s) => t + s.duration, 0));
+                    this.refreshUI();
+                };
+                el.oncontextmenu = e => { e.preventDefault(); this.removeShot(shot.id); this.refreshUI(); };
+                cardsContainer.appendChild(el);
+            });
+        }
+        if (loopBtn) loopBtn.style.background = this.loop ? '#2e7d32' : 'transparent';
+        if (this.ui.updateScrubber) this.ui.updateScrubber();
     }
 }

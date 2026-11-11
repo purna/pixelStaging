@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "default": "nile",
+  "scenes": [
+    {
+      "id": "nile",
+      "name": "The Nile (Low Poly)",
+      "file": "nile.js",
+      "type": "module"
+    },
+    {
+      "id": "nile_hd",
+      "name": "The Nile (High Definition)",
+      "file": "nile_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-basket",
+      "name": "Ch.1 · The Child in the River",
+      "file": "moses-basket.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-basket_hd",
+      "name": "Ch.1 · The Child in the River (HD)",
+      "file": "moses-basket_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-exile",
+      "name": "Ch.2 · Exile and the Burning Bush",
+      "file": "moses-exile.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-exile_hd",
+      "name": "Ch.2 · Exile and the Burning Bush (HD)",
+      "file": "moses-exile_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-throne",
+      "name": "Ch.3 · Let My People Go",
+      "file": "moses-throne.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-throne_hd",
+      "name": "Ch.3 · Let My People Go (HD)",
+      "file": "moses-throne_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-passover",
+      "name": "Ch.4 · Passover Night",
+      "file": "moses-passover.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-passover_hd",
+      "name": "Ch.4 · Passover Night (HD)",
+      "file": "moses-passover_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-sea",
+      "name": "Ch.5 · A Path Through the Water",
+      "file": "moses-sea.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-sea_hd",
+      "name": "Ch.5 · A Path Through the Water (HD)",
+      "file": "moses-sea_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-bread",
+      "name": "Ch.6 · Enough for Today",
+      "file": "moses-bread.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-bread_hd",
+      "name": "Ch.6 · Enough for Today (HD)",
+      "file": "moses-bread_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-mountain",
+      "name": "Ch.7 · Thunder on Sinai",
+      "file": "moses-mountain.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-mountain_hd",
+      "name": "Ch.7 · Thunder on Sinai (HD)",
+      "file": "moses-mountain_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-calf",
+      "name": "Ch.8 · The Broken Tablets",
+      "file": "moses-calf.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-calf_hd",
+      "name": "Ch.8 · The Broken Tablets (HD)",
+      "file": "moses-calf_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-wilderness",
+      "name": "Ch.9 · The Long Wilderness",
+      "file": "moses-wilderness.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-wilderness_hd",
+      "name": "Ch.9 · The Long Wilderness (HD)",
+      "file": "moses-wilderness_hd.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-nebo",
+      "name": "Ch.10 · The Land from Afar",
+      "file": "moses-nebo.js",
+      "type": "module"
+    },
+    {
+      "id": "moses-nebo_hd",
+      "name": "Ch.10 · The Land from Afar (HD)",
+      "file": "moses-nebo_hd.js",
+      "type": "module"
+    }
+  ]
+}

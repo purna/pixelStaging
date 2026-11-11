@@ -1330,12 +1330,16 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         const rigCam = shotCam || this.staging.cameras.getRenderCamera();
         if (rigCam) {
             const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);
-            const dpr = this.renderer.getPixelRatio();
-            this.renderer.setScissorTest(true);
-            this.renderer.setScissor(vp.x * dpr, vp.y * dpr, vp.width * dpr, vp.height * dpr);
-            this.renderer.setViewport(vp.x * dpr, vp.y * dpr, vp.width * dpr, vp.height * dpr);
-            this.renderer.setScissorTest(false);
-            this.renderer.setViewport(0, 0, this.renderer.domElement.width, this.renderer.domElement.height);
+            if (vp) {
+                const dpr = this.renderer.getPixelRatio();
+                this.renderer.setScissorTest(true);
+                this.renderer.setScissor(vp.x * dpr, vp.y * dpr, vp.width * dpr, vp.height * dpr);
+                this.renderer.setViewport(vp.x * dpr, vp.y * dpr, vp.width * dpr, vp.height * dpr);
+                this.renderer.setScissorTest(false);
+                this.renderer.setViewport(0, 0, this.renderer.domElement.width, this.renderer.domElement.height);
+            } else {
+                this.renderer.render(this.scene, rigCam);
+            }
         } else {
             this.renderer.render(this.scene, this.camera);
         }

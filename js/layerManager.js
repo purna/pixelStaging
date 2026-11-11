@@ -166,6 +166,9 @@ export class LayerManager {
 
         // Then render objects not in folders
         this.app.objects.forEach(obj => {
+            // Camera rigs are controlled from the Camera tab / Shot Designer,
+            // not the staging hierarchy.
+            if (obj.userData?.rigRef) return;
             this.renderObjectInFolder(obj, this.container, null);
         });
 

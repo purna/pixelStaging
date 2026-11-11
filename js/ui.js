@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { LAYER_PRESETS } from './layerMaterial.js';
 import { hexToRgb, rgbToHex, rgbToHsl, hslToRgb, rgbToHsv, hsvToRgb } from './colorUtils.js';
+import { getMoveSpec } from './staging/shots/shotMoves.js';
 
 export class UI {
     constructor(app) {
@@ -61,6 +62,7 @@ export class UI {
             ['event listeners', () => this.setupEventListeners()],
             ['saved settings', () => this.loadSettings()],
             ['panel tabs', () => this.setupPanelTabs()],
+            ['floating camera controls', () => this.setupFloatingCameraControls()],
             ['color editor', () => this.setupColorEditor()],
             ['hierarchy', () => this.renderHierarchyPanel()],
             ['assets', () => this.renderAssetsPanel('colors')]
@@ -395,6 +397,8 @@ export class UI {
                     this.renderHierarchyPanel();
                 } else if (tab.dataset.rightTab === 'camera') {
                     this.setupCameraTab();
+                } else if (tab.dataset.rightTab === 'shot-designer') {
+                    this.setupShotDesignerTab();
                 }
             });
         });
@@ -1747,6 +1751,321 @@ export class UI {
                 this.refreshCameraRigList();
             });
         });
+    }
+
+    // =============================================
+    // FLOATING CAMERA CONTROLS
+    // =============================================
+
+    setupFloatingCameraControls() {
+        const cameras = this.app.staging?.cameras;
+        if (!cameras) return;
+
+        const lensSelect = document.getElementById('floating-camera-lens');
+        const sensorSelect = document.getElementById('floating-camera-sensor');
+        const aspectSelect = document.getElementById('floating-camera-aspect');
+        const closeBtn = document.getElementById('floating-camera-close');
+        const viewBtn = document.getElementById('floating-camera-view');
+        const frameBtn = document.getElementById('floating-camera-frame');
+        const deleteBtn = document.getElementById('floating-camera-delete');
+
+        // Populate lens presets
+        if (lensSelect) {
+            lensSelect.innerHTML = '';
+            for (const f of [12, 16, 24, 35, 50, 85, 135]) {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.textContent = f + 'mm';
+                lensSelect.appendChild(opt);
+            }
+            lensSelect.onchange = (e) => {
+                const rig = cameras.selectedRig;
+                if (rig) cameras.setLens(rig, parseFloat(e.target.value), null);
+            };
+        }
+
+        // Populate sensor presets
+        if (sensorSelect) {
+            sensorSelect.innerHTML = '';
+            for (const [key, val] of Object.entries({ fullFrame: 'Full Frame', super35: 'Super 35', mft: 'MFT' })) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = val;
+                sensorSelect.appendChild(opt);
+            }
+            sensorSelect.onchange = (e) => {
+                const rig = cameras.selectedRig;
+                if (rig) cameras.setLens(rig, null, e.target.value);
+            };
+        }
+
+        // Populate aspect presets
+        if (aspectSelect) {
+            aspectSelect.innerHTML = '';
+            for (const [key, val] of Object.entries({ '16:9': '16:9', '2.39:1': '2.39:1', '1.85:1': '1.85:1', '4:3': '4:3', '1:1': '1:1' })) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = key;
+                aspectSelect.appendChild(opt);
+            }
+            aspectSelect.onchange = (e) => {
+                const rig = cameras.selectedRig;
+                if (rig) cameras.setAspect(rig, e.target.value);
+            };
+        }
+
+        // Close button
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                document.getElementById('floating-camera-controls').classList.add('hidden');
+            };
+        }
+
+        // View through camera
+        if (viewBtn) {
+            viewBtn.onclick = () => {
+                cameras.viewingRigId = cameras.selectedRig?.id || null;
+                if (this.app.orbit) this.app.orbit.enabled = !cameras.viewingRigId;
+                this.refreshCameraRigList();
+                this.updateFloatingCameraControls(cameras.selectedRig);
+            };
+        }
+
+        // Frame camera from view
+        if (frameBtn) {
+            frameBtn.onclick = () => {
+                cameras.frameCameraFromView();
+                this.refreshCameraRigList();
+            };
+        }
+
+        // Delete camera
+        if (deleteBtn) {
+            deleteBtn.onclick = () => {
+                cameras.deleteSelectedRig();
+                document.getElementById('floating-camera-controls').classList.add('hidden');
+                this.refreshCameraRigList();
+            };
+        }
+
+        // Move mode buttons
+        const orbitBtn = document.getElementById('floating-move-orbit');
+        const panBtn = document.getElementById('floating-move-pan');
+        let moveMode = 'orbit';
+        const setMoveMode = (mode) => {
+            moveMode = mode;
+            if (orbitBtn) orbitBtn.classList.toggle('active', mode === 'orbit');
+            if (panBtn) panBtn.classList.toggle('active', mode === 'pan');
+            if (this.app.staging?.shotManager?.framingControls) {
+                const fc = this.app.staging.shotManager.framingControls;
+                fc.enableRotate = mode === 'orbit';
+                fc.enablePan = mode === 'pan';
+            }
+        };
+        if (orbitBtn) orbitBtn.onclick = () => setMoveMode('orbit');
+        if (panBtn) panBtn.onclick = () => setMoveMode('pan');
+    }
+
+    updateFloatingCameraControls(rig) {
+        const lensSelect = document.getElementById('floating-camera-lens');
+        const sensorSelect = document.getElementById('floating-camera-sensor');
+        const aspectSelect = document.getElementById('floating-camera-aspect');
+        const viewBtn = document.getElementById('floating-camera-view');
+
+        if (!rig) return;
+
+        if (lensSelect && document.activeElement !== lensSelect) {
+            lensSelect.value = rig.lens.focalLength;
+        }
+        if (sensorSelect && document.activeElement !== sensorSelect) {
+            sensorSelect.value = rig.lens.sensor;
+        }
+        if (aspectSelect && document.activeElement !== aspectSelect) {
+            aspectSelect.value = rig.aspect;
+        }
+        if (viewBtn) {
+            const isViewing = this.app.staging.cameras.viewingRigId === rig.id;
+            viewBtn.textContent = isViewing ? 'Exit View' : 'View';
+            viewBtn.classList.toggle('active', isViewing);
+        }
+    }
+
+    // =============================================
+    // SHOT DESIGNER TAB
+    // =============================================
+
+    setupShotDesignerTab() {
+        const shotManager = this.app.staging?.shotManager;
+        const cameras = this.app.staging?.cameras;
+        const cameraSelect = document.getElementById('sd-camera-select');
+        const shotsList = document.getElementById('sd-shots-list');
+        const shotDetails = document.getElementById('sd-shot-details');
+        const emptyState = document.getElementById('sd-empty');
+
+        if (!shotManager || !cameras || !cameraSelect || !shotsList || !shotDetails || !emptyState) return;
+
+        // Populate camera select
+        cameraSelect.innerHTML = '<option value="">-- Select Camera --</option>';
+        cameras.rigs.forEach(rig => {
+            const opt = document.createElement('option');
+            opt.value = rig.id;
+            opt.textContent = `Cam ${rig.name}`;
+            cameraSelect.appendChild(opt);
+        });
+
+        const renderShots = () => {
+            shotsList.innerHTML = '';
+            if (shotManager.shots.length === 0) {
+                shotsList.innerHTML = '<div style="color:#666; font-size:10px; padding:8px;">No shots yet. Add a shot above.</div>';
+                shotDetails.style.display = 'none';
+                emptyState.style.display = shotManager.shots.length === 0 && cameras.rigs.length > 0 ? 'block' : 'none';
+                return;
+            }
+            emptyState.style.display = 'none';
+
+            shotManager.shots.forEach((shot, i) => {
+                const rig = cameras.get(shot.cameraId);
+                const isSelected = i === shotManager.selectedShotIndex;
+                const item = document.createElement('div');
+                item.className = 'shot-designer-shot-item' + (isSelected ? ' selected' : '');
+                item.dataset.index = i;
+                item.innerHTML = `
+                    <span style="width:8px;height:8px;border-radius:50%;background:${rig?.color ? '#'+rig.color.toString(16).padStart(6,'0') : '#888'};"></span>
+                    <span style="flex:1;">${shot.name} — ${shot.move} — ${shot.duration.toFixed(1)}s</span>
+                    <span style="color:#666;">${shot.easing}</span>
+                `;
+                item.onclick = () => {
+                    shotManager.selectedShotIndex = i;
+                    shotManager.seek(shotManager.getShotStartTime(i));
+                    renderShots();
+                    renderShotDetails(shot);
+                };
+                shotsList.appendChild(item);
+            });
+        };
+
+        const renderShotDetails = (shot) => {
+            shotDetails.style.display = 'block';
+            const rig = cameras.get(shot.cameraId);
+            cameraSelect.value = shot.cameraId;
+
+            // Move type
+            const moveSelect = document.getElementById('sd-move-select');
+            moveSelect.innerHTML = shotManager.getMoveOptions(shot.move);
+            moveSelect.onchange = (e) => {
+                shot.move = e.target.value;
+                shot.spec = { ...getMoveSpec(shot.move) };
+                if (shot.spec.d) shot.duration = shot.spec.d;
+                renderShots();
+                renderShotDetails(shot);
+            };
+
+            // Duration
+            const durInput = document.getElementById('sd-duration');
+            const durVal = document.getElementById('sd-duration-val');
+            durInput.value = shot.duration;
+            durVal.textContent = `${shot.duration.toFixed(1)}s`;
+            durInput.oninput = (e) => {
+                shot.duration = parseFloat(e.target.value);
+                durVal.textContent = `${shot.duration.toFixed(1)}s`;
+                renderShots();
+            };
+
+            // Speed
+            const spdInput = document.getElementById('sd-speed');
+            const spdVal = document.getElementById('sd-speed-val');
+            spdInput.value = shot.speed;
+            spdVal.textContent = `×${shot.speed}`;
+            spdInput.oninput = (e) => {
+                shot.speed = parseFloat(e.target.value);
+                spdVal.textContent = `×${shot.speed}`;
+            };
+
+            // Easing
+            const easeSelect = document.getElementById('sd-easing');
+            easeSelect.innerHTML = ['io','in','out','lin','ramp'].map(e => `<option value="${e}"${e === shot.easing ? ' selected' : ''}>${e}</option>`).join('');
+            easeSelect.onchange = (e) => { shot.easing = e.target.value; };
+
+            // Camera select change
+            cameraSelect.onchange = (e) => {
+                if (e.target.value) shot.cameraId = e.target.value;
+            };
+
+            // Frame status
+            const frameStatus = document.getElementById('sd-frame-status');
+            const hasStart = !!shot.startFrame;
+            const hasEnd = !!shot.endFrame;
+            frameStatus.textContent = `Start: ${hasStart ? 'set' : 'unset'} | End: ${hasEnd ? 'set' : 'unset'}`;
+
+            // Edit start/end frame
+            document.getElementById('sd-edit-start').onclick = () => {
+                shotManager.editingFrame = 'start';
+                shotManager.viewMode = 'frame';
+                shotManager.enterFramingMode(shot, 'start');
+                renderShots();
+            };
+            document.getElementById('sd-edit-end').onclick = () => {
+                shotManager.editingFrame = 'end';
+                shotManager.viewMode = 'frame';
+                shotManager.enterFramingMode(shot, 'end');
+                renderShots();
+            };
+            document.getElementById('sd-commit-frame').onclick = () => {
+                shotManager.commitFraming(shotManager.editingFrame);
+                renderShots();
+                renderShotDetails(shot);
+            };
+            document.getElementById('sd-cancel-frame').onclick = () => {
+                shotManager.cancelFraming();
+                renderShots();
+                renderShotDetails(shot);
+            };
+
+            // Delete shot
+            document.getElementById('sd-delete-shot').onclick = () => {
+                shotManager.removeShot(shot.id);
+                renderShots();
+                shotDetails.style.display = 'none';
+            };
+        };
+
+        // Add shot
+        document.getElementById('sd-add-shot').onclick = () => {
+            if (cameras.rigs.length === 0) {
+                this.app.ui?.showNotification('Add a virtual camera first', 'error');
+                return;
+            }
+            const rig = cameraSelect.value ? cameras.get(cameraSelect.value) : cameras.rigs[0];
+            shotManager.createShot(rig.id);
+            renderShots();
+        };
+
+        // Play/pause
+        const playBtn = document.getElementById('sd-play');
+        const pauseBtn = document.getElementById('sd-pause');
+        playBtn.onclick = () => {
+            shotManager.play();
+            playBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-block';
+        };
+        pauseBtn.onclick = () => {
+            shotManager.pause();
+            playBtn.style.display = 'inline-block';
+            pauseBtn.style.display = 'none';
+        };
+
+        // Refresh
+        document.getElementById('sd-refresh').onclick = () => {
+            renderShots();
+            shotDetails.style.display = 'none';
+        };
+
+        // Timeline panel toggle
+        document.getElementById('sd-timeline').onclick = () => {
+            shotManager.toggleUI();
+        };
+
+        renderShots();
     }
 
     // =============================================
@@ -3913,6 +4232,18 @@ export class UI {
                 infoBox.classList.remove('hidden');
             } else {
                 infoBox.classList.add('hidden');
+            }
+        }
+
+        // Show/hide floating camera controls when a camera rig is selected
+        const camControls = document.getElementById('floating-camera-controls');
+        const isCameraRig = selectedObject && selectedObject.userData?.rigRef;
+        if (camControls) {
+            if (isCameraRig) {
+                camControls.classList.remove('hidden');
+                this.updateFloatingCameraControls(selectedObject.userData.rigRef);
+            } else {
+                camControls.classList.add('hidden');
             }
         }
 

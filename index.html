@@ -328,6 +328,55 @@ Block actors, props and architecture">
                 <p>Right click to deselect</p>
             </div>
 
+            <!-- Floating Camera Controls (bottom right of canvas) -->
+            <div id="floating-camera-controls" class="floating-camera-controls hidden">
+                <div class="floating-controls-header">
+                    <span class="floating-controls-title">Camera Controls</span>
+                    <button class="floating-close-btn" id="floating-camera-close" title="Close">&times;</button>
+                </div>
+                <div class="floating-controls-group">
+                    <label class="floating-control-label">Lens</label>
+                    <select id="floating-camera-lens" class="floating-control-select"></select>
+                </div>
+                <div class="floating-controls-group">
+                    <label class="floating-control-label">Sensor</label>
+                    <select id="floating-camera-sensor" class="floating-control-select"></select>
+                </div>
+                <div class="floating-controls-group">
+                    <label class="floating-control-label">Aspect</label>
+                    <select id="floating-camera-aspect" class="floating-control-select"></select>
+                </div>
+                <div class="floating-controls-actions">
+                    <button class="floating-control-btn" id="floating-camera-view" title="View Through Camera"><i class="fas fa-eye"></i> View</button>
+                    <button class="floating-control-btn" id="floating-camera-frame" title="Frame from View"><i class="fas fa-lock"></i> Frame</button>
+                    <button class="floating-control-btn danger" id="floating-camera-delete" title="Delete Camera"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+                <div class="floating-controls-group">
+                    <label class="floating-control-label">Move Mode</label>
+                    <div class="floating-move-mode">
+                        <button class="floating-move-btn active" id="floating-move-orbit" title="Orbit"><i class="fas fa-object-rotate-right"></i></button>
+                        <button class="floating-move-btn" id="floating-move-pan" title="Pan"><i class="fas fa-arrows-alt"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shot Timeline Panel (bottom bar) -->
+            <div id="shot-timeline">
+                <div class="shot-timeline-top">
+                    <button class="btn" id="timeline-play" title="Play" style="padding: 4px 8px;">▶</button>
+                    <button class="btn" id="timeline-pause" title="Pause" style="padding: 4px 8px; display: none;">❚❚</button>
+                    <input type="range" id="shot-scrub" min="0" max="1000" value="0" style="flex: 2;">
+                    <span id="shot-time-label">No shots</span>
+                    <button class="btn" id="timeline-add-shot" title="Add Shot" style="padding: 4px 8px; margin-left: auto;">+ Shot</button>
+                    <button class="btn" id="timeline-loop" title="Loop" style="padding: 4px 8px;">➡</button>
+                </div>
+                <div id="shot-cards"></div>
+                <div class="shot-timeline-track">
+                    <div class="shot-timeline-ruler" id="shot-timeline-ruler"></div>
+                    <div class="shot-time-indicator" id="shot-time-indicator"></div>
+                </div>
+            </div>
+
             <!-- Deselect Info Box -->
             <div id="deselect-info" class="deselect-info" style="display: none;">
                 <i class="fas fa-info-circle"></i> Right-click empty space to deselect
@@ -346,6 +395,7 @@ Block actors, props and architecture">
                 <button class="right-tab" data-right-tab="object-properties" title="Properties"><i class="fas fa-sliders-h"></i></button>
                 <button class="right-tab" data-right-tab="assets" title="Assets"><i class="fas fa-box"></i></button>
                 <button class="right-tab" data-right-tab="camera" title="Camera"><i class="fas fa-video"></i></button>
+                <button class="right-tab" data-right-tab="shot-designer" title="Shot Designer"><i class="fas fa-film"></i></button>
                 <button class="right-tab" data-right-tab="scene-settings" title="Scene"><i class="fas fa-globe"></i></button>
             </div>
             <div class="right-panel-scroll">
@@ -592,6 +642,90 @@ Block actors, props and architecture">
                                 <button class="btn" id="tool-toggle-shot-timeline">
                                     <i class="fas fa-film"></i> Shot Timeline
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shot Designer Tab -->
+                <div class="right-tab-content" id="tab-shot-designer">
+                    <div class="panel-section" id="section-shot-designer">
+                        <div class="panel-header">
+                            <div class="panel-header-title"><i class="fas fa-film"></i> Shot Designer</div>
+                        </div>
+                        <div class="panel-content" id="shot-designer-content">
+                            <div class="shot-designer-toolbar">
+                                <button class="tool-btn" id="sd-add-shot" title="Add Shot" data-tooltip="**Add Shot**\nCreate a new shot for the selected camera">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="tool-btn" id="sd-play" title="Play Timeline" data-tooltip="**Play**\nPlay the shot timeline">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="tool-btn" id="sd-pause" title="Pause" data-tooltip="**Pause**\nPause playback" style="display:none;">
+                                    <i class="fas fa-pause"></i>
+                                </button>
+                                <button class="tool-btn" id="sd-timeline" title="Timeline Panel" data-tooltip="**Timeline Panel**\nToggle the shot timeline panel at the bottom">
+                                    <i class="fas fa-layer-group"></i>
+                                </button>
+                                <button class="tool-btn" id="sd-refresh" title="Refresh" data-tooltip="**Refresh**\nRebuild shot designer view">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                            </div>
+
+                            <!-- Camera selection -->
+                            <div class="shot-designer-section">
+                                <label class="shot-designer-label">Camera:</label>
+                                <select id="sd-camera-select" class="shot-designer-select"></select>
+                            </div>
+
+                            <!-- Shots list -->
+                            <div class="shot-designer-section">
+                                <label class="shot-designer-label">Shots:</label>
+                                <div id="sd-shots-list" class="shot-designer-shots"></div>
+                            </div>
+
+                            <!-- Selected shot details -->
+                            <div class="shot-designer-section" id="sd-shot-details" style="display:none;">
+                                <label class="shot-designer-label">Move Type:</label>
+                                <select id="sd-move-select" class="shot-designer-select"></select>
+                                
+                                <div style="display:flex; gap:8px; margin-top:6px;">
+                                    <label style="flex:1; font-size:10px; color:#aaa;">Duration (s):</label>
+                                    <input type="range" id="sd-duration" class="shot-designer-range" min="0.5" max="30" step="0.5">
+                                    <span id="sd-duration-val" style="width:40px; font-size:10px; color:#aaa;">3.0s</span>
+                                </div>
+                                
+                                <div style="display:flex; gap:8px; margin-top:6px;">
+                                    <label style="flex:1; font-size:10px; color:#aaa;">Speed:</label>
+                                    <input type="range" id="sd-speed" class="shot-designer-range" min="0.05" max="8" step="0.05">
+                                    <span id="sd-speed-val" style="width:40px; font-size:10px; color:#aaa;">×1.0</span>
+                                </div>
+
+                                <div style="display:flex; gap:8px; margin-top:6px;">
+                                    <label style="flex:1; font-size:10px; color:#aaa;">Easing:</label>
+                                    <select id="sd-easing" class="shot-designer-select"></select>
+                                </div>
+
+                                <div style="margin-top:8px; border-top:1px solid rgba(255,255,255,0.1); padding-top:6px;">
+                                    <label class="shot-designer-label">Framing:</label>
+                                    <div style="display:flex; gap:4px;">
+                                        <button class="shot-btn" id="sd-edit-start" style="flex:1; padding:4px; font-size:10px;">Start Frame</button>
+                                        <button class="shot-btn" id="sd-edit-end" style="flex:1; padding:4px; font-size:10px;">End Frame</button>
+                                    </div>
+                                    <div style="display:flex; gap:4px; margin-top:4px;">
+                                        <button class="shot-btn" id="sd-commit-frame" style="flex:1; padding:4px; font-size:10px; background:rgba(76,175,80,0.3);">Confirm</button>
+                                        <button class="shot-btn" id="sd-cancel-frame" style="flex:1; padding:4px; font-size:10px; background:rgba(244,67,54,0.3);">Cancel</button>
+                                    </div>
+                                    <div id="sd-frame-status" style="margin-top:4px; font-size:10px; color:#aaa;"></div>
+                                </div>
+
+                                <div style="margin-top:8px;">
+                                    <button class="shot-btn" id="sd-delete-shot" style="width:100%; padding:4px; font-size:10px; color:#f66;">Delete Shot</button>
+                                </div>
+                            </div>
+
+                            <div id="sd-empty" style="text-align:center; color:#888; padding:20px; font-size:11px;">
+                                No cameras available. Add a virtual camera from the Camera tab first.
                             </div>
                         </div>
                     </div>

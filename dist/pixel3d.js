@@ -32783,6 +32783,157 @@
     return { r, g, b };
   }
 
+  // js/staging/shots/shotMoves.js
+  var D2R = Math.PI / 180;
+  var PL = { r: [24, 44] };
+  var PS = { r: [44, 24] };
+  var HH = { s: 0.25, sf: 6 };
+  var SHOT_CATEGORIES = [
+    ["Cinematic", [
+      ["Dolly Shot", { r: [46, 24] }],
+      ["Reverse Dolly Shot", { r: [24, 46] }],
+      ["Bird's Eye Twist", { h: [8, 60], r: [40, 4], o: [0, 90] }],
+      ["Crane Shot Side", { a: [-35, -35], h: [3, 24] }],
+      ["Crane Shot Sweep", { a: [-50, 30], h: [3, 26] }],
+      ["360 Pan + Tilt", { y: [0, 360], p: [-15, 20], d: 10 }],
+      ["180 Degree Pan", { y: [-90, 90], d: 8 }],
+      ["90 Degree Pan", { y: [-45, 45] }],
+      ["Track Back Pan Down", { r: [24, 48], p: [10, -22] }],
+      ["Track Back Pan Up", { r: [24, 48], p: [-15, 10] }],
+      ["Push Forward Pan Down", { r: [48, 24], p: [5, -22] }],
+      ["Push Forward Pan Up", { r: [48, 24], p: [-12, 10] }],
+      ["Pan Back + Flip", { r: [24, 50], o: [0, 180] }],
+      ["Pan Back + Flip (Handheld)", { r: [24, 50], o: [0, 180], ...HH }],
+      ["J Move Up", { r: [44, 30], h: [4, 28], e: "in" }],
+      ["J Move Down", { r: [30, 44], h: [28, 4], e: "out" }],
+      ["L Move Up", { r: [44, 26], h: [5, 26], ph: 1, d: 8 }],
+      ["L Move Down", { r: [26, 44], h: [26, 5], ph: 2, d: 8 }],
+      ["Spiral Up", { a: [0, 270], h: [4, 28], r: [44, 30], d: 9 }],
+      ["Spiral Down", { a: [0, 270], h: [28, 4], r: [30, 44], d: 9 }],
+      ["360 Track", { a: [0, 360], d: 12, e: "lin" }],
+      ["Slide Right", { x: [-18, 18] }],
+      ["Slide Left", { x: [18, -18] }],
+      ["Slide Up", { v: [-4, 14] }],
+      ["Slide Down", { v: [14, -4] }],
+      ["Under To Above", { h: [0.3, 30], r: [42, 26] }]
+    ]],
+    ["FPV", [
+      ["Automatic Gun Fire", { s: 0.5, sf: 22, r: [36, 34], d: 3 }],
+      ["Base Jump FPV", { h: [45, 3], r: [75, 30], p: [-25, -5], s: 0.4, sf: 14, e: "in", d: 7 }],
+      ["Bleeding Out", { s: 0.12, o: [0, 25], f: [55, 40], p: [0, -25], e: "in", d: 8 }],
+      ["Explosion", { s: 2.4, sf: 18, sd: 4, d: 3 }],
+      ["Fall Backwards", { p: [0, 60], h: [7, 1], o: [0, -10], e: "in", d: 3 }],
+      ["Flinch", { s: 1.6, sf: 14, sd: 8, d: 1.6 }],
+      ["Look Around", { y: [-45, 45], p: [-8, 8], s: 0.05, d: 8 }],
+      ["Static Handheld Subtle", { s: 0.12, sf: 5, d: 6 }],
+      ["Turn, Look Up", { y: [-60, 0], p: [-5, 38], d: 5 }],
+      ["Jet Pass 01", { x: [-140, 140], tr: 1, r: [30, 30], h: [9, 9], o: [-10, 10], s: 0.3, sf: 16, e: "lin", d: 3 }],
+      ["Jet Pass 02", { x: [140, -140], tr: 1, r: [26, 26], h: [14, 10], o: [10, -10], s: 0.3, sf: 16, e: "lin", d: 3 }]
+    ]],
+    ["Pans", [
+      ["Pan Down", { p: [15, -15] }],
+      ["Pan Up", { p: [-15, 15] }],
+      ["Pan Left", { y: [-25, 25] }],
+      ["Pan Left Handheld", { y: [-25, 25], ...HH }],
+      ["Pan Right", { y: [25, -25] }],
+      ["Pan Right Handheld", { y: [25, -25], ...HH }],
+      ["Scenic Pan Left", { y: [-40, 40], f: [45, 45], d: 12 }],
+      ["Scenic Pan Right", { y: [40, -40], f: [45, 45], d: 12 }]
+    ]],
+    ["Speed Ramps", [
+      ["180 Degree Spin (Anti-Clockwise)", { a: [0, -180], e: "ramp", d: 7 }],
+      ["180 Degree Spin (Clockwise)", { a: [0, 180], e: "ramp", d: 7 }],
+      ["Contra-Zoom", { r: [26, 60], f: [80, 40], e: "ramp" }],
+      ["Crane Shot Down", { h: [28, 3], e: "ramp" }],
+      ["Crane Shot Up", { h: [3, 28], e: "ramp" }],
+      ["Move Down", { v: [8, -8], e: "ramp" }],
+      ["Move Up", { v: [-8, 8], e: "ramp" }],
+      ["Move Left", { x: [18, -18], e: "ramp" }],
+      ["Move Right", { x: [-18, 18], e: "ramp" }],
+      ["Pull Back", { r: [24, 50], e: "ramp" }],
+      ["Pull Pan Down", { r: [24, 50], p: [8, -20], e: "ramp" }],
+      ["Pull Pan Up", { r: [24, 50], p: [-10, 14], e: "ramp" }],
+      ["Pull Rise", { r: [26, 50], h: [4, 26], e: "ramp" }],
+      ["Push Down", { r: [50, 26], h: [26, 6], e: "ramp" }],
+      ["Push In", { r: [50, 24], e: "ramp" }],
+      ["Push Pan Down", { r: [50, 24], p: [6, -20], e: "ramp" }],
+      ["Push Pan Up", { r: [50, 24], p: [-10, 12], e: "ramp" }],
+      ["Twist In", { r: [50, 24], o: [0, 45], e: "ramp" }],
+      ["Twist Out", { r: [24, 50], o: [45, 0], e: "ramp" }]
+    ]],
+    ["Pushes + Pulls", [
+      ["Fast Pull", { ...PL, d: 2.5 }],
+      ["Long Pull", { r: [16, 70], d: 9 }],
+      ["Medium Pull", { ...PL, d: 6 }],
+      ["Pull Handheld", { ...PL, ...HH }],
+      ["Slow Pull", { ...PL, d: 12 }],
+      ["Pull Rise", {}],
+      ["Pull to Birds Eye", { r: [36, 4], h: [6, 55], d: 8 }],
+      ["Twist Pull", { ...PL, o: [0, 60] }],
+      ["Fast Push", { ...PS, d: 2.5 }],
+      ["Long Push", { r: [70, 16], d: 9 }],
+      ["Medium Push", { ...PS, d: 6 }],
+      ["Push Handheld", { ...PS, ...HH }],
+      ["Slow Push", { ...PS, d: 12 }],
+      ["Push Sink", { r: [44, 26], h: [14, 2] }],
+      ["Twist Push", { ...PS, o: [0, -60] }],
+      ["Push To Sky", { r: [44, 28], p: [0, 45] }],
+      ["Push To Ground", { r: [44, 28], p: [0, -30], h: [10, 3] }]
+    ]],
+    ["Flyovers", [
+      ["Flyover Zoom", { r: [80, 10], h: [40, 14], f: [45, 70], d: 9 }],
+      ["Helicopter Flyover 001", { a: [-70, 70], r: [50, 36], h: [30, 22], s: 0.15, sf: 7, d: 10 }],
+      ["Helicopter Flyover 002", { a: [60, -120], r: [56, 30], h: [24, 34], s: 0.15, sf: 7, d: 10 }],
+      ["Slow Flyover", { r: [70, 14], h: [26, 16], d: 16 }],
+      ["Mini Spy Drone", { a: [-20, 40], h: [3, 5], r: [22, 12], s: 0.1, sf: 3, dr: 0.3, f: [75, 75], d: 10 }]
+    ]],
+    ["Zooms", [
+      ["Contra-Zoom", {}],
+      ["Contra-Zoom 2", { r: [60, 26], f: [40, 80] }],
+      ["Fast Zoom", { f: [55, 20], d: 2 }],
+      ["Handheld Zoom In", { f: [55, 25], ...HH }],
+      ["Handheld Zoom Out", { f: [25, 55], ...HH }],
+      ["Slow Zoom", { f: [55, 25], d: 12 }],
+      ["Twist Zoom", { f: [55, 22], o: [0, 45] }],
+      ["Zoom In Pan Left", { f: [60, 24], y: [-15, 10] }],
+      ["Zoom In Pan Right", { f: [60, 24], y: [15, -10] }],
+      ["Zoom Out Pan Up", { f: [22, 60], p: [-10, 15] }],
+      ["Zoom In Pan Down", { f: [60, 24], p: [10, -15] }],
+      ["Sinister Twist Zoom In", { f: [70, 20], o: [0, -30], e: "in" }],
+      ["Sinister Twist Zoom Out", { f: [20, 70], o: [-30, 0], e: "out" }]
+    ]],
+    ["Chaotic", [
+      ["Backwards Running", { r: [26, 50], bob: 0.35, bf: 11, s: 0.2, sf: 11 }],
+      ["Drunk Cam", { dr: 1, r: [40, 34], s: 0.05, d: 10 }],
+      ["Static Handheld Subtle", { ...HH }],
+      ["Forwards Running", { r: [50, 24], bob: 0.35, bf: 11, s: 0.2, sf: 11 }],
+      ["Sideways Running", { x: [-25, 25], bob: 0.35, bf: 11, s: 0.2, sf: 11, e: "lin" }],
+      ["Traffic Weaving", { r: [50, 18], wv: 5, s: 0.15, sf: 10, e: "lin", d: 8 }],
+      ["Walking", { r: [46, 32], bob: 0.15, bf: 5.5, s: 0.05, e: "lin", d: 9 }],
+      ["Missile Strike", { r: [90, 4], h: [40, 1], o: [0, 180], s: 0.3, sf: 20, e: "in", d: 4 }],
+      ["Curved Missile Strike", { a: [80, 0], r: [100, 6], h: [40, 1], o: [0, 360], s: 0.3, sf: 20, e: "in", d: 4 }],
+      ["Space Camera Floating", { a: [0, 25], h: [10, 18], r: [60, 55], o: [0, 12], dr: 0.3, d: 14 }],
+      ["Space Camera Floating 2", { a: [0, -30], h: [20, 8], r: [55, 62], o: [0, -15], dr: 0.4, d: 14 }],
+      ["Space Camera Floating 3", { a: [10, 40], h: [6, 30], r: [50, 66], o: [5, 20], dr: 0.5, d: 14 }],
+      ["Spinning In Space", { a: [0, 90], o: [0, 720], h: [30, 40], e: "lin", d: 10 }],
+      ["Fast Car Flyby (left to right)", { x: [-70, 70], tr: 1, r: [22, 22], h: [1.5, 1.5], e: "lin", d: 2.5 }],
+      ["Fast Car Flyby (right to left)", { x: [70, -70], tr: 1, r: [22, 22], h: [1.5, 1.5], e: "lin", d: 2.5 }],
+      ["Handheld Transition Right", { x: [-6, 26], y: [0, -25], o: [0, 8], s: 0.5, sf: 12, e: "ramp", d: 2 }],
+      ["Handheld Transition Left", { x: [6, -26], y: [0, 25], o: [0, -8], s: 0.5, sf: 12, e: "ramp", d: 2 }]
+    ]]
+  ];
+  var ALL_MOVES = SHOT_CATEGORIES.flatMap(([_, moves]) => moves.map(([name, spec]) => ({ name, spec })));
+  var MOVE_NAMES = ALL_MOVES.map((m) => m.name);
+  var DEFAULT_MOVE = { name: "Dolly Shot", spec: { r: [46, 24] } };
+  function getMoveSpec(name) {
+    const found = ALL_MOVES.find((m) => m.name === name);
+    return found ? { ...found.spec } : { ...DEFAULT_MOVE.spec };
+  }
+  function getMoveDefaultDuration(name) {
+    const found = ALL_MOVES.find((m) => m.name === name);
+    return found?.spec?.d || 6;
+  }
+
   // js/ui.js
   var UI = class {
     constructor(app) {
@@ -32833,6 +32984,7 @@
         ["event listeners", () => this.setupEventListeners()],
         ["saved settings", () => this.loadSettings()],
         ["panel tabs", () => this.setupPanelTabs()],
+        ["floating camera controls", () => this.setupFloatingCameraControls()],
         ["color editor", () => this.setupColorEditor()],
         ["hierarchy", () => this.renderHierarchyPanel()],
         ["assets", () => this.renderAssetsPanel("colors")]
@@ -33096,6 +33248,8 @@
             this.renderHierarchyPanel();
           } else if (tab.dataset.rightTab === "camera") {
             this.setupCameraTab();
+          } else if (tab.dataset.rightTab === "shot-designer") {
+            this.setupShotDesignerTab();
           }
         });
       });
@@ -34246,6 +34400,268 @@
           this.refreshCameraRigList();
         });
       });
+    }
+    // =============================================
+    // FLOATING CAMERA CONTROLS
+    // =============================================
+    setupFloatingCameraControls() {
+      const cameras = this.app.staging?.cameras;
+      if (!cameras) return;
+      const lensSelect = document.getElementById("floating-camera-lens");
+      const sensorSelect = document.getElementById("floating-camera-sensor");
+      const aspectSelect = document.getElementById("floating-camera-aspect");
+      const closeBtn = document.getElementById("floating-camera-close");
+      const viewBtn = document.getElementById("floating-camera-view");
+      const frameBtn = document.getElementById("floating-camera-frame");
+      const deleteBtn = document.getElementById("floating-camera-delete");
+      if (lensSelect) {
+        lensSelect.innerHTML = "";
+        for (const f of [12, 16, 24, 35, 50, 85, 135]) {
+          const opt = document.createElement("option");
+          opt.value = f;
+          opt.textContent = f + "mm";
+          lensSelect.appendChild(opt);
+        }
+        lensSelect.onchange = (e) => {
+          const rig = cameras.selectedRig;
+          if (rig) cameras.setLens(rig, parseFloat(e.target.value), null);
+        };
+      }
+      if (sensorSelect) {
+        sensorSelect.innerHTML = "";
+        for (const [key, val] of Object.entries({ fullFrame: "Full Frame", super35: "Super 35", mft: "MFT" })) {
+          const opt = document.createElement("option");
+          opt.value = key;
+          opt.textContent = val;
+          sensorSelect.appendChild(opt);
+        }
+        sensorSelect.onchange = (e) => {
+          const rig = cameras.selectedRig;
+          if (rig) cameras.setLens(rig, null, e.target.value);
+        };
+      }
+      if (aspectSelect) {
+        aspectSelect.innerHTML = "";
+        for (const [key, val] of Object.entries({ "16:9": "16:9", "2.39:1": "2.39:1", "1.85:1": "1.85:1", "4:3": "4:3", "1:1": "1:1" })) {
+          const opt = document.createElement("option");
+          opt.value = key;
+          opt.textContent = key;
+          aspectSelect.appendChild(opt);
+        }
+        aspectSelect.onchange = (e) => {
+          const rig = cameras.selectedRig;
+          if (rig) cameras.setAspect(rig, e.target.value);
+        };
+      }
+      if (closeBtn) {
+        closeBtn.onclick = () => {
+          document.getElementById("floating-camera-controls").classList.add("hidden");
+        };
+      }
+      if (viewBtn) {
+        viewBtn.onclick = () => {
+          cameras.viewingRigId = cameras.selectedRig?.id || null;
+          if (this.app.orbit) this.app.orbit.enabled = !cameras.viewingRigId;
+          this.refreshCameraRigList();
+          this.updateFloatingCameraControls(cameras.selectedRig);
+        };
+      }
+      if (frameBtn) {
+        frameBtn.onclick = () => {
+          cameras.frameCameraFromView();
+          this.refreshCameraRigList();
+        };
+      }
+      if (deleteBtn) {
+        deleteBtn.onclick = () => {
+          cameras.deleteSelectedRig();
+          document.getElementById("floating-camera-controls").classList.add("hidden");
+          this.refreshCameraRigList();
+        };
+      }
+      const orbitBtn = document.getElementById("floating-move-orbit");
+      const panBtn = document.getElementById("floating-move-pan");
+      let moveMode = "orbit";
+      const setMoveMode = (mode) => {
+        moveMode = mode;
+        if (orbitBtn) orbitBtn.classList.toggle("active", mode === "orbit");
+        if (panBtn) panBtn.classList.toggle("active", mode === "pan");
+        if (this.app.staging?.shotManager?.framingControls) {
+          const fc = this.app.staging.shotManager.framingControls;
+          fc.enableRotate = mode === "orbit";
+          fc.enablePan = mode === "pan";
+        }
+      };
+      if (orbitBtn) orbitBtn.onclick = () => setMoveMode("orbit");
+      if (panBtn) panBtn.onclick = () => setMoveMode("pan");
+    }
+    updateFloatingCameraControls(rig) {
+      const lensSelect = document.getElementById("floating-camera-lens");
+      const sensorSelect = document.getElementById("floating-camera-sensor");
+      const aspectSelect = document.getElementById("floating-camera-aspect");
+      const viewBtn = document.getElementById("floating-camera-view");
+      if (!rig) return;
+      if (lensSelect && document.activeElement !== lensSelect) {
+        lensSelect.value = rig.lens.focalLength;
+      }
+      if (sensorSelect && document.activeElement !== sensorSelect) {
+        sensorSelect.value = rig.lens.sensor;
+      }
+      if (aspectSelect && document.activeElement !== aspectSelect) {
+        aspectSelect.value = rig.aspect;
+      }
+      if (viewBtn) {
+        const isViewing = this.app.staging.cameras.viewingRigId === rig.id;
+        viewBtn.textContent = isViewing ? "Exit View" : "View";
+        viewBtn.classList.toggle("active", isViewing);
+      }
+    }
+    // =============================================
+    // SHOT DESIGNER TAB
+    // =============================================
+    setupShotDesignerTab() {
+      const shotManager = this.app.staging?.shotManager;
+      const cameras = this.app.staging?.cameras;
+      const cameraSelect = document.getElementById("sd-camera-select");
+      const shotsList = document.getElementById("sd-shots-list");
+      const shotDetails = document.getElementById("sd-shot-details");
+      const emptyState = document.getElementById("sd-empty");
+      if (!shotManager || !cameras || !cameraSelect || !shotsList || !shotDetails || !emptyState) return;
+      cameraSelect.innerHTML = '<option value="">-- Select Camera --</option>';
+      cameras.rigs.forEach((rig) => {
+        const opt = document.createElement("option");
+        opt.value = rig.id;
+        opt.textContent = `Cam ${rig.name}`;
+        cameraSelect.appendChild(opt);
+      });
+      const renderShots = () => {
+        shotsList.innerHTML = "";
+        if (shotManager.shots.length === 0) {
+          shotsList.innerHTML = '<div style="color:#666; font-size:10px; padding:8px;">No shots yet. Add a shot above.</div>';
+          shotDetails.style.display = "none";
+          emptyState.style.display = shotManager.shots.length === 0 && cameras.rigs.length > 0 ? "block" : "none";
+          return;
+        }
+        emptyState.style.display = "none";
+        shotManager.shots.forEach((shot, i) => {
+          const rig = cameras.get(shot.cameraId);
+          const isSelected = i === shotManager.selectedShotIndex;
+          const item = document.createElement("div");
+          item.className = "shot-designer-shot-item" + (isSelected ? " selected" : "");
+          item.dataset.index = i;
+          item.innerHTML = `
+                    <span style="width:8px;height:8px;border-radius:50%;background:${rig?.color ? "#" + rig.color.toString(16).padStart(6, "0") : "#888"};"></span>
+                    <span style="flex:1;">${shot.name} \u2014 ${shot.move} \u2014 ${shot.duration.toFixed(1)}s</span>
+                    <span style="color:#666;">${shot.easing}</span>
+                `;
+          item.onclick = () => {
+            shotManager.selectedShotIndex = i;
+            shotManager.seek(shotManager.getShotStartTime(i));
+            renderShots();
+            renderShotDetails(shot);
+          };
+          shotsList.appendChild(item);
+        });
+      };
+      const renderShotDetails = (shot) => {
+        shotDetails.style.display = "block";
+        const rig = cameras.get(shot.cameraId);
+        cameraSelect.value = shot.cameraId;
+        const moveSelect = document.getElementById("sd-move-select");
+        moveSelect.innerHTML = shotManager.getMoveOptions(shot.move);
+        moveSelect.onchange = (e) => {
+          shot.move = e.target.value;
+          shot.spec = { ...getMoveSpec(shot.move) };
+          if (shot.spec.d) shot.duration = shot.spec.d;
+          renderShots();
+          renderShotDetails(shot);
+        };
+        const durInput = document.getElementById("sd-duration");
+        const durVal = document.getElementById("sd-duration-val");
+        durInput.value = shot.duration;
+        durVal.textContent = `${shot.duration.toFixed(1)}s`;
+        durInput.oninput = (e) => {
+          shot.duration = parseFloat(e.target.value);
+          durVal.textContent = `${shot.duration.toFixed(1)}s`;
+          renderShots();
+        };
+        const spdInput = document.getElementById("sd-speed");
+        const spdVal = document.getElementById("sd-speed-val");
+        spdInput.value = shot.speed;
+        spdVal.textContent = `\xD7${shot.speed}`;
+        spdInput.oninput = (e) => {
+          shot.speed = parseFloat(e.target.value);
+          spdVal.textContent = `\xD7${shot.speed}`;
+        };
+        const easeSelect = document.getElementById("sd-easing");
+        easeSelect.innerHTML = ["io", "in", "out", "lin", "ramp"].map((e) => `<option value="${e}"${e === shot.easing ? " selected" : ""}>${e}</option>`).join("");
+        easeSelect.onchange = (e) => {
+          shot.easing = e.target.value;
+        };
+        cameraSelect.onchange = (e) => {
+          if (e.target.value) shot.cameraId = e.target.value;
+        };
+        const frameStatus = document.getElementById("sd-frame-status");
+        const hasStart = !!shot.startFrame;
+        const hasEnd = !!shot.endFrame;
+        frameStatus.textContent = `Start: ${hasStart ? "set" : "unset"} | End: ${hasEnd ? "set" : "unset"}`;
+        document.getElementById("sd-edit-start").onclick = () => {
+          shotManager.editingFrame = "start";
+          shotManager.viewMode = "frame";
+          shotManager.enterFramingMode(shot, "start");
+          renderShots();
+        };
+        document.getElementById("sd-edit-end").onclick = () => {
+          shotManager.editingFrame = "end";
+          shotManager.viewMode = "frame";
+          shotManager.enterFramingMode(shot, "end");
+          renderShots();
+        };
+        document.getElementById("sd-commit-frame").onclick = () => {
+          shotManager.commitFraming(shotManager.editingFrame);
+          renderShots();
+          renderShotDetails(shot);
+        };
+        document.getElementById("sd-cancel-frame").onclick = () => {
+          shotManager.cancelFraming();
+          renderShots();
+          renderShotDetails(shot);
+        };
+        document.getElementById("sd-delete-shot").onclick = () => {
+          shotManager.removeShot(shot.id);
+          renderShots();
+          shotDetails.style.display = "none";
+        };
+      };
+      document.getElementById("sd-add-shot").onclick = () => {
+        if (cameras.rigs.length === 0) {
+          this.app.ui?.showNotification("Add a virtual camera first", "error");
+          return;
+        }
+        const rig = cameraSelect.value ? cameras.get(cameraSelect.value) : cameras.rigs[0];
+        shotManager.createShot(rig.id);
+        renderShots();
+      };
+      const playBtn = document.getElementById("sd-play");
+      const pauseBtn = document.getElementById("sd-pause");
+      playBtn.onclick = () => {
+        shotManager.play();
+        playBtn.style.display = "none";
+        pauseBtn.style.display = "inline-block";
+      };
+      pauseBtn.onclick = () => {
+        shotManager.pause();
+        playBtn.style.display = "inline-block";
+        pauseBtn.style.display = "none";
+      };
+      document.getElementById("sd-refresh").onclick = () => {
+        renderShots();
+        shotDetails.style.display = "none";
+      };
+      document.getElementById("sd-timeline").onclick = () => {
+        shotManager.toggleUI();
+      };
+      renderShots();
     }
     // =============================================
     // PALETTE MANAGEMENT (from pixelArt)
@@ -36338,6 +36754,16 @@
           infoBox.classList.remove("hidden");
         } else {
           infoBox.classList.add("hidden");
+        }
+      }
+      const camControls = document.getElementById("floating-camera-controls");
+      const isCameraRig = selectedObject && selectedObject.userData?.rigRef;
+      if (camControls) {
+        if (isCameraRig) {
+          camControls.classList.remove("hidden");
+          this.updateFloatingCameraControls(selectedObject.userData.rigRef);
+        } else {
+          camControls.classList.add("hidden");
         }
       }
       this.renderPropertiesPanel(selectedObject);
@@ -39806,6 +40232,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
         this.container.appendChild(folderEl);
       });
       this.app.objects.forEach((obj) => {
+        if (obj.userData?.rigRef) return;
         this.renderObjectInFolder(obj, this.container, null);
       });
       this.container.addEventListener("dragover", (e) => this.handleDragOver(e));
@@ -43739,27 +44166,62 @@ ${elements.join("\n")}
     /** Build / rebuild the timeline bottom bar. */
     buildUI() {
       if (this.ui) return;
-      const bar = document.createElement("div");
-      bar.id = "shot-timeline";
-      bar.style.cssText = "position:absolute;left:0;right:0;bottom:0;display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(15,15,30,0.92);border-top:1px solid rgba(255,255,255,0.12);z-index:50;font-size:12px;color:#e8e8f0;";
-      document.getElementById("canvas-container").appendChild(bar);
+      const bar = document.getElementById("shot-timeline");
+      if (!bar) return;
+      bar.style.display = "none";
+      const playBtn = document.getElementById("timeline-play");
+      const pauseBtn = document.getElementById("timeline-pause");
+      const scrub = document.getElementById("shot-scrub");
+      const label = document.getElementById("shot-time-label");
+      const addBtn = document.getElementById("timeline-add-shot");
+      const loopBtn = document.getElementById("timeline-loop");
+      const cardsContainer = document.getElementById("shot-cards");
       this.ui = {
         root: bar,
+        playBtn,
+        pauseBtn,
+        scrub,
+        label,
+        addBtn,
+        loopBtn,
+        cardsContainer,
         updateScrubber: () => {
-          const scrub = bar.querySelector("#shot-scrub");
-          const label = bar.querySelector("#shot-label");
           if (scrub) scrub.value = this.duration ? this.currentTime / this.duration * 1e3 : 0;
           if (label) {
             const a = this.getActiveShot();
             label.textContent = a ? `${a.shot.name} \u2014 ${a.shot.duration.toFixed(1)}s \u2014 ${a.shot.cutType}   ${this.currentTime.toFixed(1)}/${this.duration.toFixed(1)}s` : `No shots \u2014 add camera shots   ${this.duration.toFixed(1)}s`;
           }
+          if (playBtn) playBtn.style.display = this.playing ? "none" : "inline-block";
+          if (pauseBtn) pauseBtn.style.display = this.playing ? "inline-block" : "none";
         },
         rebuild: () => this.refreshUI()
       };
+      if (playBtn) playBtn.onclick = () => this.toggle();
+      if (pauseBtn) pauseBtn.onclick = () => this.toggle();
+      if (loopBtn) loopBtn.onclick = () => {
+        this.loop = !this.loop;
+        this.refreshUI();
+      };
+      if (scrub) {
+        scrub.oninput = (e) => this.seek(e.target.value / 1e3 * this.duration);
+      }
+      if (addBtn) {
+        addBtn.onclick = () => {
+          const cams = this.app.staging.cameras;
+          if (cams.rigs.length === 0) {
+            this.app.notifications.show("Add a virtual camera first", "error");
+            return;
+          }
+          const rig = cams.rigs[this.shots.length % cams.rigs.length];
+          this.addShot(rig.id);
+          this.refreshUI();
+        };
+      }
       this.refreshUI();
     }
     toggleUI() {
       this.buildUI();
+      if (!this.ui) return;
       const bar = this.ui.root;
       const show = bar.style.display === "none";
       bar.style.display = show ? "flex" : "none";
@@ -43767,57 +44229,32 @@ ${elements.join("\n")}
     }
     refreshUI() {
       if (!this.ui) return;
-      const bar = this.ui.root;
-      bar.innerHTML = "";
-      const mk = (txt, fn, extra = "") => {
-        const b = document.createElement("button");
-        b.textContent = txt;
-        b.style.cssText = "padding:4px 10px;background:#2a2a4e;border:1px solid rgba(255,255,255,0.2);border-radius:4px;color:inherit;cursor:pointer;" + extra;
-        b.onclick = fn;
-        return b;
-      };
-      bar.appendChild(mk(this.playing ? "\u275A\u275A" : "\u25B6", () => this.toggle()));
-      const scrub = document.createElement("input");
-      scrub.id = "shot-scrub";
-      scrub.type = "range";
-      scrub.min = 0;
-      scrub.max = 1e3;
-      scrub.value = this.duration ? this.currentTime / this.duration * 1e3 : 0;
-      scrub.style.cssText = "flex:1;cursor:pointer;";
-      scrub.oninput = (e) => this.seek(e.target.value / 1e3 * this.duration);
-      bar.appendChild(scrub);
-      const label = document.createElement("span");
-      label.id = "shot-label";
-      label.style.cssText = "min-width:220px;text-align:center;";
-      bar.appendChild(label);
-      bar.appendChild(mk("+ Shot", () => {
-        const cams = this.app.staging.cameras;
-        if (cams.rigs.length === 0) {
-          this.app.notifications.show("Add a virtual camera first", "error");
-          return;
-        }
-        const rig = cams.rigs[this.shots.length % cams.rigs.length];
-        this.addShot(rig.id);
-      }));
-      this.shots.forEach((shot) => {
-        const rig = this.app.staging.cameras.get(shot.cameraId);
-        const el = document.createElement("div");
-        el.style.cssText = `padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.25);background:#1a1a34;cursor:pointer;user-select:none;`;
-        el.innerHTML = `<b style="color:#${(rig?.color || 8947848).toString(16).padStart(6, "0")}">CAM ${rig?.name || "?"}</b> ${shot.duration.toFixed(1)}s <small>${shot.cutType}</small>`;
-        el.title = "Click: preview this shot \xB7 \u2190/\u2192 move \xB7 \u2715 remove";
-        el.onclick = () => {
-          this.app.staging.cameras.viewingRigId = shot.cameraId;
-          if (this.app.orbit) this.app.orbit.enabled = false;
-          this.seek(this.shots.slice(0, this.shots.indexOf(shot)).reduce((t, s) => t + s.duration, 0));
-          this.refreshUI();
-        };
-        el.oncontextmenu = (e) => {
-          e.preventDefault();
-          this.removeShot(shot.id);
-        };
-        bar.appendChild(el);
-      });
-      this.ui.updateScrubber();
+      const { cardsContainer, loopBtn } = this.ui;
+      if (cardsContainer) {
+        cardsContainer.innerHTML = "";
+        this.shots.forEach((shot, i) => {
+          const rig = this.app.staging.cameras.get(shot.cameraId);
+          const color = rig ? "#" + rig.color.toString(16).padStart(6, "0") : "#888888";
+          const el = document.createElement("div");
+          el.style.cssText = `padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.25);background:#1a1a34;cursor:pointer;user-select:none;color:${color};`;
+          el.innerHTML = `<b style="color:${color}">CAM ${rig?.name || "?"}</b> ${shot.duration.toFixed(1)}s <small>${shot.cutType}</small>`;
+          el.title = "Click: preview this shot \xB7 right-click remove";
+          el.onclick = () => {
+            this.app.staging.cameras.viewingRigId = shot.cameraId;
+            if (this.app.orbit) this.app.orbit.enabled = false;
+            this.seek(this.shots.slice(0, i).reduce((t, s) => t + s.duration, 0));
+            this.refreshUI();
+          };
+          el.oncontextmenu = (e) => {
+            e.preventDefault();
+            this.removeShot(shot.id);
+            this.refreshUI();
+          };
+          cardsContainer.appendChild(el);
+        });
+      }
+      if (loopBtn) loopBtn.style.background = this.loop ? "#2e7d32" : "transparent";
+      if (this.ui.updateScrubber) this.ui.updateScrubber();
     }
   };
 
@@ -43825,7 +44262,7 @@ ${elements.join("\n")}
   init_three_module();
 
   // js/staging/shots/easing.js
-  var D2R = Math.PI / 180;
+  var D2R2 = Math.PI / 180;
   var clamp2 = (x) => Math.min(1, Math.max(0, x));
   var lerp2 = (a, u) => a[0] + (a[1] - a[0]) * u;
   var EASING = {
@@ -43849,157 +44286,6 @@ ${elements.join("\n")}
     return lerp2(arr, u);
   }
 
-  // js/staging/shots/shotMoves.js
-  var D2R2 = Math.PI / 180;
-  var PL = { r: [24, 44] };
-  var PS = { r: [44, 24] };
-  var HH = { s: 0.25, sf: 6 };
-  var SHOT_CATEGORIES = [
-    ["Cinematic", [
-      ["Dolly Shot", { r: [46, 24] }],
-      ["Reverse Dolly Shot", { r: [24, 46] }],
-      ["Bird's Eye Twist", { h: [8, 60], r: [40, 4], o: [0, 90] }],
-      ["Crane Shot Side", { a: [-35, -35], h: [3, 24] }],
-      ["Crane Shot Sweep", { a: [-50, 30], h: [3, 26] }],
-      ["360 Pan + Tilt", { y: [0, 360], p: [-15, 20], d: 10 }],
-      ["180 Degree Pan", { y: [-90, 90], d: 8 }],
-      ["90 Degree Pan", { y: [-45, 45] }],
-      ["Track Back Pan Down", { r: [24, 48], p: [10, -22] }],
-      ["Track Back Pan Up", { r: [24, 48], p: [-15, 10] }],
-      ["Push Forward Pan Down", { r: [48, 24], p: [5, -22] }],
-      ["Push Forward Pan Up", { r: [48, 24], p: [-12, 10] }],
-      ["Pan Back + Flip", { r: [24, 50], o: [0, 180] }],
-      ["Pan Back + Flip (Handheld)", { r: [24, 50], o: [0, 180], ...HH }],
-      ["J Move Up", { r: [44, 30], h: [4, 28], e: "in" }],
-      ["J Move Down", { r: [30, 44], h: [28, 4], e: "out" }],
-      ["L Move Up", { r: [44, 26], h: [5, 26], ph: 1, d: 8 }],
-      ["L Move Down", { r: [26, 44], h: [26, 5], ph: 2, d: 8 }],
-      ["Spiral Up", { a: [0, 270], h: [4, 28], r: [44, 30], d: 9 }],
-      ["Spiral Down", { a: [0, 270], h: [28, 4], r: [30, 44], d: 9 }],
-      ["360 Track", { a: [0, 360], d: 12, e: "lin" }],
-      ["Slide Right", { x: [-18, 18] }],
-      ["Slide Left", { x: [18, -18] }],
-      ["Slide Up", { v: [-4, 14] }],
-      ["Slide Down", { v: [14, -4] }],
-      ["Under To Above", { h: [0.3, 30], r: [42, 26] }]
-    ]],
-    ["FPV", [
-      ["Automatic Gun Fire", { s: 0.5, sf: 22, r: [36, 34], d: 3 }],
-      ["Base Jump FPV", { h: [45, 3], r: [75, 30], p: [-25, -5], s: 0.4, sf: 14, e: "in", d: 7 }],
-      ["Bleeding Out", { s: 0.12, o: [0, 25], f: [55, 40], p: [0, -25], e: "in", d: 8 }],
-      ["Explosion", { s: 2.4, sf: 18, sd: 4, d: 3 }],
-      ["Fall Backwards", { p: [0, 60], h: [7, 1], o: [0, -10], e: "in", d: 3 }],
-      ["Flinch", { s: 1.6, sf: 14, sd: 8, d: 1.6 }],
-      ["Look Around", { y: [-45, 45], p: [-8, 8], s: 0.05, d: 8 }],
-      ["Static Handheld Subtle", { s: 0.12, sf: 5, d: 6 }],
-      ["Turn, Look Up", { y: [-60, 0], p: [-5, 38], d: 5 }],
-      ["Jet Pass 01", { x: [-140, 140], tr: 1, r: [30, 30], h: [9, 9], o: [-10, 10], s: 0.3, sf: 16, e: "lin", d: 3 }],
-      ["Jet Pass 02", { x: [140, -140], tr: 1, r: [26, 26], h: [14, 10], o: [10, -10], s: 0.3, sf: 16, e: "lin", d: 3 }]
-    ]],
-    ["Pans", [
-      ["Pan Down", { p: [15, -15] }],
-      ["Pan Up", { p: [-15, 15] }],
-      ["Pan Left", { y: [-25, 25] }],
-      ["Pan Left Handheld", { y: [-25, 25], ...HH }],
-      ["Pan Right", { y: [25, -25] }],
-      ["Pan Right Handheld", { y: [25, -25], ...HH }],
-      ["Scenic Pan Left", { y: [-40, 40], f: [45, 45], d: 12 }],
-      ["Scenic Pan Right", { y: [40, -40], f: [45, 45], d: 12 }]
-    ]],
-    ["Speed Ramps", [
-      ["180 Degree Spin (Anti-Clockwise)", { a: [0, -180], e: "ramp", d: 7 }],
-      ["180 Degree Spin (Clockwise)", { a: [0, 180], e: "ramp", d: 7 }],
-      ["Contra-Zoom", { r: [26, 60], f: [80, 40], e: "ramp" }],
-      ["Crane Shot Down", { h: [28, 3], e: "ramp" }],
-      ["Crane Shot Up", { h: [3, 28], e: "ramp" }],
-      ["Move Down", { v: [8, -8], e: "ramp" }],
-      ["Move Up", { v: [-8, 8], e: "ramp" }],
-      ["Move Left", { x: [18, -18], e: "ramp" }],
-      ["Move Right", { x: [-18, 18], e: "ramp" }],
-      ["Pull Back", { r: [24, 50], e: "ramp" }],
-      ["Pull Pan Down", { r: [24, 50], p: [8, -20], e: "ramp" }],
-      ["Pull Pan Up", { r: [24, 50], p: [-10, 14], e: "ramp" }],
-      ["Pull Rise", { r: [26, 50], h: [4, 26], e: "ramp" }],
-      ["Push Down", { r: [50, 26], h: [26, 6], e: "ramp" }],
-      ["Push In", { r: [50, 24], e: "ramp" }],
-      ["Push Pan Down", { r: [50, 24], p: [6, -20], e: "ramp" }],
-      ["Push Pan Up", { r: [50, 24], p: [-10, 12], e: "ramp" }],
-      ["Twist In", { r: [50, 24], o: [0, 45], e: "ramp" }],
-      ["Twist Out", { r: [24, 50], o: [45, 0], e: "ramp" }]
-    ]],
-    ["Pushes + Pulls", [
-      ["Fast Pull", { ...PL, d: 2.5 }],
-      ["Long Pull", { r: [16, 70], d: 9 }],
-      ["Medium Pull", { ...PL, d: 6 }],
-      ["Pull Handheld", { ...PL, ...HH }],
-      ["Slow Pull", { ...PL, d: 12 }],
-      ["Pull Rise", {}],
-      ["Pull to Birds Eye", { r: [36, 4], h: [6, 55], d: 8 }],
-      ["Twist Pull", { ...PL, o: [0, 60] }],
-      ["Fast Push", { ...PS, d: 2.5 }],
-      ["Long Push", { r: [70, 16], d: 9 }],
-      ["Medium Push", { ...PS, d: 6 }],
-      ["Push Handheld", { ...PS, ...HH }],
-      ["Slow Push", { ...PS, d: 12 }],
-      ["Push Sink", { r: [44, 26], h: [14, 2] }],
-      ["Twist Push", { ...PS, o: [0, -60] }],
-      ["Push To Sky", { r: [44, 28], p: [0, 45] }],
-      ["Push To Ground", { r: [44, 28], p: [0, -30], h: [10, 3] }]
-    ]],
-    ["Flyovers", [
-      ["Flyover Zoom", { r: [80, 10], h: [40, 14], f: [45, 70], d: 9 }],
-      ["Helicopter Flyover 001", { a: [-70, 70], r: [50, 36], h: [30, 22], s: 0.15, sf: 7, d: 10 }],
-      ["Helicopter Flyover 002", { a: [60, -120], r: [56, 30], h: [24, 34], s: 0.15, sf: 7, d: 10 }],
-      ["Slow Flyover", { r: [70, 14], h: [26, 16], d: 16 }],
-      ["Mini Spy Drone", { a: [-20, 40], h: [3, 5], r: [22, 12], s: 0.1, sf: 3, dr: 0.3, f: [75, 75], d: 10 }]
-    ]],
-    ["Zooms", [
-      ["Contra-Zoom", {}],
-      ["Contra-Zoom 2", { r: [60, 26], f: [40, 80] }],
-      ["Fast Zoom", { f: [55, 20], d: 2 }],
-      ["Handheld Zoom In", { f: [55, 25], ...HH }],
-      ["Handheld Zoom Out", { f: [25, 55], ...HH }],
-      ["Slow Zoom", { f: [55, 25], d: 12 }],
-      ["Twist Zoom", { f: [55, 22], o: [0, 45] }],
-      ["Zoom In Pan Left", { f: [60, 24], y: [-15, 10] }],
-      ["Zoom In Pan Right", { f: [60, 24], y: [15, -10] }],
-      ["Zoom Out Pan Up", { f: [22, 60], p: [-10, 15] }],
-      ["Zoom In Pan Down", { f: [60, 24], p: [10, -15] }],
-      ["Sinister Twist Zoom In", { f: [70, 20], o: [0, -30], e: "in" }],
-      ["Sinister Twist Zoom Out", { f: [20, 70], o: [-30, 0], e: "out" }]
-    ]],
-    ["Chaotic", [
-      ["Backwards Running", { r: [26, 50], bob: 0.35, bf: 11, s: 0.2, sf: 11 }],
-      ["Drunk Cam", { dr: 1, r: [40, 34], s: 0.05, d: 10 }],
-      ["Static Handheld Subtle", { ...HH }],
-      ["Forwards Running", { r: [50, 24], bob: 0.35, bf: 11, s: 0.2, sf: 11 }],
-      ["Sideways Running", { x: [-25, 25], bob: 0.35, bf: 11, s: 0.2, sf: 11, e: "lin" }],
-      ["Traffic Weaving", { r: [50, 18], wv: 5, s: 0.15, sf: 10, e: "lin", d: 8 }],
-      ["Walking", { r: [46, 32], bob: 0.15, bf: 5.5, s: 0.05, e: "lin", d: 9 }],
-      ["Missile Strike", { r: [90, 4], h: [40, 1], o: [0, 180], s: 0.3, sf: 20, e: "in", d: 4 }],
-      ["Curved Missile Strike", { a: [80, 0], r: [100, 6], h: [40, 1], o: [0, 360], s: 0.3, sf: 20, e: "in", d: 4 }],
-      ["Space Camera Floating", { a: [0, 25], h: [10, 18], r: [60, 55], o: [0, 12], dr: 0.3, d: 14 }],
-      ["Space Camera Floating 2", { a: [0, -30], h: [20, 8], r: [55, 62], o: [0, -15], dr: 0.4, d: 14 }],
-      ["Space Camera Floating 3", { a: [10, 40], h: [6, 30], r: [50, 66], o: [5, 20], dr: 0.5, d: 14 }],
-      ["Spinning In Space", { a: [0, 90], o: [0, 720], h: [30, 40], e: "lin", d: 10 }],
-      ["Fast Car Flyby (left to right)", { x: [-70, 70], tr: 1, r: [22, 22], h: [1.5, 1.5], e: "lin", d: 2.5 }],
-      ["Fast Car Flyby (right to left)", { x: [70, -70], tr: 1, r: [22, 22], h: [1.5, 1.5], e: "lin", d: 2.5 }],
-      ["Handheld Transition Right", { x: [-6, 26], y: [0, -25], o: [0, 8], s: 0.5, sf: 12, e: "ramp", d: 2 }],
-      ["Handheld Transition Left", { x: [6, -26], y: [0, 25], o: [0, -8], s: 0.5, sf: 12, e: "ramp", d: 2 }]
-    ]]
-  ];
-  var ALL_MOVES = SHOT_CATEGORIES.flatMap(([_, moves]) => moves.map(([name, spec]) => ({ name, spec })));
-  var MOVE_NAMES = ALL_MOVES.map((m) => m.name);
-  var DEFAULT_MOVE = { name: "Dolly Shot", spec: { r: [46, 24] } };
-  function getMoveSpec(name) {
-    const found = ALL_MOVES.find((m) => m.name === name);
-    return found ? { ...found.spec } : { ...DEFAULT_MOVE.spec };
-  }
-  function getMoveDefaultDuration(name) {
-    const found = ALL_MOVES.find((m) => m.name === name);
-    return found?.spec?.d || 6;
-  }
-
   // js/staging/shots/shotManager.js
   var V3 = Vector3;
   var Y = new V3(0, 1, 0);
@@ -44018,6 +44304,7 @@ ${elements.join("\n")}
       this.ui = null;
       this.timelineUI = null;
       this.isScrubbing = false;
+      this.framingControls = null;
       this.framingState = {
         position: new V3(),
         quaternion: new Quaternion(),
@@ -44132,6 +44419,9 @@ ${elements.join("\n")}
       this.updatePathPreview();
     }
     update(delta) {
+      if (this.framingControls) {
+        this.framingControls.update(delta);
+      }
       if (!this.playing) return this.getPreviewCamera();
       this.currentTime += delta * this.playbackRate;
       if (this.currentTime >= this.duration) {
@@ -44192,7 +44482,7 @@ ${elements.join("\n")}
       const uu = easingFn(u);
       const basePos = rigGroup.position.clone();
       const baseTarget = basePos.clone();
-      const a = lerpArray(spec.a || [0, 0], ua) * D2R;
+      const a = lerpArray(spec.a || [0, 0], ua) * D2R2;
       const r = lerpArray(spec.r || [40, 40], ua);
       const h = lerpArray(spec.h || [7, 7], ub);
       let x = spec.x ? lerpArray(spec.x, uu) : 0;
@@ -44227,12 +44517,12 @@ ${elements.join("\n")}
       pt += nz(4) * 8;
       rl += nz(5) * 6;
       const d = look.sub(pos);
-      d.applyAxisAngle(Y, yw * D2R);
-      d.applyAxisAngle(new V3().crossVectors(d, Y).normalize(), pt * D2R);
+      d.applyAxisAngle(Y, yw * D2R2);
+      d.applyAxisAngle(new V3().crossVectors(d, Y).normalize(), pt * D2R2);
       camera.position.copy(pos);
       camera.up.set(0, 1, 0);
       camera.lookAt(pos.clone().add(d));
-      camera.rotateZ(rl * D2R);
+      camera.rotateZ(rl * D2R2);
       const f = lerpArray(spec.f || [55, 55], uu);
       if (camera.fov !== f) {
         camera.fov = f;
@@ -44302,72 +44592,81 @@ ${elements.join("\n")}
     }
     buildUI() {
       if (this.ui) return;
-      const bar = document.createElement("div");
-      bar.id = "shot-timeline-bar";
-      bar.style.cssText = `
-            position: absolute;
-            left: 0; right: 0; bottom: 0;
-            display: none;
-            flex-direction: column;
-            background: rgba(15, 15, 30, 0.95);
-            border-top: 1px solid rgba(255, 255, 255, 0.12);
-            z-index: 50;
-            font-size: 11px;
-            color: #e8e8f0;
-            font-family: 'JetBrains Mono', monospace;
-        `;
-      document.getElementById("canvas-container").appendChild(bar);
-      this.ui = { root: bar };
+      const bar = document.getElementById("shot-timeline");
+      if (!bar) return;
+      bar.style.display = "none";
+      const playBtn = document.getElementById("timeline-play");
+      const pauseBtn = document.getElementById("timeline-pause");
+      const scrub = document.getElementById("shot-scrub");
+      const label = document.getElementById("shot-time-label");
+      const addBtn = document.getElementById("timeline-add-shot");
+      const loopBtn = document.getElementById("timeline-loop");
+      const cardsContainer = document.getElementById("shot-cards");
+      this.ui = {
+        root: bar,
+        playBtn,
+        pauseBtn,
+        scrub,
+        label,
+        addBtn,
+        loopBtn,
+        cardsContainer,
+        updateScrubber: () => {
+          if (scrub && !this.isScrubbing) {
+            scrub.value = this.duration ? this.currentTime / this.duration * 1e3 : 0;
+          }
+          if (label) {
+            const active = this.getActiveShot();
+            label.textContent = active ? `${active.shot.name} \u2014 ${active.shot.duration.toFixed(1)}s \u2014 ${active.shot.easing}   ${this.currentTime.toFixed(1)}/${this.duration.toFixed(1)}s` : `No shots   ${this.duration.toFixed(1)}s`;
+          }
+          if (playBtn) playBtn.style.display = this.playing ? "none" : "inline-block";
+          if (pauseBtn) pauseBtn.style.display = this.playing ? "inline-block" : "none";
+          const indicator = document.getElementById("shot-time-indicator");
+          if (indicator) {
+            indicator.style.left = this.duration > 0 ? this.currentTime / this.duration * 100 + "%" : "0%";
+          }
+        }
+      };
       this.buildTimelineUI();
+      if (playBtn) playBtn.onclick = () => this.toggle();
+      if (pauseBtn) pauseBtn.onclick = () => this.toggle();
+      if (loopBtn) loopBtn.onclick = () => {
+        this.loop = !this.loop;
+        this.refreshUI();
+      };
+      if (scrub) {
+        scrub.oninput = (e) => this.seek(e.target.value / 1e3 * this.duration);
+      }
+      if (addBtn) {
+        addBtn.onclick = () => this.addShotForSelectedCamera();
+      }
     }
     buildTimelineUI() {
-      const bar = this.ui.root;
-      bar.innerHTML = "";
       const shot = this.selectedShot;
+      if (this.ui.playBtn) this.ui.playBtn.style.display = this.playing ? "none" : "inline-block";
+      if (this.ui.pauseBtn) this.ui.pauseBtn.style.display = this.playing ? "inline-block" : "none";
+      if (this.ui.loopBtn) this.ui.loopBtn.style.background = this.loop ? "#2e7d32" : "transparent";
       if (!shot) {
-        bar.innerHTML = '<div style="padding: 12px; text-align: center; color: #888;">No shots. Add a virtual camera first, then click + Shot.</div>';
+        if (this.ui.cardsContainer) {
+          this.ui.cardsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #888; font-size: 10px;">No shots. Add a virtual camera first, then click + Shot.</div>';
+        }
+        this.buildTimelineTrack(null);
         return;
       }
       const cameras = this.app.staging?.cameras;
       const rig = cameras?.get(shot.cameraId);
-      const topBar = document.createElement("div");
-      topBar.style.cssText = "display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.08);";
-      const playBtn = this.mkBtn(this.playing ? "\u275A\u275A" : "\u25B6", () => this.toggle(), "width: 36px;");
-      const timeLabel = document.createElement("span");
-      timeLabel.id = "shot-time-label";
-      timeLabel.style.cssText = "flex: 1; text-align: center; font-variant-numeric: tabular-nums;";
-      timeLabel.textContent = `${this.currentTime.toFixed(1)} / ${this.duration.toFixed(1)}s`;
-      const scrub = document.createElement("input");
-      scrub.id = "shot-scrub";
-      scrub.type = "range";
-      scrub.min = 0;
-      scrub.max = 1e3;
-      scrub.value = this.duration ? this.currentTime / this.duration * 1e3 : 0;
-      scrub.style.cssText = "flex: 2; cursor: pointer;";
-      scrub.oninput = (e) => {
-        this.isScrubbing = true;
-        this.seek(e.target.value / 1e3 * this.duration);
-      };
-      scrub.onchange = () => {
-        this.isScrubbing = false;
-      };
-      const addShotBtn = this.mkBtn("+ Shot", () => this.addShotForSelectedCamera());
-      const loopBtn = this.mkBtn(this.loop ? "\u{1F501}" : "\u27A1", () => {
-        this.loop = !this.loop;
-        this.refreshUI();
-      }, `background: ${this.loop ? "#2e7d32" : "transparent"};`);
-      loopBtn.title = "Loop playback";
-      topBar.append(playBtn, timeLabel, scrub, addShotBtn, loopBtn);
-      bar.appendChild(topBar);
-      const cardsContainer = document.createElement("div");
-      cardsContainer.id = "shot-cards";
-      cardsContainer.style.cssText = "display: flex; gap: 8px; padding: 8px 12px; overflow-x: auto; max-height: 280px;";
-      bar.appendChild(cardsContainer);
-      this.shots.forEach((s, i) => {
-        const card = this.createShotCard(s, i, rig);
-        cardsContainer.appendChild(card);
-      });
-      this.buildTimelineTrack(bar);
+      if (this.ui.scrub) {
+        this.ui.scrub.max = 1e3;
+        this.ui.scrub.value = this.duration ? this.currentTime / this.duration * 1e3 : 0;
+      }
+      if (this.ui.cardsContainer) {
+        this.ui.cardsContainer.innerHTML = "";
+        this.shots.forEach((s, i) => {
+          const card = this.createShotCard(s, i, rig);
+          this.ui.cardsContainer.appendChild(card);
+        });
+      }
+      this.buildTimelineTrack(document.querySelector(".shot-timeline-track"));
     }
     createShotCard(shot, index, currentRig) {
       const isSelected = index === this.selectedShotIndex;
@@ -44375,98 +44674,90 @@ ${elements.join("\n")}
       const card = document.createElement("div");
       card.className = `shot-card ${isSelected ? "selected" : ""}`;
       card.dataset.index = index;
-      card.style.cssText = `
-            min-width: 280px;
-            max-width: 320px;
-            flex-shrink: 0;
-            background: ${isSelected ? "rgba(0, 200, 255, 0.15)" : "#1a1a34"};
-            border: 1px solid ${isSelected ? "rgba(0, 200, 255, 0.5)" : "rgba(255,255,255,0.15)"};
-            border-radius: 8px;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        `;
       const color = rig?.color ? "#" + rig.color.toString(16).padStart(6, "0") : "#888";
       card.innerHTML = `
-            <div class="shot-card-header" style="display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="width: 10px; height: 10px; border-radius: 2px; background: ${color};"></span>
+            <div class="shot-card-header">
+                <div class="shot-card-title">
+                    <span class="shot-card-color-dot" style="background: ${color};"></span>
                     <b style="color: ${color};">CAM ${rig?.name || "?"}</b>
-                    <small style="color: #888;">${shot.name}</small>
+                    <small class="shot-card-name">${shot.name}</small>
                 </div>
-                <div style="display: flex; gap: 2px;">
-                    <button class="shot-btn" data-action="move-up" title="Move earlier" style="width: 20px; height: 20px; font-size: 10px;">\u25B2</button>
-                    <button class="shot-btn" data-action="move-down" title="Move later" style="width: 20px; height: 20px; font-size: 10px;">\u25BC</button>
-                    <button class="shot-btn" data-action="duplicate" title="Duplicate" style="width: 20px; height: 20px; font-size: 10px;">\u29C9</button>
-                    <button class="shot-btn" data-action="delete" title="Delete" style="width: 20px; height: 20px; font-size: 10px; color: #f66;">\u2715</button>
+                <div class="shot-card-actions">
+                    <button class="shot-btn shot-btn-sm" data-action="move-up" title="Move earlier">\u25B2</button>
+                    <button class="shot-btn shot-btn-sm" data-action="move-down" title="Move later">\u25BC</button>
+                    <button class="shot-btn shot-btn-sm" data-action="duplicate" title="Duplicate">\u29C9</button>
+                    <button class="shot-btn shot-btn-sm shot-btn-danger" data-action="delete" title="Delete">\u2715</button>
                 </div>
             </div>
             
-            <div class="shot-card-body" style="display: flex; flex-direction: column; gap: 6px;">
+            <div class="shot-card-body">
                 <div class="shot-field">
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #aaa;">
-                        Move:
-                        <select class="shot-select" data-prop="move" style="flex: 1; background: #0d0d1a; border: 1px solid #333; color: inherit; padding: 2px 6px; border-radius: 3px; font-size: 10px;">
-                            ${this.getMoveOptions(shot.move)}
-                        </select>
-                    </label>
+                    <label class="shot-field-label">Move:</label>
+                    <select class="shot-select" data-prop="move">
+                        ${this.getMoveOptions(shot.move)}
+                    </select>
                 </div>
                 
-                <div class="shot-field" style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #aaa;">
-                    <label style="width: 50px;">Length:</label>
-                    <input type="range" class="shot-range" data-prop="duration" min="0.5" max="30" step="0.5" value="${shot.duration}" style="flex: 1;">
-                    <span class="shot-value" style="width: 40px; text-align: right; font-variant-numeric: tabular-nums;">${shot.duration.toFixed(1)}s</span>
+                <div class="shot-field">
+                    <label class="shot-field-label" style="width: 50px;">Length:</label>
+                    <input type="range" class="shot-range" data-prop="duration" min="0.5" max="30" step="0.5" value="${shot.duration}">
+                    <span class="shot-value">${shot.duration.toFixed(1)}s</span>
                 </div>
                 
-                <div class="shot-field" style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #aaa;">
-                    <label style="width: 50px;">Speed:</label>
-                    <input type="range" class="shot-range" data-prop="speed" min="0.05" max="8" step="0.05" value="${shot.speed}" style="flex: 1;">
-                    <span class="shot-value" style="width: 40px; text-align: right; font-variant-numeric: tabular-nums;">\xD7${shot.speed}</span>
+                <div class="shot-field">
+                    <label class="shot-field-label" style="width: 50px;">Speed:</label>
+                    <input type="range" class="shot-range" data-prop="speed" min="0.05" max="8" step="0.05" value="${shot.speed}">
+                    <span class="shot-value">\xD7${shot.speed}</span>
                 </div>
                 
-                <div class="shot-field" style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #aaa;">
-                    <label style="width: 50px;">Easing:</label>
-                    <select class="shot-select" data-prop="easing" style="flex: 1; background: #0d0d1a; border: 1px solid #333; color: inherit; padding: 2px 6px; border-radius: 3px; font-size: 10px;">
+                <div class="shot-field">
+                    <label class="shot-field-label" style="width: 50px;">Easing:</label>
+                    <select class="shot-select" data-prop="easing">
                         ${["io", "in", "out", "lin", "ramp"].map((e) => `<option value="${e}"${e === shot.easing ? " selected" : ""}>${e}</option>`).join("")}
                     </select>
                 </div>
                 
-                <div class="shot-field" style="display: flex; align-items: center; gap: 8px; font-size: 10px; color: #aaa;">
-                    <label style="width: 50px;">FOV:</label>
-                    <input type="range" class="shot-range" data-prop="fov" min="15" max="120" step="1" value="${shot.spec.f || 55}" style="flex: 1;">
-                    <span class="shot-value" style="width: 40px; text-align: right; font-variant-numeric: tabular-nums;">${Math.round(shot.spec.f || 55)}\xB0</span>
+                <div class="shot-field">
+                    <label class="shot-field-label" style="width: 50px;">FOV:</label>
+                    <input type="range" class="shot-range" data-prop="fov" min="15" max="120" step="1" value="${shot.spec.f || 55}">
+                    <span class="shot-value">${Math.round(shot.spec.f || 55)}\xB0</span>
                 </div>
                 
-                <fieldset style="border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px; font-size: 10px;">
-                    <legend style="color: #aaa; padding: 0 4px;">Framing</legend>
-                    <div style="display: flex; gap: 4px; margin-bottom: 6px;">
-                        <button class="shot-btn framing-btn" data-action="edit-start" style="flex: 1; padding: 4px; background: ${shot.startFrame ? "rgba(76, 175, 80, 0.3)" : "transparent"};">${this.editingFrame === "start" && this.viewMode === "frame" ? "\u2B24" : "\u25CB"} Start Frame</button>
-                        <button class="shot-btn framing-btn" data-action="edit-end" style="flex: 1; padding: 4px; background: ${shot.endFrame ? "rgba(76, 175, 80, 0.3)" : "transparent"};">${this.editingFrame === "end" && this.viewMode === "frame" ? "\u2B24" : "\u25CB"} End Frame</button>
+                <fieldset class="shot-fieldset">
+                    <legend>Framing</legend>
+                    <div class="framing-btn-group">
+                        <button class="shot-btn framing-btn" data-action="edit-start"${shot.startFrame ? "" : ""}>${this.editingFrame === "start" && this.viewMode === "frame" ? "\u2B24" : "\u25CB"} Start</button>
+                        <button class="shot-btn framing-btn" data-action="edit-end">${this.editingFrame === "end" && this.viewMode === "frame" ? "\u2B24" : "\u25CB"} End</button>
                     </div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="shot-btn framing-btn" data-action="view-frame" style="flex: 1; padding: 4px; background: ${this.viewMode === "frame" ? "rgba(0, 200, 255, 0.3)" : "transparent"};">Frame View</button>
-                        <button class="shot-btn framing-btn" data-action="view-explore" style="flex: 1; padding: 4px; background: ${this.viewMode === "explore" ? "rgba(0, 200, 255, 0.3)" : "transparent"};">Explore</button>
+                    <div class="framing-btn-group">
+                        <button class="shot-btn framing-btn" data-action="view-frame">${this.viewMode === "frame" ? "Frame View" : "Frame"}</button>
+                        <button class="shot-btn framing-btn" data-action="view-explore">${this.viewMode === "explore" ? "Explore" : "Explore"}</button>
                     </div>
-                    <div style="display: flex; gap: 4px; margin-top: 4px;">
-                        <button class="shot-btn framing-btn" data-action="drag-translate" style="flex: 1; padding: 2px; font-size: 9px; background: ${this.dragMode === "translate" ? "rgba(0, 200, 255, 0.3)" : "transparent"};">Drag: Move</button>
-                        <button class="shot-btn framing-btn" data-action="drag-rotate" style="flex: 1; padding: 2px; font-size: 9px; background: ${this.dragMode === "rotate" ? "rgba(0, 200, 255, 0.3)" : "transparent"};">Drag: Rotate</button>
+                    <div class="framing-btn-group">
+                        <button class="shot-btn framing-btn" data-action="drag-translate">${this.dragMode === "translate" ? "Drag: Move" : "Move"}</button>
+                        <button class="shot-btn framing-btn" data-action="drag-rotate">${this.dragMode === "rotate" ? "Drag: Rotate" : "Rotate"}</button>
                     </div>
-                    <div style="display: flex; gap: 4px; margin-top: 4px;">
-                        <button class="shot-btn framing-btn" data-action="reset-start" style="flex: 1; padding: 2px; font-size: 9px;"${!shot.startFrame ? " disabled" : ""}>Reset Start</button>
-                        <button class="shot-btn framing-btn" data-action="reset-end" style="flex: 1; padding: 2px; font-size: 9px;"${!shot.endFrame ? " disabled" : ""}>Reset End</button>
+                    <div class="framing-btn-group">
+                        <button class="shot-btn framing-btn" data-action="reset-start"${!shot.startFrame ? " disabled" : ""}>Reset Start</button>
+                        <button class="shot-btn framing-btn" data-action="reset-end"${!shot.endFrame ? " disabled" : ""}>Reset End</button>
                     </div>
+                    ${this.viewMode === "frame" ? `
+                    <div class="framing-btn-group">
+                        <button class="shot-btn framing-btn" data-action="commit-frame">Confirm Frame</button>
+                        <button class="shot-btn framing-btn shot-btn-danger" data-action="cancel-frame">Cancel</button>
+                    </div>
+                    ` : ""}
                 </fieldset>
                 
-                <fieldset style="border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px; font-size: 10px;">
-                    <legend style="color: #aaa; padding: 0 4px;">Blur</legend>
-                    <div style="display: flex; gap: 8px; font-size: 10px; color: #aaa;">
-                        <label style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
-                            Start <input type="range" class="shot-range" data-prop="blurStart" min="0" max="20" step="0.5" value="${shot.blurStart}" style="width: 100%;">
-                        </label>
-                        <label style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
-                            End <input type="range" class="shot-range" data-prop="blurEnd" min="0" max="20" step="0.5" value="${shot.blurEnd}" style="width: 100%;">
-                        </label>
+                <fieldset class="shot-fieldset">
+                    <legend>Blur</legend>
+                    <div class="shot-field">
+                        <label class="shot-field-label">Start</label>
+                        <input type="range" class="shot-range" data-prop="blurStart" min="0" max="20" step="0.5" value="${shot.blurStart}">
+                    </div>
+                    <div class="shot-field">
+                        <label class="shot-field-label">End</label>
+                        <input type="range" class="shot-range" data-prop="blurEnd" min="0" max="20" step="0.5" value="${shot.blurEnd}">
                     </div>
                 </fieldset>
             </div>
@@ -44564,6 +44855,12 @@ ${elements.join("\n")}
           shot.endFrame = null;
           this.refreshUI();
           break;
+        case "commit-frame":
+          this.commitFraming(this.editingFrame);
+          break;
+        case "cancel-frame":
+          this.cancelFraming();
+          break;
       }
     }
     enterFramingMode(shot, frameType) {
@@ -44574,7 +44871,18 @@ ${elements.join("\n")}
       this.framingState.quaternion.copy(rig.group.quaternion);
       this.framingState.fov = rig.camera.fov;
       if (this.app.orbit) this.app.orbit.enabled = false;
-      this.app.ui?.showNotification(`Adjust view for ${frameType} frame. Click again to confirm.`, "info");
+      if (this.framingControls) this.framingControls.dispose();
+      this.framingControls = new OrbitControls(rig.camera, this.app.renderer.domElement);
+      this.framingControls.target.copy(rig.group.position);
+      this.framingControls.enableDamping = true;
+      this.framingControls.dampingFactor = 0.05;
+      this.framingControls.enablePan = true;
+      this.framingControls.enableZoom = true;
+      this.framingControls.enableRotate = true;
+      this.framingControls.minDistance = 0.1;
+      this.framingControls.maxDistance = 100;
+      this.framingControls.update();
+      this.app.ui?.showNotification(`Framing ${frameType} frame. Move camera, then click Confirm or Cancel.`, "info");
     }
     commitFraming(frameType) {
       const shot = this.selectedShot;
@@ -44588,26 +44896,39 @@ ${elements.join("\n")}
         fov: rig.camera.fov
       };
       shot[frameType === "start" ? "startFrame" : "endFrame"] = frame;
+      this.exitFramingMode();
       this.refreshUI();
       this.app.ui?.showNotification(`${frameType} frame saved`, "success");
     }
-    buildTimelineTrack(container) {
-      const track = document.createElement("div");
-      track.id = "shot-timeline-track";
-      track.style.cssText = `
-            height: 60px;
-            background: rgba(0, 0, 0, 0.3);
-            border-top: 1px solid rgba(255,255,255,0.05);
-            position: relative;
-            padding: 4px 12px;
-        `;
-      const total = this.duration;
-      if (total === 0) {
-        container.appendChild(track);
-        return;
+    cancelFraming() {
+      const shot = this.selectedShot;
+      if (!shot) return;
+      const cameras = this.app.staging?.cameras;
+      const rig = cameras?.get(shot.cameraId);
+      if (!rig) return;
+      rig.group.position.copy(this.framingState.position);
+      rig.group.quaternion.copy(this.framingState.quaternion);
+      rig.camera.fov = this.framingState.fov;
+      rig.camera.updateProjectionMatrix();
+      this.exitFramingMode();
+      this.refreshUI();
+      this.app.ui?.showNotification("Framing cancelled", "info");
+    }
+    exitFramingMode() {
+      if (this.framingControls) {
+        this.framingControls.dispose();
+        this.framingControls = null;
       }
+      if (this.app.orbit) this.app.orbit.enabled = true;
+    }
+    buildTimelineTrack(container) {
+      if (!container) return;
+      container.innerHTML = "";
+      const total = this.duration;
+      if (total === 0) return;
       const ruler = document.createElement("div");
-      ruler.style.cssText = "position: absolute; top: 0; left: 0; right: 0; height: 18px; font-size: 9px; color: #666;";
+      ruler.className = "shot-timeline-ruler";
+      ruler.style.cssText = "position: absolute; top: 0; left: 0; right: 0; height: 16px; font-size: 8px; color: var(--text-secondary);";
       const step = total > 60 ? 10 : total > 24 ? 5 : total > 10 ? 2 : 1;
       for (let t = 0; t <= total; t += step) {
         const mark = document.createElement("i");
@@ -44618,41 +44939,181 @@ ${elements.join("\n")}
         label.textContent = `${t}s`;
         ruler.appendChild(label);
       }
-      track.appendChild(ruler);
+      container.appendChild(ruler);
+      let dragShotIdx = null;
+      let dragStartX = 0;
+      let dragStartLeft = 0;
+      let dragStartDuration = 0;
+      let resizeEdge = null;
+      let resizeStartX = 0;
+      let resizeStartLeft = 0;
+      let resizeStartDuration = 0;
+      const containerRect = container.getBoundingClientRect();
+      const getShotIndexAtTime = (t) => {
+        let elapsed2 = 0;
+        for (let i = 0; i < this.shots.length; i++) {
+          if (t < elapsed2 + this.shots[i].duration) return i;
+          elapsed2 += this.shots[i].duration;
+        }
+        return null;
+      };
+      const reorderShots = (fromIdx, toIdx) => {
+        if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0 || fromIdx >= this.shots.length || toIdx >= this.shots.length) return;
+        const shot = this.shots.splice(fromIdx, 1)[0];
+        this.shots.splice(toIdx, 0, shot);
+        this.selectedShotIndex = toIdx;
+        this.refreshUI();
+      };
+      const adjustDuration = (shotIdx, newDuration) => {
+        if (shotIdx < 0 || shotIdx >= this.shots.length) return;
+        newDuration = Math.max(0.5, Math.min(30, newDuration));
+        const oldDuration = this.shots[shotIdx].duration;
+        this.shots[shotIdx].duration = newDuration;
+        this.refreshUI();
+      };
+      const onMouseMove = (e) => {
+        const x = e.clientX;
+        if (resizeEdge !== null && dragShotIdx !== null) {
+          const dx = x - resizeStartX;
+          const dxPct = dx / containerRect.width * 100;
+          const totalPct = total * (dxPct / 100);
+          if (resizeEdge === "left") {
+            const newLeft = Math.max(0, dragStartLeft + totalPct);
+            const newDuration = Math.max(0.5, dragStartDuration - totalPct);
+            const newStartTime = newLeft / 100 * total;
+            let shift = newStartTime - dragStartLeft / 100 * total;
+            for (let j = dragShotIdx + 1; j < this.shots.length; j++) {
+              this.shots[j].startTime = (this.shots[j].startTime || 0) + shift;
+            }
+            this.shots[dragShotIdx].duration = newDuration;
+            let elapsed2 = 0;
+            for (let j = 0; j < this.shots.length; j++) {
+              this.shots[j]._startTime = elapsed2;
+              elapsed2 += this.shots[j].duration;
+            }
+          } else if (resizeEdge === "right") {
+            const newDuration = Math.max(0.5, dragStartDuration + totalPct);
+            this.shots[dragShotIdx].duration = newDuration;
+            let shift = newDuration - dragStartDuration;
+            let elapsed2 = 0;
+            for (let j = 0; j < this.shots.length; j++) {
+              this.shots[j]._startTime = elapsed2;
+              elapsed2 += this.shots[j].duration;
+            }
+          }
+          this.refreshUI();
+          return;
+        }
+        if (dragShotIdx !== null) {
+          const dx = x - dragStartX;
+          const dxSeconds = dx / containerRect.width * total;
+          const currentStart = this.shots[dragShotIdx]._startTime || 0;
+          const newStart = Math.max(0, currentStart + dxSeconds);
+          let targetIdx = dragShotIdx;
+          let elapsed2 = 0;
+          for (let j = 0; j < this.shots.length; j++) {
+            if (j === dragShotIdx) continue;
+            const shotStart = this.shots[j]._startTime || 0;
+            const shotDur = this.shots[j].duration;
+            if (newStart >= shotStart && newStart < shotStart + shotDur) {
+              targetIdx = j;
+              break;
+            }
+          }
+          if (targetIdx !== dragShotIdx) {
+            reorderShots(dragShotIdx, targetIdx);
+            dragShotIdx = targetIdx;
+            dragStartX = x;
+            dragStartLeft = (this.shots[targetIdx]._startTime || 0) / total * 100;
+          }
+        }
+      };
+      const onMouseUp = () => {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        dragShotIdx = null;
+        resizeEdge = null;
+        container.classList.remove("drag-over");
+        document.querySelectorAll(".shot-timeline-block").forEach((b) => b.classList.remove("dragging"));
+        this.refreshUI();
+      };
+      container.addEventListener("mousedown", (e) => {
+        if (e.target.classList.contains("shot-timeline-ruler") || e.target.parentElement?.classList.contains("shot-timeline-ruler")) return;
+        if (e.target.classList.contains("shot-time-indicator")) return;
+      });
       let elapsed = 0;
       this.shots.forEach((shot, i) => {
         const rig = this.app.staging?.cameras?.get(shot.cameraId);
         const color = rig?.color ? "#" + rig.color.toString(16).padStart(6, "0") : "#888";
         const left = elapsed / total * 100;
         const width = shot.duration / total * 100;
+        shot._startTime = elapsed;
         const block = document.createElement("div");
+        block.className = "shot-timeline-block";
         block.style.cssText = `
                 position: absolute;
                 left: ${left}%;
                 width: ${width}%;
                 top: ${i % 2 === 0 ? "20px" : "38px"};
-                height: 16px;
                 background: ${color}40;
                 border: 1px solid ${color}80;
                 border-radius: 3px;
-                cursor: pointer;
+                color: ${color};
+                font-size: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 8px;
-                color: ${color};
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 padding: 0 4px;
+                z-index: 2;
             `;
         block.textContent = `${i + 1}: ${shot.move} (${shot.duration.toFixed(1)}s)`;
-        block.title = `Shot ${i + 1} - Click to preview`;
-        block.onclick = () => {
+        block.title = `Shot ${i + 1}: ${shot.move} \u2014 ${shot.duration.toFixed(1)}s`;
+        block.dataset.shotIndex = i;
+        const resizeLeft = document.createElement("div");
+        resizeLeft.className = "shot-timeline-resize shot-timeline-resize-left";
+        resizeLeft.dataset.shotIndex = i;
+        resizeLeft.dataset.edge = "left";
+        block.appendChild(resizeLeft);
+        const resizeRight = document.createElement("div");
+        resizeRight.className = "shot-timeline-resize shot-timeline-resize-right";
+        resizeRight.dataset.shotIndex = i;
+        resizeRight.dataset.edge = "right";
+        block.appendChild(resizeRight);
+        block.onclick = (e) => {
+          e.stopPropagation();
           this.selectedShotIndex = i;
           this.seek(elapsed);
           this.refreshUI();
         };
+        block.onmousedown = (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          dragShotIdx = i;
+          dragStartX = e.clientX;
+          dragStartLeft = left;
+          dragStartDuration = shot.duration;
+          block.classList.add("dragging");
+          container.classList.add("drag-over");
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
+        };
+        const onResizeStart = (e, edge) => {
+          e.stopPropagation();
+          e.preventDefault();
+          dragShotIdx = i;
+          resizeEdge = edge;
+          resizeStartX = e.clientX;
+          resizeStartLeft = left;
+          resizeStartDuration = shot.duration;
+          block.classList.add("dragging");
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
+        };
+        resizeLeft.onmousedown = (e) => onResizeStart(e, "left");
+        resizeRight.onmousedown = (e) => onResizeStart(e, "right");
         ["start", "end"].forEach((frameType) => {
           const frame = shot[frameType === "start" ? "startFrame" : "endFrame"];
           if (frame) {
@@ -44673,31 +45134,19 @@ ${elements.join("\n")}
             block.appendChild(kf);
           }
         });
-        track.appendChild(block);
+        container.appendChild(block);
         elapsed += shot.duration;
       });
-      const indicator = document.createElement("div");
-      indicator.id = "shot-time-indicator";
-      indicator.style.cssText = `
-            position: absolute;
-            left: ${total > 0 ? this.currentTime / total * 100 : 0}%;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #00e5ff;
-            box-shadow: 0 0 8px #00e5ff;
-            pointer-events: none;
-            z-index: 10;
-        `;
-      track.appendChild(indicator);
-      track.onclick = (e) => {
-        if (e.target === track || e.target === ruler) {
-          const rect = track.getBoundingClientRect();
-          const pct = (e.clientX - rect.left) / rect.width;
-          this.seek(pct * total);
+      const indicator = document.getElementById("shot-time-indicator");
+      if (indicator) {
+        indicator.style.left = total > 0 ? this.currentTime / total * 100 + "%" : "0%";
+      }
+      container.onmousedown = (e) => {
+        if (e.target === container || e.target.classList.contains("shot-timeline-ruler")) {
+          this.selectedShotIndex = null;
+          this.refreshUI();
         }
       };
-      container.appendChild(track);
     }
     addShotForSelectedCamera() {
       const cameras = this.app.staging?.cameras;
@@ -44728,19 +45177,7 @@ ${elements.join("\n")}
     refreshUI() {
       if (!this.ui) return;
       this.buildTimelineUI();
-      const timeLabel = document.getElementById("shot-time-label");
-      if (timeLabel) {
-        const active = this.getActiveShot();
-        timeLabel.textContent = active ? `${active.shot.name} \u2014 ${active.shot.duration.toFixed(1)}s \u2014 ${active.shot.easing}   ${this.currentTime.toFixed(1)}/${this.duration.toFixed(1)}s` : `No shots   ${this.duration.toFixed(1)}s`;
-      }
-      const scrub = document.getElementById("shot-scrub");
-      if (scrub && !this.isScrubbing) {
-        scrub.value = this.duration ? this.currentTime / this.duration * 1e3 : 0;
-      }
-      const indicator = document.getElementById("shot-time-indicator");
-      if (indicator) {
-        indicator.style.left = this.duration > 0 ? this.currentTime / this.duration * 100 + "%" : "0%";
-      }
+      this.ui.updateScrubber();
     }
     toggleUI() {
       this.buildUI();
@@ -46020,12 +46457,16 @@ ${elements.join("\n")}
       const rigCam = shotCam || this.staging.cameras.getRenderCamera();
       if (rigCam) {
         const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);
-        const dpr = this.renderer.getPixelRatio();
-        this.renderer.setScissorTest(true);
-        this.renderer.setScissor(vp.x * dpr, vp.y * dpr, vp.width * dpr, vp.height * dpr);
-        this.renderer.setViewport(vp.x * dpr, vp.y * dpr, vp.width * dpr, vp.height * dpr);
-        this.renderer.setScissorTest(false);
-        this.renderer.setViewport(0, 0, this.renderer.domElement.width, this.renderer.domElement.height);
+        if (vp) {
+          const dpr = this.renderer.getPixelRatio();
+          this.renderer.setScissorTest(true);
+          this.renderer.setScissor(vp.x * dpr, vp.y * dpr, vp.width * dpr, vp.height * dpr);
+          this.renderer.setViewport(vp.x * dpr, vp.y * dpr, vp.width * dpr, vp.height * dpr);
+          this.renderer.setScissorTest(false);
+          this.renderer.setViewport(0, 0, this.renderer.domElement.width, this.renderer.domElement.height);
+        } else {
+          this.renderer.render(this.scene, rigCam);
+        }
       } else {
         this.renderer.render(this.scene, this.camera);
       }
