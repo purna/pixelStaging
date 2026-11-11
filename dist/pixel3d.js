@@ -34375,9 +34375,7 @@
       if (tab === "colors") {
         this.renderPalette();
       } else if (tab === "models") {
-        if (this.app.polyforkImporter && this.app.polyforkImporter.models.length === 0) {
-          this.searchPolyforkModels("");
-        }
+        this.renderSceneModelAssets();
       }
     }
     setupCameraNudge() {
@@ -34558,6 +34556,108 @@
       if (this.app.orbit) {
         this.app.orbit.target.copy(target);
         this.app.orbit.update();
+      }
+    }
+    renderSceneModelAssets() {
+      const container = document.getElementById("scene-model-assets");
+      if (!container) return;
+      const objects = this.app.getAllObjects ? this.app.getAllObjects() : this.app.objects;
+      const seenObjects = /* @__PURE__ */ new Set();
+      const groups = /* @__PURE__ */ new Map();
+      const labelFor = (obj) => {
+        const staging = obj.userData?.staging;
+        if (staging) return obj.userData?.name || `${staging.kind}: ${staging.presetId}`;
+        const type = obj.userData?.type;
+        if (type === "character") {
+          const labels = {
+            xbot: "Female Character",
+            ybot: "Male Character",
+            xbot_child: "Child Female Character",
+            ybot_child: "Child Male Character"
+          };
+          return labels[obj.userData.characterType] || "3D Character";
+        }
+        if (type === "figure") return `${obj.userData.gender || "Actor"} Figure`;
+        if (type === "shape" || type === "shape2d") return obj.userData.shapeType || type;
+        if (type === "light") return `${obj.userData.lightType || "Light"} Light`;
+        return obj.userData?.name || obj.name || "Object";
+      };
+      const keyFor = (obj) => {
+        const staging = obj.userData?.staging;
+        if (staging) return `staging:${staging.kind}:${staging.presetId}`;
+        const type = obj.userData?.type;
+        if (type === "character") return `character:${obj.userData.characterType || "character"}`;
+        if (type === "figure") return `figure:${obj.userData.gender || "figure"}`;
+        if (type === "shape" || type === "shape2d") return `${type}:${obj.userData.shapeType}`;
+        if (type === "light") return `light:${obj.userData.lightType}`;
+        return `${type}:${obj.name}`;
+      };
+      const iconFor = (obj) => {
+        const type = obj.userData?.type;
+        if (type === "character" || type === "figure" || obj.userData?.staging?.kind === "figure") return "fa-user";
+        if (type === "light") return "fa-lightbulb";
+        if (type === "shape2d") return "fa-square";
+        return "fa-cube";
+      };
+      for (const obj of objects) {
+        if (!obj || seenObjects.has(obj.uuid) || obj.userData?.rigRef) continue;
+        seenObjects.add(obj.uuid);
+        const type = obj.userData?.type;
+        if (!["staging", "character", "figure", "shape", "shape2d", "light"].includes(type)) continue;
+        const key = keyFor(obj);
+        if (!groups.has(key)) groups.set(key, { label: labelFor(obj), icon: iconFor(obj), objects: [] });
+        groups.get(key).objects.push(obj);
+      }
+      if (!groups.size) {
+        container.innerHTML = '<div class="scene-model-empty">No 3D models in the scene yet.</div>';
+        return;
+      }
+      container.innerHTML = "";
+      for (const [key, group] of groups) {
+        const first = group.objects[0];
+        let color = "#888888";
+        first.traverse((child) => {
+          if (color !== "#888888" || !child.isMesh || !child.material) return;
+          const material = Array.isArray(child.material) ? child.material[0] : child.material;
+          if (material?.color) color = "#" + material.color.getHexString();
+        });
+        const card = document.createElement("div");
+        card.className = "scene-model-card";
+        card.dataset.modelKey = key;
+        card.innerHTML = `
+                <div class="scene-model-card-head">
+                    <i class="fas ${group.icon}"></i>
+                    <span><b>${group.label}</b><small>${group.objects.length} in scene</small></span>
+                </div>
+                <div class="scene-model-card-colour">
+                    <input type="color" value="${color}" aria-label="Colour for ${group.label}">
+                    <code>${color}</code>
+                    <button type="button">Select</button>
+                </div>
+            `;
+        const colourInput = card.querySelector('input[type="color"]');
+        const colourCode = card.querySelector("code");
+        colourInput.addEventListener("input", () => {
+          const next = colourInput.value;
+          colourCode.textContent = next;
+          for (const obj of group.objects) {
+            obj.traverse((child) => {
+              if (!child.isMesh || !child.material) return;
+              const materials = Array.isArray(child.material) ? child.material : [child.material];
+              materials.forEach((material) => material?.color?.set(next));
+            });
+          }
+        });
+        card.querySelector("button").addEventListener("click", () => {
+          this.app.selectObject?.(first);
+          this.app.focusObject?.(first);
+        });
+        card.addEventListener("click", (event) => {
+          if (event.target.closest("input, button")) return;
+          this.app.selectObject?.(first);
+          this.app.focusObject?.(first);
+        });
+        container.appendChild(card);
       }
     }
     setupPaletteColorRestriction() {

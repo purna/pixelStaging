@@ -724,3 +724,194 @@
     min-width: min(500px, calc(100vw - 48px));
     max-width: calc(100vw - 48px);
 }
+
+/* AI settings panel */
+.settings-tab-content[data-tab-content="ai"] {
+    padding: 12px 0;
+}
+
+.settings-tab-content[data-tab-content="ai"] .settings-content {
+    background: var(--bg-medium);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.settings-tab-content[data-tab-content="ai"] .settings-section {
+    border: 0;
+    padding: 0;
+}
+
+.settings-tab-content[data-tab-content="ai"] .section-heading {
+    margin-bottom: 12px;
+}
+
+.settings-tab-content[data-tab-content="ai"] .property-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.ai-settings-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0;
+    padding: 9px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    background: var(--bg-dark);
+    font: inherit;
+    font-size: 0.78rem;
+}
+
+.ai-settings-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(0, 255, 65, 0.1);
+}
+
+.ai-provider-fields {
+    display: flex !important;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-dark);
+}
+
+.ai-provider-fields .property-label {
+    display: block;
+    margin: 5px 0 0;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.ai-provider-fields .property-label:first-child {
+    margin-top: 0;
+}
+
+.ai-provider-fields .ai-settings-input {
+    margin-top: 0;
+}
+
+#ai-openrouter-load-free-models {
+    width: 100%;
+    margin-top: 4px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.72rem;
+}
+
+#ai-openrouter-load-free-models:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.ai-settings-note {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.ai-openrouter-fallback-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+/* AI Create modal */
+#ai-modal .modal {
+    width: min(620px, calc(100vw - 40px));
+}
+
+#ai-modal .modal-title {
+    padding: 20px 24px 8px;
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+#ai-modal #modal-desc {
+    padding: 0 24px;
+    margin-bottom: 12px;
+    font-size: 0.82rem;
+}
+
+#ai-modal #ai-prompt-input {
+    width: calc(100% - 48px);
+    margin: 0 24px;
+    min-height: 140px;
+    box-sizing: border-box;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 12px;
+    font: inherit;
+    font-size: 0.82rem;
+    resize: vertical;
+}
+
+#ai-modal #ai-prompt-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(0, 255, 65, 0.1);
+}
+
+#ai-modal .modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px 20px;
+    margin-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+#ai-modal .modal-actions .btn {
+    min-width: 108px;
+    padding: 10px 16px;
+    border-radius: 7px;
+    font-weight: 600;
+}
+
+#ai-modal #btn-ai-cancel {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+#ai-modal #btn-ai-cancel:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+#ai-modal .btn.ai-magic {
+    background: linear-gradient(135deg, #6d5dfc, #a855f7);
+    color: #fff;
+    border: 0;
+    box-shadow: 0 4px 14px rgba(124, 92, 255, 0.28);
+}
+
+#ai-modal .btn.ai-magic:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 6px 18px rgba(124, 92, 255, 0.4);
+}
+
+#ai-modal .loading-spinner {
+    margin-right: auto;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}

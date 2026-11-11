@@ -7932,3 +7932,103 @@ body.overlays-hidden #floating-camera-controls {
     min-width: 0;
     height: 48px;
 }
+
+/* Scene model asset list */
+.scene-model-assets {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.scene-model-card {
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    background: var(--bg-dark);
+    padding: 9px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.scene-model-card:hover {
+    border-color: var(--accent-primary);
+}
+
+.scene-model-card-head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+}
+
+.scene-model-card-head > i {
+    width: 24px;
+    text-align: center;
+    color: var(--accent-primary);
+    font-size: 15px;
+}
+
+.scene-model-card-head span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.scene-model-card-head b {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.scene-model-card-head small {
+    color: var(--text-secondary);
+    font-size: 9px;
+}
+
+.scene-model-card-colour {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.scene-model-card-colour input[type="color"] {
+    width: 34px;
+    height: 28px;
+    padding: 2px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-light);
+}
+
+.scene-model-card-colour code {
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 9px;
+}
+
+.scene-model-card-colour button {
+    border: 1px solid var(--border-color);
+    background: var(--bg-light);
+    color: var(--text-primary);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 9px;
+    cursor: pointer;
+}
+
+.scene-model-card-colour button:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.scene-model-empty {
+    padding: 18px 10px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
