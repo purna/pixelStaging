@@ -5529,3 +5529,62 @@ input[type="number"].color-slider-value-compact {
     font-variant-numeric: tabular-nums;
     font-family: inherit;
 }
+
+/* Scene list (save / switch multiple scenes) */
+.scene-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.scene-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color, rgba(255,255,255,0.12));
+    border-radius: 4px;
+    background: var(--bg-light, rgba(255,255,255,0.04));
+    color: var(--text-primary, #e8e8f0);
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.scene-list-item:hover {
+    border-color: rgba(0, 200, 255, 0.45);
+}
+
+.scene-list-item.active {
+    border-color: rgba(0, 200, 255, 0.8);
+    background: rgba(0, 200, 255, 0.12);
+}
+
+.scene-list-item small {
+    opacity: 0.6;
+    font-size: 0.65rem;
+}
+
+.scene-list-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.scene-list-actions input {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg-light, rgba(255,255,255,0.04));
+    border: 1px solid var(--border-color, rgba(255,255,255,0.12));
+    border-radius: 4px;
+    color: var(--text-primary, #e8e8f0);
+    padding: 5px 7px;
+    font-size: 0.72rem;
+}
+
+.scene-list-actions .btn {
+    white-space: nowrap;
+    font-size: 0.7rem;
+    padding: 5px 8px;
+}

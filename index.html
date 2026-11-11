@@ -291,10 +291,10 @@ Block actors, props and architecture">
                 --Keyboard: S--"><i class="fas fa-expand-arrows-alt"></i></button>
 
 
-                <!-- Transform Space Toggle -->
-                <label class="transform-space-toggle" title="Toggle Transform Space">
+                <!-- Camera / Scene controls -->
+                <label class="transform-space-toggle" title="Camera controls: drag to look. Scene controls: select and move objects.">
                     <input type="checkbox" id="transform-space-checkbox" class="Checkbox" checked>
-                    <span class="toggle-label">Local</span>
+                    <span class="toggle-label">Camera</span>
                 </label>
             </div>
 
@@ -369,6 +369,7 @@ Block actors, props and architecture">
                     <span id="shot-time-label">No shots</span>
                     <button class="btn" id="timeline-add-shot" title="Add Shot" style="padding: 4px 8px; margin-left: auto;">+ Shot</button>
                     <button class="btn" id="timeline-loop" title="Loop" style="padding: 4px 8px;">➡</button>
+                    <button class="btn" id="timeline-export-pdf" title="Export storyboard PDF">PDF</button>
                 </div>
                 <div id="shot-cards"></div>
                 <div class="shot-timeline-track">
@@ -424,6 +425,24 @@ Block actors, props and architecture">
                             </div>
                         </div>
                         <div id="scene-content" class="panel-content">
+                            <!-- Scene list / save -->
+                            <div class="collapsible-section">
+                                <div class="collapsible-header" data-target="scene-list-section">
+                                    <span>Scenes</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="collapsible-content" id="scene-list-section">
+                                    <div id="scene-list" class="scene-list"></div>
+                                    <div class="scene-list-actions">
+                                        <input type="text" id="scene-new-name" placeholder="New scene name">
+                                        <button class="btn" id="scene-create">Save as new</button>
+                                    </div>
+                                    <div class="scene-list-actions">
+                                        <button class="btn" id="scene-save">Save current</button>
+                                        <button class="btn" id="scene-delete">Delete current</button>
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Scene Settings Sections -->
                             <div class="collapsible-section">
                                 <div class="collapsible-header" data-target="scene-section">
@@ -670,6 +689,9 @@ Block actors, props and architecture">
                                 <button class="tool-btn" id="sd-refresh" title="Refresh" data-tooltip="**Refresh**\nRebuild shot designer view">
                                     <i class="fas fa-redo"></i>
                                 </button>
+                                <button class="tool-btn" id="sd-export-pdf" title="Export storyboard PDF" data-tooltip="**Export PDF**\nExport all scene storyboards with camera notes">
+                                    <i class="fas fa-file-pdf"></i>
+                                </button>
                             </div>
 
                             <!-- Camera selection -->
@@ -725,7 +747,7 @@ Block actors, props and architecture">
                             </div>
 
                             <div id="sd-empty" style="text-align:center; color:#888; padding:20px; font-size:11px;">
-                                No cameras available. Add a virtual camera from the Camera tab first.
+                                No shots yet. Use + Shot to add the first shot.
                             </div>
                         </div>
                     </div>

@@ -21,6 +21,7 @@ export class ShotManager {
         this.ui = null;
         this.timelineUI = null;
         this.isScrubbing = false;
+        this.previewActive = false;
         
         // Framing camera controls (OrbitControls during frame editing)
         this.framingControls = null;
@@ -49,6 +50,8 @@ export class ShotManager {
     }
 
     createShot(cameraId, options = {}) {
+        const cameras = this.app.staging?.cameras;
+        if (!cameraId) cameraId = cameras?.defaultRig?.id || cameras?.ensureDefaultRig?.()?.id;
         const moveName = options.move || 'Dolly Shot';
         const moveSpec = getMoveSpec(moveName);
         const defaultDuration = getMoveDefaultDuration(moveName);
@@ -136,6 +139,7 @@ export class ShotManager {
     play() {
         if (this.shots.length === 0) return;
         this.playing = true;
+        this.previewActive = true;
         if (this.currentTime >= this.duration) this.currentTime = 0;
         this.refreshUI();
     }
@@ -151,6 +155,7 @@ export class ShotManager {
 
     seek(t) {
         this.currentTime = clamp(t, 0, this.duration);
+        this.previewActive = true;
         if (this.ui) this.ui.updateScrubber();
         this.updatePathPreview();
     }
@@ -159,7 +164,7 @@ export class ShotManager {
         if (this.framingControls) {
             this.framingControls.update(delta);
         }
-        if (!this.playing) return this.getPreviewCamera();
+        if (!this.playing) return this.previewActive ? this.getPreviewCamera() : null;
         
         this.currentTime += delta * this.playbackRate;
         if (this.currentTime >= this.duration) {
@@ -436,6 +441,8 @@ export class ShotManager {
         if (addBtn) {
             addBtn.onclick = () => this.addShotForSelectedCamera();
         }
+        const pdfBtn = document.getElementById('timeline-export-pdf');
+        if (pdfBtn) pdfBtn.onclick = () => this.app.exportStoryboardPDF?.();
     }
 
     buildTimelineUI() {
@@ -448,7 +455,7 @@ export class ShotManager {
         
         if (!shot) {
             if (this.ui.cardsContainer) {
-                this.ui.cardsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #888; font-size: 10px;">No shots. Add a virtual camera first, then click + Shot.</div>';
+                this.ui.cardsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #888; font-size: 10px;">No shots yet. Click + Shot to add the first shot.</div>';
             }
             // Build empty timeline track
             this.buildTimelineTrack(null);
@@ -1038,12 +1045,15 @@ export class ShotManager {
 
     addShotForSelectedCamera() {
         const cameras = this.app.staging?.cameras;
-        if (!cameras || cameras.rigs.length === 0) {
-            this.app.ui?.showNotification('Add a virtual camera first', 'error');
+        if (!cameras) return;
+        const rig = this.app.selectedObject?.userData?.rigRef
+            || cameras.defaultRig
+            || cameras.ensureDefaultRig()
+            || cameras.rigs[this.shots.length % Math.max(1, cameras.rigs.length)];
+        if (!rig) {
+            this.app.ui?.showNotification('No camera available', 'error');
             return;
         }
-        // Use the currently selected rig or cycle through rigs
-        const rig = this.app.selectedObject?.userData?.rigRef || cameras.rigs[this.shots.length % cameras.rigs.length];
         this.createShot(rig.id);
     }
 

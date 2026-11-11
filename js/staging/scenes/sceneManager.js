@@ -31,7 +31,8 @@ export class SceneManager {
             id: 'scene_' + Math.random().toString(36).slice(2, 9),
             name,
             objects: [],
-            cameraRigs: [],
+            // A scene always starts with its own non-deletable camera.
+            cameraRigs: [this.makeDefaultCamera()],
             shots: [],
             settings: {
                 backgroundColor: '#2a2a4e',
@@ -107,37 +108,46 @@ export class SceneManager {
         return true;
     }
 
+    makeDefaultCamera() {
+        return {
+            id: 'default_camera',
+            name: 'Camera',
+            isDefault: true,
+            position: [4, 1.5, 4],
+            rotation: [0, 0, 0],
+            lens: { focalLength: 50, sensor: 'fullFrame' },
+            aspect: '16:9',
+            color: 0x00e5ff
+        };
+    }
+
     saveCurrentSceneState() {
-        if (!this.currentSceneName) return;
+        if (!this.currentSceneName || !this.app.scene) return;
         
         const sceneData = this.scenes.get(this.currentSceneName);
         if (!sceneData) return;
         
-        // Save object transforms
-        sceneData.objects = this.app.objects.map(obj => ({
-            uuid: obj.uuid,
-            name: obj.name,
-            type: obj.userData?.type,
-            staging: obj.userData?.staging,
-            position: obj.position.toArray(),
-            rotation: obj.rotation.toArray(),
-            scale: obj.scale.toArray(),
-            visible: obj.visible,
-            // Store material colors for staging objects
-            materials: obj.userData?.type === 'staging' ? this.extractMaterials(obj) : null
-        }));
+        // Save a restorable snapshot of the scene contents.
+        const snapshot = this.app.fileManager?.serializeCurrentScene?.();
+        sceneData.objects = snapshot?.objects || [];
+        sceneData.animations = snapshot?.animations || { clips: {} };
         
         // Save camera rigs
         if (this.app.staging?.cameras) {
             sceneData.cameraRigs = this.app.staging.cameras.rigs.map(rig => ({
                 id: rig.id,
                 name: rig.name,
+                isDefault: !!rig.isDefault,
                 position: rig.group.position.toArray(),
                 rotation: rig.group.rotation.toArray(),
                 lens: { ...rig.lens },
                 aspect: rig.aspect,
                 color: rig.color
             }));
+            // Keep the invariant even if the live list was temporarily empty.
+            if (!sceneData.cameraRigs.some(r => r.isDefault)) {
+                sceneData.cameraRigs.unshift(this.makeDefaultCamera());
+            }
         }
         
         // Save shots
@@ -167,8 +177,31 @@ export class SceneManager {
     }
 
     loadSceneState(sceneData) {
+        // During construction the renderer/UI do not exist yet.
+        if (!this.app.scene || !this.app.ui) {
+            this.refreshUI();
+            return;
+        }
+
         // Clear current scene
         this.clearCurrentScene();
+
+        // Rebuild the saved objects, then put the scene's cameras back.
+        if (this.app.fileManager && Array.isArray(sceneData.objects)) {
+            this.app.fileManager.loadData({
+                objects: sceneData.objects,
+                animations: sceneData.animations || null
+            });
+        }
+        this.restoreSceneCameras(sceneData);
+
+        // Restore this scene's shot timeline.
+        if (this.app.staging?.shotManager) {
+            this.app.staging.shotManager.shots = (sceneData.shots || []).map(s => ({ ...s }));
+            this.app.staging.shotManager.currentTime = 0;
+            this.app.staging.shotManager.previewActive = false;
+            this.app.staging.shotManager.refreshUI();
+        }
         
         // Apply settings
         this.applySceneSettings(sceneData.settings);
@@ -195,6 +228,30 @@ export class SceneManager {
         
         // Lights - these would need to find and update existing lights
         // For now we just store the settings
+    }
+
+    restoreSceneCameras(sceneData) {
+        const cameras = this.app.staging?.cameras;
+        if (!cameras || !this.app.scene) return;
+
+        const saved = Array.isArray(sceneData?.cameraRigs) && sceneData.cameraRigs.length
+            ? sceneData.cameraRigs
+            : [this.makeDefaultCamera()];
+
+        cameras.clearRigs();
+        for (const def of saved) {
+            cameras.addRig(def.name, new THREE.Vector3().fromArray(def.position || [4, 1.5, 4]), {
+                id: def.id,
+                name: def.name,
+                isDefault: !!def.isDefault,
+                rotation: def.rotation,
+                lens: def.lens,
+                aspect: def.aspect,
+                color: def.color
+            });
+        }
+        cameras.ensureDefaultRig();
+        cameras.refreshUI();
     }
 
     clearCurrentScene() {
@@ -262,8 +319,10 @@ export class SceneManager {
             data.scenes[name] = {
                 name: sceneData.name,
                 settings: sceneData.settings,
-                shots: sceneData.shots,
-                cameraRigs: sceneData.cameraRigs.map(r => ({ ...r })),
+                objects: sceneData.objects || [],
+                animations: sceneData.animations || { clips: {} },
+                shots: sceneData.shots || [],
+                cameraRigs: (sceneData.cameraRigs || []).map(r => ({ ...r })),
                 createdAt: sceneData.createdAt
             };
         }
@@ -280,7 +339,8 @@ export class SceneManager {
             this.scenes.set(name, {
                 id: 'scene_' + Math.random().toString(36).slice(2, 9),
                 name: sceneData.name,
-                objects: [],
+                objects: sceneData.objects || [],
+                animations: sceneData.animations || { clips: {} },
                 cameraRigs: sceneData.cameraRigs || [],
                 shots: sceneData.shots || [],
                 settings: sceneData.settings || {
@@ -301,5 +361,30 @@ export class SceneManager {
         
         this.refreshUI();
         return true;
+    }
+
+    /** Save every scene to browser storage so it survives a reload. */
+    persistScenes() {
+        if (!this.currentSceneName) return false;
+        this.saveCurrentSceneState();
+        try {
+            localStorage.setItem('pixel3d-scenes', JSON.stringify(this.exportScenes()));
+            return true;
+        } catch (error) {
+            console.error('Could not save scenes:', error);
+            return false;
+        }
+    }
+
+    /** Restore saved scenes from browser storage if available. */
+    restorePersistedScenes() {
+        const raw = localStorage.getItem('pixel3d-scenes');
+        if (!raw) return false;
+        try {
+            return this.importScenes(JSON.parse(raw));
+        } catch (error) {
+            console.error('Could not restore scenes:', error);
+            return false;
+        }
     }
 }

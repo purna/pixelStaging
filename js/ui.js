@@ -63,6 +63,7 @@ export class UI {
             ['saved settings', () => this.loadSettings()],
             ['panel tabs', () => this.setupPanelTabs()],
             ['floating camera controls', () => this.setupFloatingCameraControls()],
+            ['scene list', () => this.setupSceneList()],
             ['color editor', () => this.setupColorEditor()],
             ['hierarchy', () => this.renderHierarchyPanel()],
             ['assets', () => this.renderAssetsPanel('colors')]
@@ -1642,6 +1643,67 @@ export class UI {
         }
     }
 
+    setupSceneList() {
+        const scenes = this.app.staging?.scenes;
+        if (!scenes) return;
+
+        const createBtn = document.getElementById('scene-create');
+        const saveBtn = document.getElementById('scene-save');
+        const deleteBtn = document.getElementById('scene-delete');
+        const nameInput = document.getElementById('scene-new-name');
+
+        if (createBtn && !createBtn.dataset.wired) {
+            createBtn.dataset.wired = 'true';
+            createBtn.addEventListener('click', () => {
+                const name = (nameInput?.value || '').trim() || `Scene ${scenes.getSceneNames().length + 1}`;
+                scenes.createScene(name, true);
+                scenes.persistScenes();
+                if (nameInput) nameInput.value = '';
+                this.showNotification(`Scene "${name}" saved`, 'success');
+            });
+        }
+
+        if (saveBtn && !saveBtn.dataset.wired) {
+            saveBtn.dataset.wired = 'true';
+            saveBtn.addEventListener('click', () => {
+                scenes.persistScenes();
+                this.showNotification(`Saved scene "${scenes.currentSceneName}"`, 'success');
+            });
+        }
+
+        if (deleteBtn && !deleteBtn.dataset.wired) {
+            deleteBtn.dataset.wired = 'true';
+            deleteBtn.addEventListener('click', () => {
+                if (scenes.deleteScene(scenes.currentSceneName)) scenes.persistScenes();
+            });
+        }
+
+        this.renderSceneList();
+    }
+
+    renderSceneList() {
+        const list = document.getElementById('scene-list');
+        const scenes = this.app.staging?.scenes;
+        if (!list || !scenes) return;
+
+        list.innerHTML = scenes.getSceneNames().map(name => `
+            <div class="scene-list-item ${name === scenes.currentSceneName ? 'active' : ''}" data-scene-name="${name}">
+                <span>${name}</span>
+                <small>${name === scenes.currentSceneName ? 'current' : ''}</small>
+            </div>
+        `).join('');
+
+        list.querySelectorAll('.scene-list-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const name = item.dataset.sceneName;
+                if (name && name !== scenes.currentSceneName) {
+                    scenes.switchToScene(name);
+                    scenes.persistScenes();
+                }
+            });
+        });
+    }
+
     setupCameraTab() {
         // Initialize camera rig controls in the right panel
         const cameras = this.app.staging?.cameras;
@@ -2064,6 +2126,9 @@ export class UI {
         document.getElementById('sd-timeline').onclick = () => {
             shotManager.toggleUI();
         };
+
+        const exportPdfBtn = document.getElementById('sd-export-pdf');
+        if (exportPdfBtn) exportPdfBtn.onclick = () => this.app.exportStoryboardPDF?.();
 
         renderShots();
     }

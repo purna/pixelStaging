@@ -27,8 +27,26 @@ export class CameraRigManager {
         this.rigs = [];
         this.viewingRigId = null;   // null = layout mode (editing camera)
         this.activeIndex = 0;
+        this.defaultRigId = null;
         // Camera controls are now in the right panel Camera tab
         // setTimeout(() => this.buildUI(), 100);
+    }
+
+    /** Every scene must have a camera that cannot be deleted. */
+    ensureDefaultRig() {
+        const existing = this.rigs.find(r => r.isDefault);
+        if (existing) {
+            this.defaultRigId = existing.id;
+            return existing;
+        }
+
+        const rig = this.addRig('Camera', null, { isDefault: true });
+        this.defaultRigId = rig.id;
+        return rig;
+    }
+
+    get defaultRig() {
+        return this.rigs.find(r => r.isDefault) || null;
     }
 
     /** Derived vertical FOV (degrees) for a lens spec. */
@@ -42,17 +60,19 @@ export class CameraRigManager {
     }
 
     /** Create a rig; its group's -Z is the look direction. */
-    addRig(name = null, position = null) {
-        const id = 'rig_' + Math.random().toString(36).slice(2, 9);
-        const color = RIG_COLORS[this.rigs.length % RIG_COLORS.length];
-        const letter = String.fromCharCode(65 + this.rigs.length);
+    addRig(name = null, position = null, options = {}) {
+        const id = options.id || 'rig_' + Math.random().toString(36).slice(2, 9);
+        const isDefault = options.isDefault === true;
+        const color = options.color ?? RIG_COLORS[this.rigs.length % RIG_COLORS.length];
+        const letter = options.letter || String.fromCharCode(65 + this.rigs.length);
 
         const group = new THREE.Group();
-        group.name = `Camera ${name || letter}`;
+        group.name = options.name || (isDefault ? 'Camera' : `Camera ${name || letter}`);
         group.position.copy(position || new THREE.Vector3(4, 1.5, 4));
+        if (options.rotation) group.rotation.fromArray(options.rotation);
 
-        const lens = { focalLength: 50, sensor: 'fullFrame' };
-        const aspect = '16:9';
+        const lens = options.lens ? { ...options.lens } : { focalLength: 50, sensor: 'fullFrame' };
+        const aspect = options.aspect || '16:9';
         const camera = new THREE.PerspectiveCamera(
             CameraRigManager.vFov(lens), CameraRigManager.aspectValue(aspect), 0.1, 500
         );
@@ -76,15 +96,39 @@ export class CameraRigManager {
         this.app.scene.add(group);
         this.app.objects.push(group);
 
-        const rig = { id, name: name || letter, color, group, camera, frustum, lens, aspect, visibleInViewport: true };
+        const rig = {
+            id,
+            name: options.name || name || (isDefault ? 'Camera' : letter),
+            color,
+            group,
+            camera,
+            frustum,
+            lens,
+            aspect,
+            visibleInViewport: true,
+            isDefault,
+            deletable: !isDefault
+        };
         group.userData.rigRef = rig;
         this.rigs.push(rig);
+        if (isDefault) this.defaultRigId = id;
         this.updateRigFrustum(rig);
         this.refreshUI();
         return rig;
     }
 
     removeRig(rigId) {
+        const rig = this.get(rigId);
+        if (!rig) return false;
+        if (rig.isDefault || rig.id === this.defaultRigId) {
+            this.app.ui?.showNotification?.('The default scene camera cannot be deleted', 'error');
+            return false;
+        }
+        return this._removeRigForce(rigId);
+    }
+
+    /** Internal removal used when rebuilding a scene's camera set. */
+    _removeRigForce(rigId) {
         const idx = this.rigs.findIndex(r => r.id === rigId);
         if (idx === -1) return false;
         const rig = this.rigs[idx];
@@ -93,8 +137,16 @@ export class CameraRigManager {
         const oi = this.app.objects.indexOf(rig.group);
         if (oi > -1) this.app.objects.splice(oi, 1);
         this.rigs.splice(idx, 1);
+        if (this.defaultRigId === rigId) this.defaultRigId = null;
         this.refreshUI();
         return true;
+    }
+
+    /** Remove every rig (used when loading a different scene). */
+    clearRigs() {
+        for (const rig of [...this.rigs]) this._removeRigForce(rig.id);
+        this.viewingRigId = null;
+        this.defaultRigId = null;
     }
 
     get(rigId) { return this.rigs.find(r => r.id === rigId) || null; }
@@ -230,6 +282,10 @@ export class CameraRigManager {
         const rig = this.selectedRig;
         if (!rig) {
             if (this.app.ui?.showNotification) this.app.ui.showNotification('Select a camera to delete', 'error');
+            return;
+        }
+        if (rig.isDefault) {
+            if (this.app.ui?.showNotification) this.app.ui.showNotification('The default scene camera cannot be deleted', 'error');
             return;
         }
         this.removeRig(rig.id);

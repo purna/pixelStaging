@@ -568,19 +568,25 @@ export class FileManager {
         this.app.ui?.showNotification('Scene exported as JS!', 'success');
     }
 
-    saveToBrowser() {
+    /** Serialize the scene into a restorable snapshot (used for scene saving). */
+    serializeCurrentScene() {
         const data = [];
 
         // Helper to serialize an object
         const processObj = (obj) => {
+            // Camera rigs belong to the scene camera list, not the object list.
+            if (obj.userData?.rigRef) return;
+
             // Only process objects with our specific types
-            if (obj.userData.type) {
+            if (obj.userData?.type) {
                 const item = {
                     type: obj.userData.type,
+                    name: obj.name,
                     position: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
                     rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
                     scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
-                    userData: obj.userData
+                    visible: obj.visible,
+                    userData: { ...obj.userData }
                 };
 
                 if (obj.userData.type === 'shape' || obj.userData.type === 'shape2d') {
@@ -595,7 +601,6 @@ export class FileManager {
                     item.intensity = l.intensity;
                 } else if (obj.userData.type === 'figure') {
                     item.gender = obj.userData.gender;
-                    // Save posing data (rotation of limbs)
                     item.joints = {};
                     obj.traverse(child => {
                         if (child.userData.name && child.userData.name.includes('Joint')) {
@@ -606,22 +611,26 @@ export class FileManager {
                             };
                         }
                     });
+                } else if (obj.userData.type === 'staging' && obj.userData.staging) {
+                    item.staging = { ...obj.userData.staging };
                 }
                 data.push(item);
             }
         };
 
-        // Traverse only direct children of scene to find our managed roots
-        this.app.scene.children.forEach(child => {
-            processObj(child);
-        });
+        // Traverse only direct children of scene to find managed roots
+        this.app.scene.children.forEach(child => processObj(child));
 
-        // Save to localStorage
-        localStorage.setItem('pixel3d-scene', JSON.stringify({
+        return {
             version: 1,
             objects: data,
             animations: this.app.animationManager.toJSON()
-        }));
+        };
+    }
+
+    saveToBrowser() {
+        const sceneData = this.serializeCurrentScene();
+        localStorage.setItem('pixel3d-scene', JSON.stringify(sceneData));
         this.saveFolderStructure();
     }
 
@@ -774,6 +783,18 @@ export class FileManager {
                             child.rotation.set(rot.x, rot.y, rot.z);
                         }
                     });
+                }
+            }
+            else if (item.type === 'staging') {
+                const staging = item.staging || item.userData?.staging;
+                if (staging) {
+                    newObj = this.app.staging.factory.create(
+                        staging.kind,
+                        staging.presetId,
+                        staging.params || {},
+                        staging.colorOverride || null
+                    );
+                    if (newObj) this.app.addToScene(newObj);
                 }
             }
 

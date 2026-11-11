@@ -32985,6 +32985,7 @@
         ["saved settings", () => this.loadSettings()],
         ["panel tabs", () => this.setupPanelTabs()],
         ["floating camera controls", () => this.setupFloatingCameraControls()],
+        ["scene list", () => this.setupSceneList()],
         ["color editor", () => this.setupColorEditor()],
         ["hierarchy", () => this.renderHierarchyPanel()],
         ["assets", () => this.renderAssetsPanel("colors")]
@@ -34314,6 +34315,58 @@
         }
       }
     }
+    setupSceneList() {
+      const scenes = this.app.staging?.scenes;
+      if (!scenes) return;
+      const createBtn = document.getElementById("scene-create");
+      const saveBtn = document.getElementById("scene-save");
+      const deleteBtn = document.getElementById("scene-delete");
+      const nameInput = document.getElementById("scene-new-name");
+      if (createBtn && !createBtn.dataset.wired) {
+        createBtn.dataset.wired = "true";
+        createBtn.addEventListener("click", () => {
+          const name = (nameInput?.value || "").trim() || `Scene ${scenes.getSceneNames().length + 1}`;
+          scenes.createScene(name, true);
+          scenes.persistScenes();
+          if (nameInput) nameInput.value = "";
+          this.showNotification(`Scene "${name}" saved`, "success");
+        });
+      }
+      if (saveBtn && !saveBtn.dataset.wired) {
+        saveBtn.dataset.wired = "true";
+        saveBtn.addEventListener("click", () => {
+          scenes.persistScenes();
+          this.showNotification(`Saved scene "${scenes.currentSceneName}"`, "success");
+        });
+      }
+      if (deleteBtn && !deleteBtn.dataset.wired) {
+        deleteBtn.dataset.wired = "true";
+        deleteBtn.addEventListener("click", () => {
+          if (scenes.deleteScene(scenes.currentSceneName)) scenes.persistScenes();
+        });
+      }
+      this.renderSceneList();
+    }
+    renderSceneList() {
+      const list = document.getElementById("scene-list");
+      const scenes = this.app.staging?.scenes;
+      if (!list || !scenes) return;
+      list.innerHTML = scenes.getSceneNames().map((name) => `
+            <div class="scene-list-item ${name === scenes.currentSceneName ? "active" : ""}" data-scene-name="${name}">
+                <span>${name}</span>
+                <small>${name === scenes.currentSceneName ? "current" : ""}</small>
+            </div>
+        `).join("");
+      list.querySelectorAll(".scene-list-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          const name = item.dataset.sceneName;
+          if (name && name !== scenes.currentSceneName) {
+            scenes.switchToScene(name);
+            scenes.persistScenes();
+          }
+        });
+      });
+    }
     setupCameraTab() {
       const cameras = this.app.staging?.cameras;
       if (!cameras) return;
@@ -34661,6 +34714,8 @@
       document.getElementById("sd-timeline").onclick = () => {
         shotManager.toggleUI();
       };
+      const exportPdfBtn = document.getElementById("sd-export-pdf");
+      if (exportPdfBtn) exportPdfBtn.onclick = () => this.app.exportStoryboardPDF?.();
       renderShots();
     }
     // =============================================
@@ -39226,16 +39281,20 @@
       setTimeout(() => URL.revokeObjectURL(url), 1e3);
       this.app.ui?.showNotification("Scene exported as JS!", "success");
     }
-    saveToBrowser() {
+    /** Serialize the scene into a restorable snapshot (used for scene saving). */
+    serializeCurrentScene() {
       const data = [];
       const processObj = (obj) => {
-        if (obj.userData.type) {
+        if (obj.userData?.rigRef) return;
+        if (obj.userData?.type) {
           const item = {
             type: obj.userData.type,
+            name: obj.name,
             position: { x: obj.position.x, y: obj.position.y, z: obj.position.z },
             rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
             scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
-            userData: obj.userData
+            visible: obj.visible,
+            userData: { ...obj.userData }
           };
           if (obj.userData.type === "shape" || obj.userData.type === "shape2d") {
             item.shapeType = obj.userData.shapeType;
@@ -39259,18 +39318,22 @@
                 };
               }
             });
+          } else if (obj.userData.type === "staging" && obj.userData.staging) {
+            item.staging = { ...obj.userData.staging };
           }
           data.push(item);
         }
       };
-      this.app.scene.children.forEach((child) => {
-        processObj(child);
-      });
-      localStorage.setItem("pixel3d-scene", JSON.stringify({
+      this.app.scene.children.forEach((child) => processObj(child));
+      return {
         version: 1,
         objects: data,
         animations: this.app.animationManager.toJSON()
-      }));
+      };
+    }
+    saveToBrowser() {
+      const sceneData = this.serializeCurrentScene();
+      localStorage.setItem("pixel3d-scene", JSON.stringify(sceneData));
       this.saveFolderStructure();
     }
     // Save folder structure
@@ -39395,6 +39458,17 @@
                 child.rotation.set(rot.x, rot.y, rot.z);
               }
             });
+          }
+        } else if (item.type === "staging") {
+          const staging = item.staging || item.userData?.staging;
+          if (staging) {
+            newObj = this.app.staging.factory.create(
+              staging.kind,
+              staging.presetId,
+              staging.params || {},
+              staging.colorOverride || null
+            );
+            if (newObj) this.app.addToScene(newObj);
           }
         }
         if (newObj) {
@@ -43886,6 +43960,21 @@ ${elements.join("\n")}
       this.rigs = [];
       this.viewingRigId = null;
       this.activeIndex = 0;
+      this.defaultRigId = null;
+    }
+    /** Every scene must have a camera that cannot be deleted. */
+    ensureDefaultRig() {
+      const existing = this.rigs.find((r) => r.isDefault);
+      if (existing) {
+        this.defaultRigId = existing.id;
+        return existing;
+      }
+      const rig = this.addRig("Camera", null, { isDefault: true });
+      this.defaultRigId = rig.id;
+      return rig;
+    }
+    get defaultRig() {
+      return this.rigs.find((r) => r.isDefault) || null;
     }
     /** Derived vertical FOV (degrees) for a lens spec. */
     static vFov(lens) {
@@ -43896,15 +43985,17 @@ ${elements.join("\n")}
       return ASPECT_PRESETS[aspect2] ?? 16 / 9;
     }
     /** Create a rig; its group's -Z is the look direction. */
-    addRig(name = null, position = null) {
-      const id = "rig_" + Math.random().toString(36).slice(2, 9);
-      const color = RIG_COLORS[this.rigs.length % RIG_COLORS.length];
-      const letter = String.fromCharCode(65 + this.rigs.length);
+    addRig(name = null, position = null, options = {}) {
+      const id = options.id || "rig_" + Math.random().toString(36).slice(2, 9);
+      const isDefault = options.isDefault === true;
+      const color = options.color ?? RIG_COLORS[this.rigs.length % RIG_COLORS.length];
+      const letter = options.letter || String.fromCharCode(65 + this.rigs.length);
       const group = new Group();
-      group.name = `Camera ${name || letter}`;
+      group.name = options.name || (isDefault ? "Camera" : `Camera ${name || letter}`);
       group.position.copy(position || new Vector3(4, 1.5, 4));
-      const lens = { focalLength: 50, sensor: "fullFrame" };
-      const aspect2 = "16:9";
+      if (options.rotation) group.rotation.fromArray(options.rotation);
+      const lens = options.lens ? { ...options.lens } : { focalLength: 50, sensor: "fullFrame" };
+      const aspect2 = options.aspect || "16:9";
       const camera = new PerspectiveCamera(
         _CameraRigManager.vFov(lens),
         _CameraRigManager.aspectValue(aspect2),
@@ -43924,14 +44015,37 @@ ${elements.join("\n")}
       group.userData.rig = { id, color };
       this.app.scene.add(group);
       this.app.objects.push(group);
-      const rig = { id, name: name || letter, color, group, camera, frustum, lens, aspect: aspect2, visibleInViewport: true };
+      const rig = {
+        id,
+        name: options.name || name || (isDefault ? "Camera" : letter),
+        color,
+        group,
+        camera,
+        frustum,
+        lens,
+        aspect: aspect2,
+        visibleInViewport: true,
+        isDefault,
+        deletable: !isDefault
+      };
       group.userData.rigRef = rig;
       this.rigs.push(rig);
+      if (isDefault) this.defaultRigId = id;
       this.updateRigFrustum(rig);
       this.refreshUI();
       return rig;
     }
     removeRig(rigId) {
+      const rig = this.get(rigId);
+      if (!rig) return false;
+      if (rig.isDefault || rig.id === this.defaultRigId) {
+        this.app.ui?.showNotification?.("The default scene camera cannot be deleted", "error");
+        return false;
+      }
+      return this._removeRigForce(rigId);
+    }
+    /** Internal removal used when rebuilding a scene's camera set. */
+    _removeRigForce(rigId) {
       const idx = this.rigs.findIndex((r) => r.id === rigId);
       if (idx === -1) return false;
       const rig = this.rigs[idx];
@@ -43940,8 +44054,15 @@ ${elements.join("\n")}
       const oi = this.app.objects.indexOf(rig.group);
       if (oi > -1) this.app.objects.splice(oi, 1);
       this.rigs.splice(idx, 1);
+      if (this.defaultRigId === rigId) this.defaultRigId = null;
       this.refreshUI();
       return true;
+    }
+    /** Remove every rig (used when loading a different scene). */
+    clearRigs() {
+      for (const rig of [...this.rigs]) this._removeRigForce(rig.id);
+      this.viewingRigId = null;
+      this.defaultRigId = null;
     }
     get(rigId) {
       return this.rigs.find((r) => r.id === rigId) || null;
@@ -44063,6 +44184,10 @@ ${elements.join("\n")}
       const rig = this.selectedRig;
       if (!rig) {
         if (this.app.ui?.showNotification) this.app.ui.showNotification("Select a camera to delete", "error");
+        return;
+      }
+      if (rig.isDefault) {
+        if (this.app.ui?.showNotification) this.app.ui.showNotification("The default scene camera cannot be deleted", "error");
         return;
       }
       this.removeRig(rig.id);
@@ -44304,6 +44429,7 @@ ${elements.join("\n")}
       this.ui = null;
       this.timelineUI = null;
       this.isScrubbing = false;
+      this.previewActive = false;
       this.framingControls = null;
       this.framingState = {
         position: new V3(),
@@ -44321,6 +44447,8 @@ ${elements.join("\n")}
       return this.shots[this.selectedShotIndex] || null;
     }
     createShot(cameraId, options = {}) {
+      const cameras = this.app.staging?.cameras;
+      if (!cameraId) cameraId = cameras?.defaultRig?.id || cameras?.ensureDefaultRig?.()?.id;
       const moveName = options.move || "Dolly Shot";
       const moveSpec = getMoveSpec(moveName);
       const defaultDuration = getMoveDefaultDuration(moveName);
@@ -44403,6 +44531,7 @@ ${elements.join("\n")}
     play() {
       if (this.shots.length === 0) return;
       this.playing = true;
+      this.previewActive = true;
       if (this.currentTime >= this.duration) this.currentTime = 0;
       this.refreshUI();
     }
@@ -44415,6 +44544,7 @@ ${elements.join("\n")}
     }
     seek(t) {
       this.currentTime = clamp2(t, 0, this.duration);
+      this.previewActive = true;
       if (this.ui) this.ui.updateScrubber();
       this.updatePathPreview();
     }
@@ -44422,7 +44552,7 @@ ${elements.join("\n")}
       if (this.framingControls) {
         this.framingControls.update(delta);
       }
-      if (!this.playing) return this.getPreviewCamera();
+      if (!this.playing) return this.previewActive ? this.getPreviewCamera() : null;
       this.currentTime += delta * this.playbackRate;
       if (this.currentTime >= this.duration) {
         if (this.loop) {
@@ -44640,6 +44770,8 @@ ${elements.join("\n")}
       if (addBtn) {
         addBtn.onclick = () => this.addShotForSelectedCamera();
       }
+      const pdfBtn = document.getElementById("timeline-export-pdf");
+      if (pdfBtn) pdfBtn.onclick = () => this.app.exportStoryboardPDF?.();
     }
     buildTimelineUI() {
       const shot = this.selectedShot;
@@ -44648,7 +44780,7 @@ ${elements.join("\n")}
       if (this.ui.loopBtn) this.ui.loopBtn.style.background = this.loop ? "#2e7d32" : "transparent";
       if (!shot) {
         if (this.ui.cardsContainer) {
-          this.ui.cardsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #888; font-size: 10px;">No shots. Add a virtual camera first, then click + Shot.</div>';
+          this.ui.cardsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #888; font-size: 10px;">No shots yet. Click + Shot to add the first shot.</div>';
         }
         this.buildTimelineTrack(null);
         return;
@@ -45150,11 +45282,12 @@ ${elements.join("\n")}
     }
     addShotForSelectedCamera() {
       const cameras = this.app.staging?.cameras;
-      if (!cameras || cameras.rigs.length === 0) {
-        this.app.ui?.showNotification("Add a virtual camera first", "error");
+      if (!cameras) return;
+      const rig = this.app.selectedObject?.userData?.rigRef || cameras.defaultRig || cameras.ensureDefaultRig() || cameras.rigs[this.shots.length % Math.max(1, cameras.rigs.length)];
+      if (!rig) {
+        this.app.ui?.showNotification("No camera available", "error");
         return;
       }
-      const rig = this.app.selectedObject?.userData?.rigRef || cameras.rigs[this.shots.length % cameras.rigs.length];
       this.createShot(rig.id);
     }
     mkBtn(text, fn, extra = "") {
@@ -45220,6 +45353,7 @@ ${elements.join("\n")}
   };
 
   // js/staging/scenes/sceneManager.js
+  init_three_module();
   var SceneManager = class {
     constructor(app) {
       this.app = app;
@@ -45242,7 +45376,8 @@ ${elements.join("\n")}
         id: "scene_" + Math.random().toString(36).slice(2, 9),
         name,
         objects: [],
-        cameraRigs: [],
+        // A scene always starts with its own non-deletable camera.
+        cameraRigs: [this.makeDefaultCamera()],
         shots: [],
         settings: {
           backgroundColor: "#2a2a4e",
@@ -45297,32 +45432,39 @@ ${elements.join("\n")}
       this.refreshUI();
       return true;
     }
+    makeDefaultCamera() {
+      return {
+        id: "default_camera",
+        name: "Camera",
+        isDefault: true,
+        position: [4, 1.5, 4],
+        rotation: [0, 0, 0],
+        lens: { focalLength: 50, sensor: "fullFrame" },
+        aspect: "16:9",
+        color: 58879
+      };
+    }
     saveCurrentSceneState() {
-      if (!this.currentSceneName) return;
+      if (!this.currentSceneName || !this.app.scene) return;
       const sceneData = this.scenes.get(this.currentSceneName);
       if (!sceneData) return;
-      sceneData.objects = this.app.objects.map((obj) => ({
-        uuid: obj.uuid,
-        name: obj.name,
-        type: obj.userData?.type,
-        staging: obj.userData?.staging,
-        position: obj.position.toArray(),
-        rotation: obj.rotation.toArray(),
-        scale: obj.scale.toArray(),
-        visible: obj.visible,
-        // Store material colors for staging objects
-        materials: obj.userData?.type === "staging" ? this.extractMaterials(obj) : null
-      }));
+      const snapshot = this.app.fileManager?.serializeCurrentScene?.();
+      sceneData.objects = snapshot?.objects || [];
+      sceneData.animations = snapshot?.animations || { clips: {} };
       if (this.app.staging?.cameras) {
         sceneData.cameraRigs = this.app.staging.cameras.rigs.map((rig) => ({
           id: rig.id,
           name: rig.name,
+          isDefault: !!rig.isDefault,
           position: rig.group.position.toArray(),
           rotation: rig.group.rotation.toArray(),
           lens: { ...rig.lens },
           aspect: rig.aspect,
           color: rig.color
         }));
+        if (!sceneData.cameraRigs.some((r) => r.isDefault)) {
+          sceneData.cameraRigs.unshift(this.makeDefaultCamera());
+        }
       }
       if (this.app.staging?.shotManager) {
         sceneData.shots = this.app.staging.shotManager.shots.map((s) => ({ ...s }));
@@ -45348,7 +45490,24 @@ ${elements.join("\n")}
       return materials;
     }
     loadSceneState(sceneData) {
+      if (!this.app.scene || !this.app.ui) {
+        this.refreshUI();
+        return;
+      }
       this.clearCurrentScene();
+      if (this.app.fileManager && Array.isArray(sceneData.objects)) {
+        this.app.fileManager.loadData({
+          objects: sceneData.objects,
+          animations: sceneData.animations || null
+        });
+      }
+      this.restoreSceneCameras(sceneData);
+      if (this.app.staging?.shotManager) {
+        this.app.staging.shotManager.shots = (sceneData.shots || []).map((s) => ({ ...s }));
+        this.app.staging.shotManager.currentTime = 0;
+        this.app.staging.shotManager.previewActive = false;
+        this.app.staging.shotManager.refreshUI();
+      }
       this.applySceneSettings(sceneData.settings);
       this.app.ui?.renderHierarchyPanel();
     }
@@ -45361,6 +45520,25 @@ ${elements.join("\n")}
       } else {
         this.app.setFog(false);
       }
+    }
+    restoreSceneCameras(sceneData) {
+      const cameras = this.app.staging?.cameras;
+      if (!cameras || !this.app.scene) return;
+      const saved = Array.isArray(sceneData?.cameraRigs) && sceneData.cameraRigs.length ? sceneData.cameraRigs : [this.makeDefaultCamera()];
+      cameras.clearRigs();
+      for (const def of saved) {
+        cameras.addRig(def.name, new Vector3().fromArray(def.position || [4, 1.5, 4]), {
+          id: def.id,
+          name: def.name,
+          isDefault: !!def.isDefault,
+          rotation: def.rotation,
+          lens: def.lens,
+          aspect: def.aspect,
+          color: def.color
+        });
+      }
+      cameras.ensureDefaultRig();
+      cameras.refreshUI();
     }
     clearCurrentScene() {
       this.app.deselect();
@@ -45411,8 +45589,10 @@ ${elements.join("\n")}
         data.scenes[name] = {
           name: sceneData.name,
           settings: sceneData.settings,
-          shots: sceneData.shots,
-          cameraRigs: sceneData.cameraRigs.map((r) => ({ ...r })),
+          objects: sceneData.objects || [],
+          animations: sceneData.animations || { clips: {} },
+          shots: sceneData.shots || [],
+          cameraRigs: (sceneData.cameraRigs || []).map((r) => ({ ...r })),
           createdAt: sceneData.createdAt
         };
       }
@@ -45425,7 +45605,8 @@ ${elements.join("\n")}
         this.scenes.set(name, {
           id: "scene_" + Math.random().toString(36).slice(2, 9),
           name: sceneData.name,
-          objects: [],
+          objects: sceneData.objects || [],
+          animations: sceneData.animations || { clips: {} },
           cameraRigs: sceneData.cameraRigs || [],
           shots: sceneData.shots || [],
           settings: sceneData.settings || {
@@ -45444,7 +45625,308 @@ ${elements.join("\n")}
       this.refreshUI();
       return true;
     }
+    /** Save every scene to browser storage so it survives a reload. */
+    persistScenes() {
+      if (!this.currentSceneName) return false;
+      this.saveCurrentSceneState();
+      try {
+        localStorage.setItem("pixel3d-scenes", JSON.stringify(this.exportScenes()));
+        return true;
+      } catch (error) {
+        console.error("Could not save scenes:", error);
+        return false;
+      }
+    }
+    /** Restore saved scenes from browser storage if available. */
+    restorePersistedScenes() {
+      const raw = localStorage.getItem("pixel3d-scenes");
+      if (!raw) return false;
+      try {
+        return this.importScenes(JSON.parse(raw));
+      } catch (error) {
+        console.error("Could not restore scenes:", error);
+        return false;
+      }
+    }
   };
+
+  // js/storyboardExporter.js
+  init_three_module();
+  var PAGE_W = 612;
+  var PAGE_H = 792;
+  function bytes(text) {
+    return new TextEncoder().encode(text);
+  }
+  function concatBytes(parts) {
+    const total = parts.reduce((n, p) => n + p.length, 0);
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const part of parts) {
+      out.set(part, offset);
+      offset += part.length;
+    }
+    return out;
+  }
+  function base64Bytes(dataUrl) {
+    const base64 = dataUrl.split(",")[1] || "";
+    const binary = atob(base64);
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+    return out;
+  }
+  function pdfText(value) {
+    return String(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/\r?\n/g, " ");
+  }
+  function wrap2(text, maxChars) {
+    const words = String(text).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = "";
+    for (const word of words) {
+      if ((line + " " + word).trim().length > maxChars && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = (line + " " + word).trim();
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+  var PDFBuilder = class {
+    constructor() {
+      this.objects = /* @__PURE__ */ new Map();
+      this.nextId = 4;
+      this.objects.set(3, bytes("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"));
+    }
+    addObject(data) {
+      const id = this.nextId++;
+      this.objects.set(id, data);
+      return id;
+    }
+    addImage(dataUrl, width, height) {
+      const imageBytes = base64Bytes(dataUrl);
+      const header = bytes(
+        `<< /Type /XObject /Subtype /Image /Width ${width} /Height ${height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>
+stream
+`
+      );
+      return this.addObject(concatBytes([header, imageBytes, bytes("\nendstream")]));
+    }
+    addContent(stream) {
+      const body = bytes(stream);
+      return this.addObject(concatBytes([
+        bytes(`<< /Length ${body.length} >>
+stream
+`),
+        body,
+        bytes("\nendstream")
+      ]));
+    }
+    addPage(contentId, images) {
+      const imageResources = images.map((id, index) => `/Im${index} ${id} 0 R`).join(" ");
+      const page = bytes(
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_W} ${PAGE_H}] /Resources << /Font << /F1 3 0 R >> /XObject << ${imageResources} >> >> /Contents ${contentId} 0 R >>`
+      );
+      return this.addObject(page);
+    }
+    finish(pageIds) {
+      this.objects.set(2, bytes(
+        `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`
+      ));
+      this.objects.set(1, bytes("<< /Type /Catalog /Pages 2 0 R >>"));
+      const header = bytes("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+      const parts = [header];
+      const offsets = [];
+      let offset = header.length;
+      const ids = [...this.objects.keys()].sort((a, b) => a - b);
+      for (const id of ids) {
+        const body = this.objects.get(id);
+        offsets[id] = offset;
+        const prefix = bytes(`${id} 0 obj
+`);
+        const suffix = bytes("\nendobj\n");
+        parts.push(prefix, body, suffix);
+        offset += prefix.length + body.length + suffix.length;
+      }
+      const maxId = ids[ids.length - 1] || 0;
+      const xrefOffset = offset;
+      let xref = `xref
+0 ${maxId + 1}
+0000000000 65535 f 
+`;
+      for (let id = 1; id <= maxId; id++) {
+        xref += offsets[id] ? `${String(offsets[id]).padStart(10, "0")} 00000 n 
+` : "0000000000 65535 f \n";
+      }
+      xref += `trailer
+<< /Size ${maxId + 1} /Root 1 0 R >>
+startxref
+${xrefOffset}
+%%EOF`;
+      parts.push(bytes(xref));
+      return concatBytes(parts);
+    }
+  };
+  function makePage(builder, sceneName, shot, frames) {
+    const imageObjects = frames.map((frame) => builder.addImage(frame.dataUrl, frame.width, frame.height));
+    const imageIds = imageObjects;
+    const lines = [];
+    lines.push(`BT /F1 18 Tf 44 742 Td (${pdfText(sceneName)} - ${pdfText(shot.name)}) Tj ET`);
+    lines.push(`BT /F1 10 Tf 44 714 Td (Camera: ${pdfText(shot.cameraName)}) Tj ET`);
+    lines.push(`BT /F1 10 Tf 44 698 Td (Move: ${pdfText(shot.move)}    Duration: ${shot.duration.toFixed(1)}s    Speed: x${shot.speed}    Easing: ${pdfText(shot.easing)}) Tj ET`);
+    const framing = [];
+    if (shot.startFrame) framing.push("start keyframe");
+    if (shot.endFrame) framing.push("end keyframe");
+    lines.push(`BT /F1 10 Tf 44 682 Td (Framing: ${pdfText(framing.length ? framing.join(", ") : "auto / camera preset")}) Tj ET`);
+    let imageCommand = "q\n";
+    if (frames.length >= 2) {
+      imageCommand += `250 0 0 140 44 500 cm /Im0 Do Q
+`;
+      imageCommand += `q 250 0 0 140 318 500 cm /Im1 Do Q
+`;
+      lines.push(`BT /F1 9 Tf 44 646 Td (Start frame) Tj ET`);
+      lines.push(`BT /F1 9 Tf 318 646 Td (End frame) Tj ET`);
+    } else {
+      imageCommand += `524 0 0 294 44 420 cm /Im0 Do Q
+`;
+    }
+    const notes = shot.notes || "";
+    const textLines = [
+      `Camera movement: ${shot.move}. Starts at the first frame and arrives at the second frame over ${shot.duration.toFixed(1)} seconds at x${shot.speed} speed.`,
+      framing.length ? `Use the stored ${framing.join(" and ")} camera framing.` : "The move is generated automatically from the shot preset.",
+      notes
+    ].filter(Boolean);
+    let y = 606;
+    for (const block of textLines) {
+      for (const line of wrap2(block, 92)) {
+        lines.push(`BT /F1 10 Tf 44 ${y} Td (${pdfText(line)}) Tj ET`);
+        y -= 14;
+      }
+      y -= 4;
+    }
+    lines.push(`BT /F1 9 Tf 44 40 Td (Pixel Staging storyboard - ${pdfText(sceneName)}) Tj ET`);
+    const contentId = builder.addContent(imageCommand + "\n" + lines.join("\n"));
+    return builder.addPage(contentId, imageIds);
+  }
+  function renderFrame(app, rig, shot, shotManager, localT) {
+    const renderer = app.renderer;
+    const canvas = renderer.domElement;
+    const width = canvas.width;
+    const height = canvas.height;
+    const oldViewport = renderer.getViewport(new Vector4());
+    const oldScissorTest = renderer.getScissorTest();
+    renderer.setScissorTest(false);
+    renderer.setViewport(0, 0, width, height);
+    const camera = rig.camera.clone();
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    if (shot && shotManager) {
+      shotManager.applyShotMove(camera, rig.group, shot, localT, 0);
+    } else {
+      camera.position.copy(rig.group.position);
+      camera.quaternion.copy(rig.group.quaternion);
+    }
+    camera.updateMatrixWorld(true);
+    renderer.render(app.scene, camera);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.86);
+    renderer.setViewport(oldViewport);
+    renderer.setScissorTest(oldScissorTest);
+    return { dataUrl, width, height };
+  }
+  function collectShotsForScene(app) {
+    const cameras = app.staging?.cameras;
+    const shotManager = app.staging?.shotManager;
+    const rigs = cameras?.rigs || [];
+    const defaultRig = cameras?.defaultRig || rigs[0] || null;
+    const shots = shotManager?.shots || [];
+    if (shots.length) {
+      return shots.map((shot) => {
+        const rig = cameras?.get?.(shot.cameraId) || defaultRig;
+        return {
+          shot,
+          rig,
+          name: shot.name,
+          cameraName: rig?.name ? `Camera ${rig.name}` : "Default Camera",
+          move: shot.move || "Static",
+          duration: Number.isFinite(shot.duration) ? shot.duration : 3,
+          speed: Number.isFinite(shot.speed) ? shot.speed : 1,
+          easing: shot.easing || "io",
+          startFrame: !!shot.startFrame,
+          endFrame: !!shot.endFrame,
+          notes: shot.notes || ""
+        };
+      }).filter((item) => item.rig);
+    }
+    if (!defaultRig) return [];
+    return [{
+      shot: null,
+      rig: defaultRig,
+      name: "Scene camera",
+      cameraName: defaultRig.name ? `Camera ${defaultRig.name}` : "Default Camera",
+      move: "Static",
+      duration: 0,
+      speed: 1,
+      easing: "io",
+      startFrame: false,
+      endFrame: false,
+      notes: "No shot timeline has been added to this scene yet."
+    }];
+  }
+  async function exportStoryboardPDF(app) {
+    const scenes = app.staging?.scenes;
+    if (!scenes) {
+      app.ui?.showNotification?.("No scene manager available", "error");
+      return;
+    }
+    const originalScene = scenes.currentSceneName;
+    const sceneNames = scenes.getSceneNames();
+    if (!sceneNames.length) {
+      app.ui?.showNotification?.("Add a scene first", "error");
+      return;
+    }
+    app.ui?.showNotification?.("Building storyboard PDF\u2026", "info");
+    const pages = [];
+    const builder = new PDFBuilder();
+    try {
+      scenes.saveCurrentSceneState();
+      for (const sceneName of sceneNames) {
+        if (scenes.currentSceneName !== sceneName) {
+          scenes.switchToScene(sceneName);
+        }
+        const items = collectShotsForScene(app);
+        for (const item of items) {
+          const frames = [];
+          if (item.shot) {
+            frames.push(renderFrame(app, item.rig, item.shot, app.staging.shotManager, 0));
+            frames.push(renderFrame(app, item.rig, item.shot, app.staging.shotManager, item.duration));
+          } else {
+            frames.push(renderFrame(app, item.rig, null, null, 0));
+          }
+          pages.push(makePage(builder, sceneName, item, frames));
+        }
+      }
+    } finally {
+      if (scenes.currentSceneName !== originalScene) {
+        try {
+          scenes.switchToScene(originalScene);
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+    }
+    if (!pages.length) {
+      app.ui?.showNotification?.("No cameras found for the storyboard", "error");
+      return;
+    }
+    const pdf = new Blob([builder.finish(pages)], { type: "application/pdf" });
+    const url = URL.createObjectURL(pdf);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "pixel-staging-storyboard.pdf";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    app.ui?.showNotification?.(`Storyboard exported (${pages.length} pages)`, "success");
+  }
 
   // js/main.js
   var StageApp = class {
@@ -45464,6 +45946,7 @@ ${elements.join("\n")}
       this.isDraggingGizmo = false;
       this.gizmoDragJustEnded = false;
       this.originalColors = /* @__PURE__ */ new Map();
+      this.controlMode = "camera";
       this.APP_DEFAULTS = APP_DEFAULTS2;
       this.snapEnabled = APP_DEFAULTS2.snap.enabled;
       this.snapMode = APP_DEFAULTS2.snap.mode;
@@ -45587,6 +46070,7 @@ ${elements.join("\n")}
       this.setGridVisible(true);
       this.setAxesVisible(true);
       this.addDefaultTestObjects();
+      this.staging.cameras.ensureDefaultRig();
       this.initializeEditorModules();
       this.historyManager.updateUndoRedoButtons();
       this.animate();
@@ -45604,9 +46088,26 @@ ${elements.join("\n")}
         }
       });
       try {
+        this.staging.shotManager.buildUI();
+        if (this.staging.shotManager.ui?.root) {
+          this.staging.shotManager.ui.root.style.display = "flex";
+          this.staging.shotManager.refreshUI();
+        }
+      } catch (error) {
+        console.error("Shot timeline failed to initialize:", error);
+      }
+      try {
         this.ui.renderHierarchyPanel();
       } catch (error) {
         console.error("Editor panels failed to refresh:", error);
+      }
+      try {
+        if (this.staging.scenes.restorePersistedScenes()) {
+          this.staging.cameras.ensureDefaultRig();
+          this.ui.renderHierarchyPanel();
+        }
+      } catch (error) {
+        console.error("Saved scenes failed to restore:", error);
       }
     }
     // Setup transform controls after camera is properly initialized
@@ -45670,11 +46171,41 @@ ${elements.join("\n")}
           this.clearSnapGuides();
         });
         this.transformControl.setSize(APP_DEFAULTS2.transform.gizmoSize);
-        this.transformControl.visible = true;
+        this.transformControl.visible = false;
         this.transformControl.space = "local";
         this.scene.add(this.transformControl);
         this.transformControl.setMode("translate");
+        this.setControlMode("camera");
       }, APP_DEFAULTS2.init.uiInitDelay);
+    }
+    /**
+     * Switch the viewport controls between the camera and scene objects.
+     * Camera mode: drag to look around / navigate the view.
+     * Scene mode: click objects and use the transform gizmo.
+     */
+    setControlMode(mode) {
+      this.controlMode = mode === "scene" ? "scene" : "camera";
+      if (this.orbit) {
+        this.orbit.enabled = this.controlMode === "camera";
+        if (this.controlMode === "camera") {
+          this.orbit.enablePan = true;
+          this.orbit.screenSpacePanning = true;
+        }
+      }
+      if (this.transformControl) {
+        this.transformControl.enabled = this.controlMode === "scene";
+        this.transformControl.visible = this.controlMode === "scene" && !!this.selectedObject;
+        if (this.controlMode === "camera") this.transformControl.detach();
+      }
+      if (this.controlMode === "camera" && this.staging?.shotManager) {
+        this.staging.shotManager.previewActive = false;
+      }
+      const checkbox = document.getElementById("transform-space-checkbox");
+      const label = document.querySelector(".transform-space-toggle .toggle-label");
+      if (checkbox) checkbox.checked = this.controlMode === "camera";
+      if (label) label.textContent = this.controlMode === "camera" ? "Camera" : "Scene";
+      this.renderer?.domElement && (this.renderer.domElement.style.cursor = "default");
+      this.ui?.showNotification?.(this.controlMode === "camera" ? "Camera controls: drag the view" : "Scene controls: move objects", "info");
     }
     // Configure orbit controls for optimal touch/trackpad experience
     configureOrbitControlsForTouch() {
@@ -45688,18 +46219,10 @@ ${elements.join("\n")}
         this.orbit.enabled = false;
       }
     }
-    toggleTransformSpace(useLocalSpace) {
-      if (this.transformControl) {
-        this.transformControl.space = useLocalSpace ? "local" : "world";
-        const label = document.querySelector(".transform-space-toggle .toggle-label");
-        if (label) {
-          label.textContent = useLocalSpace ? "Local" : "World";
-        }
-        this.ui.showNotification(
-          `Transform space: ${useLocalSpace ? "Local" : "World"}`,
-          "info"
-        );
-      }
+    // Kept as a compatibility alias for older UI bindings. The switch now
+    // controls camera-vs-scene editing, not local-vs-world transform space.
+    toggleTransformSpace(useCameraMode) {
+      this.setControlMode(useCameraMode ? "camera" : "scene");
     }
     // --- UNDO/REDO METHODS ---
     undo() {
@@ -45822,6 +46345,9 @@ ${elements.join("\n")}
     }
     importShotTimeline(data) {
       return this.staging.shotManager.importTimeline(data);
+    }
+    async exportStoryboardPDF() {
+      return exportStoryboardPDF(this);
     }
     // --- SCENE MANAGER ---
     createScene(name) {
@@ -45971,6 +46497,10 @@ ${elements.join("\n")}
     }
     // --- MANIPULATION ---
     onPointerMove(event) {
+      if (this.controlMode === "camera") {
+        this.renderer.domElement.style.cursor = "grab";
+        return;
+      }
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
       this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -46033,7 +46563,7 @@ ${elements.join("\n")}
     }
     // --- POINTER EVENTS ---
     onPointerUpForDeselect(event) {
-      if (this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
+      if (this.controlMode === "camera" || this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
         return;
       }
       const rect = this.renderer.domElement.getBoundingClientRect();
@@ -46052,6 +46582,10 @@ ${elements.join("\n")}
       }
     }
     onPointerDown(event) {
+      if (this.controlMode === "camera") {
+        this.renderer.domElement.style.cursor = "grabbing";
+        return;
+      }
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
       this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -46100,7 +46634,7 @@ ${elements.join("\n")}
       }
       if (this.transformControl) {
         this.transformControl.attach(this.selectedObject);
-        this.transformControl.visible = true;
+        this.transformControl.visible = this.controlMode === "scene";
         this.transformControl.setSize(APP_DEFAULTS2.transform.selectGizmoSize);
       }
       this.ui.resetPanelToDefault();
@@ -46118,21 +46652,16 @@ ${elements.join("\n")}
     setTransformMode(mode) {
       if (mode === "hand") {
         if (this.orbit) {
-          this.orbit.enabled = true;
-          this.transformControl.visible = false;
-          this.transformControl.detach();
           this.orbit.enablePan = true;
           this.orbit.screenSpacePanning = true;
           this.orbit.panSpeed = APP_DEFAULTS2.transform.handPanSpeed;
           this.orbit.enableDamping = true;
           this.orbit.dampingFactor = APP_DEFAULTS2.transform.dampingFactor;
-          this.ui.showNotification("Hand Tool: Single-finger panning enabled", "info");
         }
+        this.setControlMode("camera");
+        this.ui.showNotification("Camera controls: drag to look, right-drag to pan", "info");
       } else {
-        if (this.orbit) {
-          this.orbit.enabled = false;
-          this.transformControl.visible = true;
-        }
+        this.setControlMode("scene");
         this.transformControl.setMode(mode);
         const modeNames = {
           "translate": "Translate",

@@ -22,6 +22,7 @@ import { CameraRigManager } from './staging/cameras/rigManager.js';
 import { ShotBoard } from './staging/shots/shotBoard.js';
 import { ShotManager } from './staging/shots/shotManager.js';
 import { SceneManager } from './staging/scenes/sceneManager.js';
+import { exportStoryboardPDF } from './storyboardExporter.js';
 
 class StageApp {
     constructor() {
@@ -42,6 +43,8 @@ class StageApp {
         this.isDraggingGizmo = false;
         this.gizmoDragJustEnded = false;
         this.originalColors = new Map();
+        // 'camera' = drag/navigate the view; 'scene' = select and transform objects.
+        this.controlMode = 'camera';
 
         // Snap state
         this.APP_DEFAULTS = APP_DEFAULTS;
@@ -198,6 +201,9 @@ class StageApp {
         // broken panel must never prevent the renderer or default scene loading.
         this.addDefaultTestObjects();
 
+        // Every scene owns a permanent camera, even before any shot is added.
+        this.staging.cameras.ensureDefaultRig();
+
         this.initializeEditorModules();
 
         // Initialize undo/redo buttons state
@@ -221,12 +227,34 @@ class StageApp {
             }
         });
 
+        // Make the shot timeline visible so shots are discoverable without
+        // digging through a secondary panel.
+        try {
+            this.staging.shotManager.buildUI();
+            if (this.staging.shotManager.ui?.root) {
+                this.staging.shotManager.ui.root.style.display = 'flex';
+                this.staging.shotManager.refreshUI();
+            }
+        } catch (error) {
+            console.error('Shot timeline failed to initialize:', error);
+        }
+
         // Refresh panels after the default objects exist, even if another
         // optional editor module could not initialize.
         try {
             this.ui.renderHierarchyPanel();
         } catch (error) {
             console.error('Editor panels failed to refresh:', error);
+        }
+
+        // Restore saved scenes when available; otherwise the starter scene stays.
+        try {
+            if (this.staging.scenes.restorePersistedScenes()) {
+                this.staging.cameras.ensureDefaultRig();
+                this.ui.renderHierarchyPanel();
+            }
+        } catch (error) {
+            console.error('Saved scenes failed to restore:', error);
         }
     }
 
@@ -309,12 +337,50 @@ class StageApp {
 
             // Ensure transform controls are visible and have proper size
             this.transformControl.setSize(APP_DEFAULTS.transform.gizmoSize);
-            this.transformControl.visible = true;
+            this.transformControl.visible = false;
             this.transformControl.space = 'local';
 
             this.scene.add(this.transformControl);
             this.transformControl.setMode('translate');
+            this.setControlMode('camera');
         }, APP_DEFAULTS.init.uiInitDelay);
+    }
+
+    /**
+     * Switch the viewport controls between the camera and scene objects.
+     * Camera mode: drag to look around / navigate the view.
+     * Scene mode: click objects and use the transform gizmo.
+     */
+    setControlMode(mode) {
+        this.controlMode = mode === 'scene' ? 'scene' : 'camera';
+
+        if (this.orbit) {
+            this.orbit.enabled = this.controlMode === 'camera';
+            if (this.controlMode === 'camera') {
+                this.orbit.enablePan = true;
+                this.orbit.screenSpacePanning = true;
+            }
+        }
+
+        if (this.transformControl) {
+            this.transformControl.enabled = this.controlMode === 'scene';
+            this.transformControl.visible = this.controlMode === 'scene' && !!this.selectedObject;
+            if (this.controlMode === 'camera') this.transformControl.detach();
+        }
+
+        // Dragging the editor camera exits the shot preview so the user sees
+        // exactly what the controls are moving.
+        if (this.controlMode === 'camera' && this.staging?.shotManager) {
+            this.staging.shotManager.previewActive = false;
+        }
+
+        const checkbox = document.getElementById('transform-space-checkbox');
+        const label = document.querySelector('.transform-space-toggle .toggle-label');
+        if (checkbox) checkbox.checked = this.controlMode === 'camera';
+        if (label) label.textContent = this.controlMode === 'camera' ? 'Camera' : 'Scene';
+
+        this.renderer?.domElement && (this.renderer.domElement.style.cursor = 'default');
+        this.ui?.showNotification?.(this.controlMode === 'camera' ? 'Camera controls: drag the view' : 'Scene controls: move objects', 'info');
     }
 
     // Configure orbit controls for optimal touch/trackpad experience
@@ -334,18 +400,10 @@ class StageApp {
         }
     }
     
-        toggleTransformSpace(useLocalSpace) {
-            if (this.transformControl) {
-                this.transformControl.space = useLocalSpace ? 'local' : 'world';
-                const label = document.querySelector('.transform-space-toggle .toggle-label');
-                if (label) {
-                    label.textContent = useLocalSpace ? 'Local' : 'World';
-                }
-                this.ui.showNotification(
-                    `Transform space: ${useLocalSpace ? 'Local' : 'World'}`,
-                    'info'
-                );
-            }
+        // Kept as a compatibility alias for older UI bindings. The switch now
+        // controls camera-vs-scene editing, not local-vs-world transform space.
+        toggleTransformSpace(useCameraMode) {
+            this.setControlMode(useCameraMode ? 'camera' : 'scene');
         }
 
     // --- UNDO/REDO METHODS ---
@@ -502,6 +560,10 @@ class StageApp {
 
     importShotTimeline(data) {
         return this.staging.shotManager.importTimeline(data);
+    }
+
+    async exportStoryboardPDF() {
+        return exportStoryboardPDF(this);
     }
 
     // --- SCENE MANAGER ---
@@ -695,6 +757,12 @@ class StageApp {
     // --- MANIPULATION ---
 
     onPointerMove(event) {
+        // In camera mode the canvas is only for looking around, not selecting.
+        if (this.controlMode === 'camera') {
+            this.renderer.domElement.style.cursor = 'grab';
+            return;
+        }
+
         const rect = this.renderer.domElement.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -776,7 +844,7 @@ class StageApp {
     // --- POINTER EVENTS ---
 
     onPointerUpForDeselect(event) {
-        if (this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
+        if (this.controlMode === 'camera' || this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
             return;
         }
         
@@ -801,6 +869,12 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     }
 
     onPointerDown(event) {
+        // Camera mode: let OrbitControls handle the drag on the canvas.
+        if (this.controlMode === 'camera') {
+            this.renderer.domElement.style.cursor = 'grabbing';
+            return;
+        }
+
         // Calculate mouse position
         const rect = this.renderer.domElement.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -872,7 +946,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
         if (this.transformControl) {
             this.transformControl.attach(this.selectedObject);
-            this.transformControl.visible = true;
+            this.transformControl.visible = this.controlMode === 'scene';
             this.transformControl.setSize(APP_DEFAULTS.transform.selectGizmoSize);
         }
 
@@ -896,24 +970,16 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     setTransformMode(mode) {
         if (mode === 'hand') {
             if (this.orbit) {
-                this.orbit.enabled = true;
-                this.transformControl.visible = false;
-                this.transformControl.detach();
-
                 this.orbit.enablePan = true;
                 this.orbit.screenSpacePanning = true;
                 this.orbit.panSpeed = APP_DEFAULTS.transform.handPanSpeed;
-
                 this.orbit.enableDamping = true;
                 this.orbit.dampingFactor = APP_DEFAULTS.transform.dampingFactor;
-
-                this.ui.showNotification('Hand Tool: Single-finger panning enabled', 'info');
             }
+            this.setControlMode('camera');
+            this.ui.showNotification('Camera controls: drag to look, right-drag to pan', 'info');
         } else {
-            if (this.orbit) {
-                this.orbit.enabled = false;
-                this.transformControl.visible = true;
-            }
+            this.setControlMode('scene');
             this.transformControl.setMode(mode);
 
             const modeNames = {
