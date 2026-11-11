@@ -212,26 +212,128 @@ function hideExportHelpers(app) {
     return () => hidden.forEach(object => { object.visible = true; });
 }
 
-function renderWithCamera(app, camera) {
+function getRenderSize(app) {
     const renderer = app.renderer;
     const canvas = renderer.domElement;
-    const width = canvas.width;
-    const height = canvas.height;
+    const size = renderer.getSize(new THREE.Vector2());
+    return {
+        width: Math.max(1, Math.round(size.x || canvas.clientWidth || canvas.width)),
+        height: Math.max(1, Math.round(size.y || canvas.clientHeight || canvas.height))
+    };
+}
+
+/** Draw the same thirds / safe-area guides used by the viewport into a still. */
+function drawCameraGuides(ctx, width, height) {
+    const stroke = Math.max(1, Math.round(Math.min(width, height) / 720));
+    const insetRect = (inset) => {
+        const x = width * inset;
+        const y = height * inset;
+        ctx.strokeRect(x, y, width - x * 2, height - y * 2);
+    };
+
+    ctx.save();
+    ctx.lineWidth = stroke;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.24)';
+    ctx.beginPath();
+    ctx.moveTo(width / 3, 0);
+    ctx.lineTo(width / 3, height);
+    ctx.moveTo((width / 3) * 2, 0);
+    ctx.lineTo((width / 3) * 2, height);
+    ctx.moveTo(0, height / 3);
+    ctx.lineTo(width, height / 3);
+    ctx.moveTo(0, (height / 3) * 2);
+    ctx.lineTo(width, (height / 3) * 2);
+    ctx.stroke();
+
+    ctx.setLineDash([stroke * 5, stroke * 4]);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.42)';
+    insetRect(0.05);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+    ctx.strokeRect(width * 0.1, height * 0.1, width * 0.8, height * 0.8);
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.beginPath();
+    ctx.moveTo(width / 2 - stroke * 8, height / 2);
+    ctx.lineTo(width / 2 + stroke * 8, height / 2);
+    ctx.moveTo(width / 2, height / 2 - stroke * 8);
+    ctx.lineTo(width / 2, height / 2 + stroke * 8);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function renderWithCamera(app, camera, { aspect = null, guides = false } = {}) {
+    const renderer = app.renderer;
+    const canvas = renderer.domElement;
+    const { width, height } = getRenderSize(app);
     const oldViewport = renderer.getViewport(new THREE.Vector4());
+    const oldScissor = renderer.getScissor(new THREE.Vector4());
     const oldScissorTest = renderer.getScissorTest();
     const restoreHelpers = hideExportHelpers(app);
 
-    renderer.setScissorTest(false);
-    renderer.setViewport(0, 0, width, height);
+    // Frame the still exactly like the camera preview: a centred viewport
+    // with the camera's own aspect, rather than stretching the camera over
+    // the whole editor canvas.
+    let vx = 0;
+    let vy = 0;
+    let vw = width;
+    let vh = height;
+    if (Number.isFinite(aspect) && aspect > 0) {
+        if (width / height > aspect) {
+            vh = height;
+            vw = height * aspect;
+        } else {
+            vw = width;
+            vh = width / aspect;
+        }
+        vx = (width - vw) / 2;
+        vy = (height - vh) / 2;
+        if (camera.isPerspectiveCamera) {
+            camera.aspect = aspect;
+            camera.updateProjectionMatrix();
+        }
+    }
+
+    renderer.setScissorTest(true);
+    renderer.setViewport(vx, vy, vw, vh);
+    renderer.setScissor(vx, vy, vw, vh);
     camera.updateMatrixWorld(true);
     renderer.render(app.scene, camera);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
+
+    // Copy just the rendered camera viewport at full drawing-buffer
+    // resolution. setViewport() takes CSS pixels, while the canvas is in
+    // device pixels, so account for the renderer's pixel ratio here.
+    const scaleX = canvas.width / width;
+    const scaleY = canvas.height / height;
+    const outWidth = Math.max(1, Math.round(vw * scaleX));
+    const outHeight = Math.max(1, Math.round(vh * scaleY));
+    const out = document.createElement('canvas');
+    out.width = outWidth;
+    out.height = outHeight;
+    const ctx = out.getContext('2d');
+    ctx.drawImage(
+        canvas,
+        Math.round(vx * scaleX),
+        Math.round(vy * scaleY),
+        outWidth,
+        outHeight,
+        0,
+        0,
+        outWidth,
+        outHeight
+    );
+    if (guides && app.cameraGuidesEnabled && !document.body.classList.contains('overlays-hidden')) {
+        drawCameraGuides(ctx, outWidth, outHeight);
+    }
+
+    const dataUrl = out.toDataURL('image/jpeg', 0.86);
 
     renderer.setViewport(oldViewport);
+    renderer.setScissor(oldScissor);
     renderer.setScissorTest(oldScissorTest);
     restoreHelpers();
 
-    return { dataUrl, width, height, position: camera.position.toArray() };
+    return { dataUrl, width: outWidth, height: outHeight, position: camera.position.toArray() };
 }
 
 function getSceneBounds(app) {
@@ -248,16 +350,20 @@ function getSceneBounds(app) {
 
 function renderSceneViews(app) {
     const box = getSceneBounds(app);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const canvas = app.renderer.domElement;
-    const aspect = canvas.width / canvas.height;
-    const extent = Math.max(size.x, size.y, size.z, 4) * 1.25;
-    const halfHeight = extent / 2;
-    const halfWidth = halfHeight * aspect;
-    const distance = Math.max(size.x, size.y, size.z, 4) * 2;
+    const boundsCenter = box.getCenter(new THREE.Vector3());
+    const { width, height } = getRenderSize(app);
+    const aspect = width / height;
 
-    const makeCamera = (position, up) => {
+    // Scene views are laid out from the world origin (the default model
+    // position), not from an off-centre bounding box. The vertical focus
+    // stays on the content so side views are not framed around the floor.
+    const center = new THREE.Vector3(0, boundsCenter.y, 0);
+    const halfX = Math.max(Math.abs(box.min.x), Math.abs(box.max.x), 2) * 1.15;
+    const halfY = Math.max(Math.abs(box.max.y - center.y), Math.abs(box.min.y - center.y), 2) * 1.15;
+    const halfZ = Math.max(Math.abs(box.min.z), Math.abs(box.max.z), 2) * 1.15;
+    const distance = Math.max(halfX, halfY, halfZ) * 2.2;
+
+    const makeCamera = (position, up, halfHeight, halfWidth) => {
         const camera = new THREE.OrthographicCamera(-halfWidth, halfWidth, halfHeight, -halfHeight, 0.1, distance * 4);
         camera.position.copy(position);
         camera.up.copy(up);
@@ -266,10 +372,14 @@ function renderSceneViews(app) {
         return camera;
     };
 
+    // Fit each view to the full scene extent on both axes.
+    const topdownHeight = Math.max(halfZ, halfX / aspect);
+    const sideHeight = Math.max(halfY, halfZ / aspect);
+
     return [
-        { label: 'Topdown view', ...renderWithCamera(app, makeCamera(new THREE.Vector3(center.x, box.max.y + distance, center.z), new THREE.Vector3(0, 0, -1))) },
-        { label: 'Left side view', ...renderWithCamera(app, makeCamera(new THREE.Vector3(box.min.x - distance, center.y, center.z), new THREE.Vector3(0, 1, 0))) },
-        { label: 'Right side view', ...renderWithCamera(app, makeCamera(new THREE.Vector3(box.max.x + distance, center.y, center.z), new THREE.Vector3(0, 1, 0))) }
+        { label: 'Topdown view', ...renderWithCamera(app, makeCamera(new THREE.Vector3(center.x, Math.max(box.max.y, center.y) + distance, center.z), new THREE.Vector3(0, 0, -1), topdownHeight, topdownHeight * aspect)) },
+        { label: 'Left side view', ...renderWithCamera(app, makeCamera(new THREE.Vector3(Math.min(box.min.x, 0) - distance, center.y, center.z), new THREE.Vector3(0, 1, 0), sideHeight, sideHeight * aspect)) },
+        { label: 'Right side view', ...renderWithCamera(app, makeCamera(new THREE.Vector3(Math.max(box.max.x, 0) + distance, center.y, center.z), new THREE.Vector3(0, 1, 0), sideHeight, sideHeight * aspect)) }
     ];
 }
 
@@ -296,10 +406,7 @@ function makeSceneViewsPage(builder, sceneName, views) {
 }
 
 function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) {
-    const canvas = app.renderer.domElement;
     const camera = rig.camera.clone();
-    camera.aspect = canvas.width / canvas.height;
-    camera.updateProjectionMatrix();
 
     if (explicitFrame) {
         camera.position.fromArray(explicitFrame.position);
@@ -318,7 +425,7 @@ function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) 
         camera.quaternion.copy(worldQuaternion);
     }
 
-    return renderWithCamera(app, camera);
+    return renderWithCamera(app, camera, { aspect: rig.camera.aspect, guides: true });
 }
 
 function collectShotsForScene(app) {
