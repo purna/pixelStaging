@@ -593,8 +593,11 @@ class StageApp {
         if (checkbox) checkbox.checked = this.controlMode === 'camera';
         if (label) label.textContent = this.controlMode === 'camera' ? 'Camera' : 'Scene';
 
-        // Camera nudge tools belong to camera control mode only.
+        // Camera nudge tools and the shot timeline belong to camera mode only.
         document.getElementById('camera-nudge')?.classList.toggle('hidden', this.controlMode !== 'camera');
+        const timeline = document.getElementById('shot-timeline');
+        if (timeline) timeline.style.display = this.controlMode === 'camera' ? 'flex' : 'none';
+        if (this.controlMode === 'camera') this.staging?.shotManager?.refreshUI?.();
         document.getElementById('selection-info')?.classList.toggle('hidden', !(this.selectedObject && this.controlMode === 'scene'));
 
         this.renderer?.domElement && (this.renderer.domElement.style.cursor = 'default');
