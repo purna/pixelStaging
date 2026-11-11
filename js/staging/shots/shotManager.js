@@ -274,6 +274,10 @@ export class ShotManager {
         const rig = shot ? cameras?.get(shot.cameraId) : null;
         if (!shot || !rig) return;
 
+        const shotIndex = this.shots.indexOf(shot);
+        this.selectedShotIndex = shotIndex;
+        this.currentTime = this.getShotStartTime(shotIndex) + (frameType === 'end' ? shot.duration : 0);
+
         const frame = shot[frameType === 'start' ? 'startFrame' : 'endFrame'];
         const temp = rig.camera.clone();
         if (frame) {
@@ -299,7 +303,6 @@ export class ShotManager {
             this.app.orbit.update();
         }
 
-        this.selectedShotIndex = this.shots.indexOf(shot);
         this.editingFrame = frameType;
         this.viewMode = 'frame';
         this.previewActive = false;
