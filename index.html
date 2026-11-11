@@ -400,15 +400,20 @@ Block actors, props and architecture">
             </div>
 
             <!-- Shot Timeline Panel (bottom bar) -->
+            <div id="transition-overlay"></div>
+
             <div id="shot-timeline">
                 <div class="shot-timeline-top">
-                    <button class="btn" id="timeline-play" title="Play" style="padding: 4px 8px;">▶</button>
-                    <button class="btn" id="timeline-pause" title="Pause" style="padding: 4px 8px; display: none;">❚❚</button>
-                    <input type="range" id="shot-scrub" min="0" max="1000" value="0" style="flex: 2;">
-                    <span id="shot-time-label">No shots</span>
-                    <button class="btn" id="timeline-add-shot" title="Add Shot" style="padding: 4px 8px; margin-left: auto;">+ Shot</button>
-                    <button class="btn" id="timeline-loop" title="Loop" style="padding: 4px 8px;">➡</button>
+                    <button class="btn timeline-icon-btn" id="timeline-stop" title="Stop and return to edit view">■</button>
+                    <button class="btn timeline-play-btn" id="timeline-play-shot" title="Play the selected shot">▶ Play shot</button>
+                    <button class="btn timeline-play-btn" id="timeline-play-all" title="Play all shots">Play all</button>
+                    <button class="btn timeline-icon-btn" id="timeline-pause" title="Pause" style="display:none;">❚❚</button>
+                    <span id="shot-time-label">0:00.0 / 0:00.0</span>
+                    <label class="timeline-check"><input type="checkbox" id="timeline-loop"> Loop</label>
+                    <label class="timeline-check"><input type="checkbox" id="timeline-show-path"> Show path</label>
+                    <button class="btn" id="timeline-add-shot" title="Add Shot" style="margin-left:auto;">+ Shot</button>
                     <button class="btn" id="timeline-export-pdf" title="Export storyboard PDF">PDF</button>
+                    <button class="btn" id="timeline-report" title="Open detailed storyboard report">Report</button>
                 </div>
                 <div class="shot-timeline-track">
                     <div class="shot-timeline-ruler" id="shot-timeline-ruler"></div>
@@ -492,6 +497,11 @@ Block actors, props and architecture">
                                         <label class="property-label">Scene Title: <input type="text" id="scene-title"
                                                 value="My Scene"
                                                 style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px;"></label>
+                                    </div>
+                                    <div class="property-group">
+                                        <label class="property-label" for="scene-notes">Scene Notes:</label>
+                                        <textarea id="scene-notes" rows="4" placeholder="Set description, lighting notes, continuity notes…"
+                                                style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px; resize: vertical;"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -732,6 +742,9 @@ Block actors, props and architecture">
                                 </button>
                                 <button class="tool-btn" id="sd-export-pdf" title="Export storyboard PDF" data-tooltip="**Export PDF**\nExport all scene storyboards with camera notes">
                                     <i class="fas fa-file-pdf"></i>
+                                </button>
+                                <button class="tool-btn" id="sd-report" title="Open storyboard report" data-tooltip="**Report**\nOpen a printable report with screenshots, camera details and notes">
+                                    <i class="fas fa-file-alt"></i>
                                 </button>
                             </div>
 

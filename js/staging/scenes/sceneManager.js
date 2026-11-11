@@ -30,7 +30,8 @@ export class SceneManager {
         const sceneData = {
             id: 'scene_' + Math.random().toString(36).slice(2, 9),
             name,
-            objects: [],
+            objects: this.makeStarterObjects(),
+            notes: '',
             // A scene always starts with its own non-deletable camera.
             cameraRigs: [this.makeDefaultCamera()],
             shots: [],
@@ -84,8 +85,12 @@ export class SceneManager {
         const newName = `${name} (copy)`;
         const newScene = this.createScene(newName, false);
         
-        // Copy objects (we'll just reference them for now, deep copy would be more complex)
+        // Copy the scene payload so a duplicate starts in the same state.
         newScene.settings = JSON.parse(JSON.stringify(source.settings));
+        newScene.objects = JSON.parse(JSON.stringify(source.objects || []));
+        newScene.cameraRigs = JSON.parse(JSON.stringify(source.cameraRigs || []));
+        newScene.shots = JSON.parse(JSON.stringify(source.shots || []));
+        newScene.notes = source.notes || '';
         
         this.refreshUI();
         return newScene;
@@ -106,6 +111,41 @@ export class SceneManager {
         this.app.ui?.showNotification(`Switched to scene "${name}"`, 'info');
         this.refreshUI();
         return true;
+    }
+
+    makeStarterObjects() {
+        const staging = (name, presetId, position, rotation = [0, 0, 0]) => ({
+            type: 'staging',
+            name,
+            position: { x: position[0], y: position[1], z: position[2] },
+            rotation: { x: rotation[0], y: rotation[1], z: rotation[2] },
+            scale: { x: 1, y: 1, z: 1 },
+            visible: true,
+            userData: {
+                type: 'staging',
+                name,
+                staging: {
+                    id: `starter_${presetId}_${Math.random().toString(36).slice(2, 7)}`,
+                    kind: presetId === 'figure-standing' ? 'figure' : 'architecture',
+                    presetId,
+                    params: {},
+                    colorOverride: null
+                }
+            },
+            staging: {
+                kind: presetId === 'figure-standing' ? 'figure' : 'architecture',
+                presetId,
+                params: {},
+                colorOverride: null
+            }
+        });
+
+        return [
+            staging('Floor', 'floor', [0, 0, 0]),
+            staging('Wall (straight)', 'wall-straight', [0, 0, -5]),
+            staging('Wall (straight)', 'wall-straight', [-5, 0, 0], [0, Math.PI / 2, 0]),
+            staging('Actor (standing)', 'figure-standing', [0, 0, 0])
+        ];
     }
 
     makeDefaultCamera() {
@@ -303,6 +343,17 @@ export class SceneManager {
         return true;
     }
 
+    setSceneNotes(notes) {
+        const sceneData = this.scenes.get(this.currentSceneName);
+        if (!sceneData) return false;
+        sceneData.notes = notes;
+        return true;
+    }
+
+    getSceneNotes(name = this.currentSceneName) {
+        return this.scenes.get(name)?.notes || '';
+    }
+
     refreshUI() {
         // Trigger UI update for scene list
         if (this.app.ui?.renderSceneList) {
@@ -322,6 +373,7 @@ export class SceneManager {
         for (const [name, sceneData] of this.scenes) {
             data.scenes[name] = {
                 name: sceneData.name,
+                notes: sceneData.notes || '',
                 settings: sceneData.settings,
                 objects: sceneData.objects || [],
                 animations: sceneData.animations || { clips: {} },
@@ -343,6 +395,7 @@ export class SceneManager {
             this.scenes.set(name, {
                 id: 'scene_' + Math.random().toString(36).slice(2, 9),
                 name: sceneData.name,
+                notes: sceneData.notes || '',
                 objects: sceneData.objects || [],
                 animations: sceneData.animations || { clips: {} },
                 cameraRigs: sceneData.cameraRigs || [],

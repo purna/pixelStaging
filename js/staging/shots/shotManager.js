@@ -22,6 +22,8 @@ export class ShotManager {
         this.timelineUI = null;
         this.isScrubbing = false;
         this.previewActive = false;
+        this.showPath = false;
+        this._transitionOverlay = null;
         this._moveScale = 1;
         this._moveScaleAt = 0;
         
@@ -142,10 +144,40 @@ export class ShotManager {
     }
 
     play() {
+        this.playAll();
+    }
+
+    playAll() {
         if (this.shots.length === 0) return;
+        this._playStart = 0;
+        this._playEnd = this.duration;
+        this.currentTime = 0;
         this.playing = true;
         this.previewActive = true;
-        if (this.currentTime >= this.duration) this.currentTime = 0;
+        this.refreshUI();
+    }
+
+    playShot(index = this.selectedShotIndex) {
+        const shot = this.shots[index];
+        if (!shot) return;
+        this.selectedShotIndex = index;
+        this._playStart = this.getShotStartTime(index);
+        this._playEnd = this._playStart + shot.duration;
+        this.currentTime = this._playStart;
+        this.playing = true;
+        this.previewActive = true;
+        this.refreshUI();
+    }
+
+    stop() {
+        this.playing = false;
+        this.previewActive = false;
+        this.currentTime = 0;
+        this._playStart = 0;
+        this._playEnd = this.duration;
+        this.clearPreviewBlur();
+        this.clearTransitionOverlay();
+        this.updatePathPreview();
         this.refreshUI();
     }
 
@@ -155,7 +187,7 @@ export class ShotManager {
     }
 
     toggle() {
-        this.playing ? this.pause() : this.play();
+        this.playing ? this.pause() : this.playAll();
     }
 
     seek(t) {
@@ -170,6 +202,7 @@ export class ShotManager {
             this.framingControls.update(delta);
             if (this.framingRig) {
                 this.clearPreviewBlur();
+                this.clearTransitionOverlay();
                 this.framingRig.camera.updateMatrixWorld(true);
                 return this.framingRig.camera;
             }
@@ -177,17 +210,21 @@ export class ShotManager {
         if (!this.playing) {
             if (!this.previewActive) {
                 this.clearPreviewBlur();
+                this.clearTransitionOverlay();
                 return null;
             }
             return this.getPreviewCamera();
         }
 
         this.currentTime += delta * this.playbackRate;
-        if (this.currentTime >= this.duration) {
+        const rangeStart = Number.isFinite(this._playStart) ? this._playStart : 0;
+        const rangeEnd = Number.isFinite(this._playEnd) ? this._playEnd : this.duration;
+        if (this.currentTime >= rangeEnd) {
             if (this.loop) {
-                this.currentTime %= this.duration;
+                const range = Math.max(0.001, rangeEnd - rangeStart);
+                this.currentTime = rangeStart + ((this.currentTime - rangeStart) % range);
             } else {
-                this.currentTime = this.duration;
+                this.currentTime = rangeEnd;
                 this.pause();
             }
         }
@@ -220,6 +257,7 @@ export class ShotManager {
         if (this.app.renderer?.domElement) {
             this.app.renderer.domElement.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '';
         }
+        this.updateTransitionOverlay(active);
 
         return previewCamera;
     }
@@ -228,6 +266,70 @@ export class ShotManager {
         if (this.app.renderer?.domElement) {
             this.app.renderer.domElement.style.filter = '';
         }
+    }
+
+    clearTransitionOverlay() {
+        const overlay = this._transitionOverlay || document.getElementById('transition-overlay');
+        if (overlay) {
+            overlay.style.opacity = '0';
+            overlay.style.background = '#000';
+        }
+    }
+
+    updateTransitionOverlay(active) {
+        const overlay = this._transitionOverlay || document.getElementById('transition-overlay');
+        if (!overlay || !active) return this.clearTransitionOverlay();
+        this._transitionOverlay = overlay;
+
+        const index = active.shotIndex;
+        const shot = active.shot;
+        let alpha = 0;
+        let color = '#000000';
+
+        if (shot.transition?.type && shot.transition.type !== 'none' && index < this.shots.length - 1) {
+            const length = Math.max(0.01, shot.transition.length || 1);
+            if (active.localT > shot.duration - length) {
+                alpha = clamp((active.localT - (shot.duration - length)) / length) * (shot.transition.opacity ?? 1);
+                color = shot.transition.color || '#000000';
+            }
+        }
+
+        const previous = index > 0 ? this.shots[index - 1] : null;
+        if (previous?.transition?.type && previous.transition.type !== 'none') {
+            const length = Math.max(0.01, previous.transition.length || 1);
+            if (active.localT < length) {
+                alpha = Math.max(alpha, (1 - active.localT / length) * (previous.transition.opacity ?? 1));
+                color = previous.transition.color || '#000000';
+            }
+        }
+
+        overlay.style.background = color;
+        overlay.style.opacity = String(clamp(alpha));
+    }
+
+    ensurePathPreview() {
+        if (this.pathLine || !this.app.scene) return;
+        const geometry = new THREE.BufferGeometry();
+        const material = new THREE.LineBasicMaterial({ color: 0xf3b63f, transparent: true, opacity: 0.9 });
+        this.pathLine = new THREE.Line(geometry, material);
+        this.pathLine.name = 'shot-path-preview';
+        this.pathLine.visible = false;
+        this.app.scene.add(this.pathLine);
+
+        const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xf3b63f });
+        this.pathMarkers = [
+            new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 8), markerMaterial),
+            new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 8), markerMaterial)
+        ];
+        this.pathMarkers.forEach(marker => {
+            marker.visible = false;
+            this.app.scene.add(marker);
+        });
+    }
+
+    setShowPath(show) {
+        this.showPath = !!show;
+        this.updatePathPreview();
     }
 
     applyShotMove(camera, rig, shot, localT, time) {
@@ -437,10 +539,21 @@ export class ShotManager {
     }
 
     updatePathPreview() {
+        this.ensurePathPreview();
         if (!this.pathLine) return;
-        
+
+        if (!this.showPath) {
+            this.pathLine.visible = false;
+            this.pathMarkers.forEach(marker => marker.visible = false);
+            return;
+        }
+
         const active = this.getActiveShot();
-        if (!active) return;
+        if (!active) {
+            this.pathLine.visible = false;
+            this.pathMarkers.forEach(marker => marker.visible = false);
+            return;
+        }
         
         const cameras = this.app.staging?.cameras;
         const rig = cameras?.get(active.shot.cameraId);
@@ -458,40 +571,47 @@ export class ShotManager {
         
         this.pathLine.geometry.setFromPoints(points);
         
-        // Update markers
-        if (this.pathMarkers[0]) this.pathMarkers[0].position.copy(points[0]);
-        if (this.pathMarkers[1]) this.pathMarkers[1].position.copy(points[points.length - 1]);
+        this.pathLine.visible = true;
+        if (this.pathMarkers[0]) {
+            this.pathMarkers[0].visible = true;
+            this.pathMarkers[0].position.copy(points[0]);
+        }
+        if (this.pathMarkers[1]) {
+            this.pathMarkers[1].visible = true;
+            this.pathMarkers[1].position.copy(points[points.length - 1]);
+        }
     }
 
     buildUI() {
         if (this.ui) return;
-        
-        // Use existing HTML timeline panel
+
         const bar = document.getElementById('shot-timeline');
         if (!bar) return;
         bar.style.display = 'none';
 
-        const playBtn = document.getElementById('timeline-play');
         const pauseBtn = document.getElementById('timeline-pause');
-        const scrub = document.getElementById('shot-scrub');
+        const stopBtn = document.getElementById('timeline-stop');
+        const playShotBtn = document.getElementById('timeline-play-shot');
+        const playAllBtn = document.getElementById('timeline-play-all');
         const label = document.getElementById('shot-time-label');
         const addBtn = document.getElementById('timeline-add-shot');
-        const loopBtn = document.getElementById('timeline-loop');
-        const cardsContainer = document.getElementById('shot-cards');
+        const loopCheck = document.getElementById('timeline-loop');
+        const pathCheck = document.getElementById('timeline-show-path');
+
+        const formatTime = (seconds) => {
+            const safe = Math.max(0, seconds || 0);
+            return `${Math.floor(safe / 60)}:${(safe % 60).toFixed(1).padStart(4, '0')}`;
+        };
 
         this.ui = {
-            root: bar, playBtn, pauseBtn, scrub, label, addBtn, loopBtn, cardsContainer,
+            root: bar,
+            pauseBtn,
+            label,
+            addBtn,
+            loopCheck,
+            pathCheck,
             updateScrubber: () => {
-                if (scrub && !this.isScrubbing) {
-                    scrub.value = this.duration ? (this.currentTime / this.duration) * 1000 : 0;
-                }
-                if (label) {
-                    const active = this.getActiveShot();
-                    label.textContent = active
-                        ? `${active.shot.name} — ${active.shot.duration.toFixed(1)}s — ${active.shot.easing}   ${this.currentTime.toFixed(1)}/${this.duration.toFixed(1)}s`
-                        : `No shots   ${this.duration.toFixed(1)}s`;
-                }
-                if (playBtn) playBtn.style.display = this.playing ? 'none' : 'inline-block';
+                if (label) label.textContent = `${formatTime(this.currentTime)} / ${formatTime(this.duration)}`;
                 if (pauseBtn) pauseBtn.style.display = this.playing ? 'inline-block' : 'none';
                 const indicator = document.getElementById('shot-time-indicator');
                 if (indicator) {
@@ -501,56 +621,25 @@ export class ShotManager {
         };
         this.buildTimelineUI();
 
-        // Wire up timeline buttons
-        if (playBtn) playBtn.onclick = () => this.toggle();
-        if (pauseBtn) pauseBtn.onclick = () => this.toggle();
-        if (loopBtn) loopBtn.onclick = () => { this.loop = !this.loop; this.refreshUI(); };
-        if (scrub) {
-            scrub.oninput = e => this.seek((e.target.value / 1000) * this.duration);
+        if (stopBtn) stopBtn.onclick = () => this.stop();
+        if (playShotBtn) playShotBtn.onclick = () => this.playShot();
+        if (playAllBtn) playAllBtn.onclick = () => this.playAll();
+        if (pauseBtn) pauseBtn.onclick = () => this.pause();
+        if (loopCheck) {
+            loopCheck.checked = this.loop;
+            loopCheck.onchange = () => { this.loop = loopCheck.checked; };
         }
-        if (addBtn) {
-            addBtn.onclick = () => this.addShotForSelectedCamera();
+        if (pathCheck) {
+            pathCheck.checked = this.showPath;
+            pathCheck.onchange = () => this.setShowPath(pathCheck.checked);
         }
-        const pdfBtn = document.getElementById('timeline-export-pdf');
-        if (pdfBtn) pdfBtn.onclick = () => this.app.exportStoryboardPDF?.();
+        if (addBtn) addBtn.onclick = () => this.addShotForSelectedCamera();
+        document.getElementById('timeline-export-pdf')?.addEventListener('click', () => this.app.exportStoryboardPDF?.());
+        document.getElementById('timeline-report')?.addEventListener('click', () => this.app.openStoryboardReport?.());
     }
 
     buildTimelineUI() {
-        const shot = this.selectedShot;
-        
-        // Update play/pause button visibility
-        if (this.ui.playBtn) this.ui.playBtn.style.display = this.playing ? 'none' : 'inline-block';
         if (this.ui.pauseBtn) this.ui.pauseBtn.style.display = this.playing ? 'inline-block' : 'none';
-        if (this.ui.loopBtn) this.ui.loopBtn.style.background = this.loop ? '#2e7d32' : 'transparent';
-        
-        if (!shot) {
-            if (this.ui.cardsContainer) {
-                this.ui.cardsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #888; font-size: 10px;">No shots yet. Click + Shot to add the first shot.</div>';
-            }
-            // Build empty timeline track
-            this.buildTimelineTrack(null);
-            return;
-        }
-        
-        const cameras = this.app.staging?.cameras;
-        const rig = cameras?.get(shot.cameraId);
-        
-        // Update scrubber
-        if (this.ui.scrub) {
-            this.ui.scrub.max = 1000;
-            this.ui.scrub.value = this.duration ? (this.currentTime / this.duration) * 1000 : 0;
-        }
-        
-        // Shot cards area
-        if (this.ui.cardsContainer) {
-            this.ui.cardsContainer.innerHTML = '';
-            this.shots.forEach((s, i) => {
-                const card = this.createShotCard(s, i, rig);
-                this.ui.cardsContainer.appendChild(card);
-            });
-        }
-        
-        // Timeline track visualization
         this.buildTimelineTrack(document.querySelector('.shot-timeline-track'));
     }
 
@@ -1033,8 +1122,8 @@ export class ShotManager {
                 position: absolute;
                 left: ${left}%;
                 width: ${width}%;
-                top: ${i % 2 === 0 ? '22px' : '48px'};
-                height: 22px;
+                top: ${i % 2 === 0 ? '24px' : '74px'};
+                height: 42px;
                 background: ${color}40;
                 border: 1px solid ${color}80;
                 border-radius: 3px;
@@ -1132,6 +1221,25 @@ export class ShotManager {
             });
             
             container.appendChild(block);
+
+            if (shot.transition?.type && shot.transition.type !== 'none' && i < this.shots.length - 1) {
+                const transition = document.createElement('div');
+                transition.className = 'shot-timeline-transition-marker';
+                transition.style.left = `${((elapsed + shot.duration) / total) * 100}%`;
+                transition.style.top = `${i % 2 === 0 ? '70px' : '116px'}`;
+                transition.title = `Transition: ${shot.transition.type} · ${(shot.transition.length || 1).toFixed(2)}s`;
+                transition.textContent = '⇄';
+                transition.onmousedown = (event) => event.stopPropagation();
+                transition.onclick = (event) => {
+                    event.stopPropagation();
+                    this.selectedShotIndex = i;
+                    this.app.ui._shotDesignerOpenIndex = i;
+                    this.app.ui.renderShotDesignerList?.();
+                    this.refreshUI();
+                };
+                container.appendChild(transition);
+            }
+
             elapsed += shot.duration;
         });
         
@@ -1141,12 +1249,12 @@ export class ShotManager {
             indicator.style.left = total > 0 ? (this.currentTime / total) * 100 + '%' : '0%';
         }
         
-        // Track background click to deselect
+        // Click/drag the ruler or empty track to seek.
         container.onmousedown = (e) => {
-            if (e.target === container || e.target.classList.contains('shot-timeline-ruler')) {
-                this.selectedShotIndex = null;
-                this.refreshUI();
-            }
+            if (e.target !== container && !e.target.classList.contains('shot-timeline-ruler') && !e.target.parentElement?.classList.contains('shot-timeline-ruler')) return;
+            const rect = container.getBoundingClientRect();
+            const time = Math.max(0, Math.min(total, ((e.clientX - rect.left) / rect.width) * total));
+            this.seek(time);
         };
     }
 
@@ -1186,6 +1294,7 @@ export class ShotManager {
         if (!this.ui) return;
         this.buildTimelineUI();
         this.ui.updateScrubber();
+        this.updatePathPreview();
         this.app.updateKeyframeGizmos?.();
     }
 

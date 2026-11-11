@@ -1777,6 +1777,26 @@ export class UI {
             });
         }
 
+        const notesInput = document.getElementById('scene-notes');
+        if (notesInput && !notesInput.dataset.wired) {
+            notesInput.dataset.wired = 'true';
+            notesInput.addEventListener('input', () => scenes.setSceneNotes(notesInput.value));
+            notesInput.addEventListener('change', () => scenes.persistScenes());
+        }
+
+        const titleInput = document.getElementById('scene-title');
+        if (titleInput && !titleInput.dataset.wired) {
+            titleInput.dataset.wired = 'true';
+            titleInput.addEventListener('change', () => {
+                const next = titleInput.value.trim();
+                if (next && next !== scenes.currentSceneName) {
+                    scenes.renameScene(scenes.currentSceneName, next);
+                    scenes.persistScenes();
+                    this.renderSceneList();
+                }
+            });
+        }
+
         this.renderSceneList();
     }
 
@@ -1784,6 +1804,11 @@ export class UI {
         const list = document.getElementById('scene-list');
         const scenes = this.app.staging?.scenes;
         if (!list || !scenes) return;
+
+        const titleInput = document.getElementById('scene-title');
+        const notesInput = document.getElementById('scene-notes');
+        if (titleInput && document.activeElement !== titleInput) titleInput.value = scenes.currentSceneName;
+        if (notesInput && document.activeElement !== notesInput) notesInput.value = scenes.getSceneNotes();
 
         list.innerHTML = scenes.getSceneNames().map(name => `
             <div class="scene-list-item ${name === scenes.currentSceneName ? 'active' : ''}" data-scene-name="${name}">
@@ -2117,6 +2142,8 @@ export class UI {
 
         const exportBtn = document.getElementById('sd-export-pdf');
         if (exportBtn) exportBtn.onclick = () => this.app.exportStoryboardPDF?.();
+        const reportBtn = document.getElementById('sd-report');
+        if (reportBtn) reportBtn.onclick = () => this.app.openStoryboardReport?.();
 
         if (emptyState) emptyState.style.display = 'none';
         if (shotManager.selectedShotIndex != null) this._shotDesignerOpenIndex = shotManager.selectedShotIndex;
@@ -2139,26 +2166,30 @@ export class UI {
 
         shotManager.shots.forEach((shot, index) => {
             const rig = cameras.get(shot.cameraId);
-            const color = rig?.color ? '#' + rig.color.toString(16).padStart(6, '0') : '#888';
+            const color = rig?.color ? '#' + rig.color.toString(16).padStart(6, '0') : '#f3b63f';
             const open = this._shotDesignerOpenIndex === index;
             const selected = shotManager.selectedShotIndex === index;
 
             const item = document.createElement('div');
             item.className = `sd-shot-item${open ? ' open' : ''}${selected ? ' selected' : ''}`;
-            item.dataset.index = index;
 
-            const header = document.createElement('button');
-            header.type = 'button';
+            const header = document.createElement('div');
             header.className = 'sd-shot-header';
             header.innerHTML = `
-                <span class="sd-shot-number" style="border-color:${color};color:${color}">${index + 1}</span>
+                <span class="sd-shot-number">${index + 1}</span>
                 <span class="sd-shot-heading">
-                    <b>${shot.name}</b>
-                    <small>${shot.move} · ${shot.duration.toFixed(1)}s · ×${shot.speed}</small>
+                    <b>${shot.move || shot.name}</b>
+                    <small>${shot.duration.toFixed(1)}s · ×${shot.speed} · ${shot.startFrame ? 'custom start' : 'auto start'} · ${shot.endFrame ? 'custom end' : 'auto end'}</small>
                 </span>
-                <span class="sd-shot-chevron">${open ? '▾' : '▸'}</span>
+                <span class="sd-shot-actions">
+                    <button type="button" data-shot-action="up" title="Move earlier">▲</button>
+                    <button type="button" data-shot-action="down" title="Move later">▼</button>
+                    <button type="button" data-shot-action="duplicate" title="Duplicate">⧉</button>
+                    <button type="button" data-shot-action="delete" title="Delete">✕</button>
+                </span>
             `;
-            header.onclick = () => {
+            header.addEventListener('click', (event) => {
+                if (event.target.closest('[data-shot-action]')) return;
                 shotManager.selectedShotIndex = index;
                 this._shotDesignerOpenIndex = open ? null : index;
                 shotManager.currentTime = shotManager.getShotStartTime(index);
@@ -2166,7 +2197,21 @@ export class UI {
                 shotManager.clearPreviewBlur();
                 this.renderShotDesignerList();
                 this.app.updateKeyframeGizmos?.();
-            };
+            });
+            header.querySelectorAll('[data-shot-action]').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    const action = button.dataset.shotAction;
+                    if (action === 'up') shotManager.moveShot(shot.id, -1);
+                    if (action === 'down') shotManager.moveShot(shot.id, 1);
+                    if (action === 'duplicate') shotManager.duplicateShot(shot.id);
+                    if (action === 'delete') {
+                        shotManager.removeShot(shot.id);
+                        this._shotDesignerOpenIndex = null;
+                    }
+                    this.renderShotDesignerList();
+                });
+            });
             item.appendChild(header);
 
             if (open) item.appendChild(this.buildShotEditor(shot, index));
@@ -2177,18 +2222,38 @@ export class UI {
     buildShotEditor(shot, index) {
         const shotManager = this.app.staging.shotManager;
         const cameras = this.app.staging.cameras;
-        const rig = cameras.get(shot.cameraId);
         const body = document.createElement('div');
         body.className = 'sd-shot-body';
 
-        const row = (label, input) => {
-            const el = document.createElement('label');
-            el.className = 'sd-field';
+        const row = (label, input, className = '') => {
+            const el = document.createElement('div');
+            el.className = `sd-field ${className}`;
             const span = document.createElement('span');
             span.textContent = label;
             el.append(span, input);
             return el;
         };
+
+        const rangeRow = (label, value, min, max, step, formatter, onInput) => {
+            const wrap = document.createElement('span');
+            wrap.className = 'sd-range-wrap';
+            const input = document.createElement('input');
+            input.type = 'range'; input.min = String(min); input.max = String(max); input.step = String(step); input.value = String(value);
+            const output = document.createElement('b');
+            output.className = 'sd-value';
+            output.textContent = formatter(value);
+            input.oninput = () => {
+                output.textContent = formatter(parseFloat(input.value));
+                onInput(parseFloat(input.value));
+            };
+            wrap.append(input, output);
+            return row(label, wrap);
+        };
+
+        const cameraSelect = document.createElement('select');
+        cameraSelect.className = 'shot-designer-select';
+        cameraSelect.innerHTML = cameras.rigs.map(cam => `<option value="${cam.id}"${cam.id === shot.cameraId ? ' selected' : ''}>${cam.isDefault ? 'Default Camera' : `Cam ${cam.name}`}</option>`).join('');
+        cameraSelect.onchange = () => { shot.cameraId = cameraSelect.value; this.renderShotDesignerList(); };
 
         const moveSelect = document.createElement('select');
         moveSelect.className = 'shot-designer-select';
@@ -2197,164 +2262,149 @@ export class UI {
             shot.move = moveSelect.value;
             shot.spec = { ...getMoveSpec(shot.move) };
             if (shot.spec.d) shot.duration = shot.spec.d;
-            initialiseHelp();
             this.renderShotDesignerList();
         };
 
-        const duration = document.createElement('input');
-        duration.type = 'range'; duration.min = '0.5'; duration.max = '30'; duration.step = '0.5';
-        duration.value = shot.duration;
-        const durationValue = document.createElement('b');
-        durationValue.className = 'sd-value';
-        durationValue.textContent = `${shot.duration.toFixed(1)}s`;
-        duration.oninput = () => {
-            shot.duration = parseFloat(duration.value);
-            durationValue.textContent = `${shot.duration.toFixed(1)}s`;
-        };
+        const durationRow = rangeRow('Length', shot.duration, 0.5, 30, 0.5, v => `${v.toFixed(1)}s`, v => { shot.duration = v; });
 
-        const speed = document.createElement('input');
-        speed.type = 'range'; speed.min = '0.05'; speed.max = '8'; speed.step = '0.05';
-        speed.value = shot.speed;
-        const speedValue = document.createElement('b');
-        speedValue.className = 'sd-value';
-        speedValue.textContent = `×${shot.speed}`;
-        speed.oninput = () => {
-            shot.speed = parseFloat(speed.value);
-            speedValue.textContent = `×${shot.speed}`;
-        };
-
-        const easing = document.createElement('select');
-        easing.className = 'shot-designer-select';
-        easing.innerHTML = ['io','in','out','lin','ramp'].map(e => `<option value="${e}"${e === shot.easing ? ' selected' : ''}>${e}</option>`).join('');
-        easing.onchange = () => { shot.easing = easing.value; };
-
-        const fov = document.createElement('input');
-        fov.type = 'range'; fov.min = '15'; fov.max = '120'; fov.step = '1';
-        fov.value = shot.spec?.f?.[0] ?? 55;
-        const fovValue = document.createElement('b');
-        fovValue.className = 'sd-value';
-        fovValue.textContent = `${Math.round(fov.value)}°`;
-        fov.oninput = () => {
-            const value = parseFloat(fov.value);
-            shot.spec.f = [value, value];
-            fovValue.textContent = `${Math.round(value)}°`;
-        };
-
-        const blurStart = document.createElement('input');
-        blurStart.type = 'range'; blurStart.min = '0'; blurStart.max = '20'; blurStart.step = '0.5';
-        blurStart.value = shot.blurStart || 0;
-        const blurStartValue = document.createElement('b');
-        blurStartValue.className = 'sd-value';
-        blurStartValue.textContent = String(shot.blurStart || 0);
-        blurStart.oninput = () => { shot.blurStart = parseFloat(blurStart.value); blurStartValue.textContent = blurStart.value; };
-
-        const blurEnd = document.createElement('input');
-        blurEnd.type = 'range'; blurEnd.min = '0'; blurEnd.max = '20'; blurEnd.step = '0.5';
-        blurEnd.value = shot.blurEnd || 0;
-        const blurEndValue = document.createElement('b');
-        blurEndValue.className = 'sd-value';
-        blurEndValue.textContent = String(shot.blurEnd || 0);
-        blurEnd.oninput = () => { shot.blurEnd = parseFloat(blurEnd.value); blurEndValue.textContent = blurEnd.value; };
-
-        const cameraSelect = document.createElement('select');
-        cameraSelect.className = 'shot-designer-select';
-        cameraSelect.innerHTML = cameras.rigs.map(cam => `<option value="${cam.id}"${cam.id === shot.cameraId ? ' selected' : ''}>${cam.isDefault ? 'Default Camera' : `Cam ${cam.name}`}</option>`).join('');
-        cameraSelect.onchange = () => { shot.cameraId = cameraSelect.value; this.renderShotDesignerList(); };
+        const speedWrap = document.createElement('span');
+        speedWrap.className = 'sd-speed-control';
+        const minus = document.createElement('button'); minus.textContent = '−';
+        const speedValue = document.createElement('b'); speedValue.textContent = `×${shot.speed}`;
+        const plus = document.createElement('button'); plus.textContent = '+';
+        minus.onclick = () => { shot.speed = Math.max(0.05, Math.round((shot.speed - 0.25) * 100) / 100); speedValue.textContent = `×${shot.speed}`; };
+        plus.onclick = () => { shot.speed = Math.min(8, Math.round((shot.speed + 0.25) * 100) / 100); speedValue.textContent = `×${shot.speed}`; };
+        speedWrap.append(minus, speedValue, plus);
 
         body.append(
             row('Camera', cameraSelect),
-            row('Move', moveSelect),
-            row('Duration', (() => { const w = document.createElement('span'); w.className='sd-range-wrap'; w.append(duration, durationValue); return w; })()),
-            row('Speed', (() => { const w = document.createElement('span'); w.className='sd-range-wrap'; w.append(speed, speedValue); return w; })()),
-            row('Easing', easing),
-            row('FOV', (() => { const w = document.createElement('span'); w.className='sd-range-wrap'; w.append(fov, fovValue); return w; })())
+            row('Camera move', moveSelect),
+            durationRow,
+            row('Speed', speedWrap)
         );
 
-        // Animation curve
-        const curveField = document.createElement('fieldset');
-        curveField.className = 'sd-fieldset';
-        const curveLegend = document.createElement('legend');
-        curveLegend.textContent = 'Animation curve';
-        curveField.appendChild(curveLegend);
+        // Framing block, matching the Shot Designer reference.
+        const framing = document.createElement('fieldset');
+        framing.className = 'sd-fieldset sd-framing';
+        framing.innerHTML = '<legend>Framing</legend>';
 
-        const curveToggle = document.createElement('button');
-        curveToggle.type = 'button';
-        curveToggle.className = 'sd-secondary-btn';
-        curveToggle.textContent = Array.isArray(shot.curve) ? 'Use preset easing' : 'Custom bezier curve';
-        curveToggle.onclick = () => {
-            shot.curve = Array.isArray(shot.curve) ? null : [0.42, 0, 0.58, 1];
-            this.renderShotDesignerList();
-        };
-        curveField.appendChild(curveToggle);
-
-        if (Array.isArray(shot.curve)) {
-            const curveGrid = document.createElement('div');
-            curveGrid.className = 'sd-curve-grid';
-            ['x1', 'y1', 'x2', 'y2'].forEach((label, i) => {
-                const control = document.createElement('label');
-                control.innerHTML = `<span>${label}</span>`;
-                const input = document.createElement('input');
-                input.type = 'range';
-                input.min = i % 2 === 0 ? '0' : '-1';
-                input.max = i % 2 === 0 ? '1' : '2';
-                input.step = '0.01';
-                input.value = shot.curve[i];
-                const value = document.createElement('b');
-                value.textContent = Number(shot.curve[i]).toFixed(2);
-                input.oninput = () => {
-                    shot.curve[i] = parseFloat(input.value);
-                    value.textContent = Number(input.value).toFixed(2);
-                };
-                control.append(input, value);
-                curveGrid.appendChild(control);
+        const segmented = (items, active, onSelect) => {
+            const seg = document.createElement('div');
+            seg.className = 'sd-segmented';
+            items.forEach(([label, value]) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = label;
+                button.className = value === active ? 'active' : '';
+                button.onclick = () => { onSelect(value); this.renderShotDesignerList(); };
+                seg.appendChild(button);
             });
-            curveField.appendChild(curveGrid);
-        }
-        body.appendChild(curveField);
-
-        // Framing
-        const framingField = document.createElement('fieldset');
-        framingField.className = 'sd-fieldset';
-        framingField.innerHTML = `
-            <legend>Framing</legend>
-            <div class="sd-btn-row">
-                <button type="button" class="sd-action" data-frame="start">○ Start frame</button>
-                <button type="button" class="sd-action" data-frame="end">○ End frame</button>
-            </div>
-            <div class="sd-btn-row">
-                <button type="button" class="sd-action sd-action-primary" data-frame-action="commit">Confirm frame</button>
-                <button type="button" class="sd-action sd-action-danger" data-frame-action="cancel">Cancel</button>
-            </div>
-            <small class="sd-help">Start: ${shot.startFrame ? 'custom' : 'auto'} · End: ${shot.endFrame ? 'custom' : 'auto'}</small>
-        `;
-        framingField.querySelectorAll('[data-frame]').forEach(button => {
-            button.onclick = () => {
-                shotManager.selectedShotIndex = index;
-                shotManager.editingFrame = button.dataset.frame;
-                shotManager.viewMode = 'frame';
-                shotManager.enterFramingMode(shot, button.dataset.frame);
-                this.renderShotDesignerList();
-            };
-        });
-        framingField.querySelector('[data-frame-action="commit"]').onclick = () => {
-            shotManager.commitFraming(shotManager.editingFrame);
-            this.renderShotDesignerList();
+            return seg;
         };
-        framingField.querySelector('[data-frame-action="cancel"]').onclick = () => {
-            shotManager.cancelFraming();
-            this.renderShotDesignerList();
-        };
-        body.appendChild(framingField);
 
-        const blurField = document.createElement('fieldset');
-        blurField.className = 'sd-fieldset';
-        const blurLegend = document.createElement('legend');
-        blurLegend.textContent = 'Blur';
-        blurField.append(blurLegend,
-            row('Start', (() => { const w=document.createElement('span'); w.className='sd-range-wrap'; w.append(blurStart, blurStartValue); return w; })()),
-            row('End', (() => { const w=document.createElement('span'); w.className='sd-range-wrap'; w.append(blurEnd, blurEndValue); return w; })())
+        framing.appendChild(segmented(
+            [['Start frame', 'start'], ['End frame', 'end']],
+            shotManager.editingFrame,
+            value => { shotManager.selectedShotIndex = index; shotManager.editingFrame = value; }
+        ));
+
+        framing.appendChild(segmented(
+            [['Frame view', 'frame'], ['Explore scene', 'explore']],
+            shotManager.viewMode,
+            value => {
+                shotManager.viewMode = value;
+                if (value === 'explore') {
+                    shotManager.previewActive = false;
+                    shotManager.clearTransitionOverlay();
+                }
+            }
+        ));
+
+        framing.appendChild(segmented(
+            [['Drag moves', 'translate'], ['Drag rotates', 'rotate']],
+            shotManager.dragMode,
+            value => { shotManager.dragMode = value; }
+        ));
+
+        const fov = shot.spec?.f?.[0] ?? 55;
+        framing.appendChild(rangeRow('Zoom', fov, 15, 120, 1, v => String(Math.round(v)), value => {
+            shot.spec.f = [value, value];
+        }));
+
+        const customRow = document.createElement('div');
+        customRow.className = 'sd-custom-row';
+        const customLabel = document.createElement('b');
+        customLabel.textContent = shot.startFrame || shot.endFrame ? 'Custom framing' : 'Auto framing';
+        const reset = document.createElement('button');
+        reset.type = 'button';
+        reset.textContent = 'Reset';
+        reset.onclick = () => {
+            shot.startFrame = null;
+            shot.endFrame = null;
+            this.renderShotDesignerList();
+            this.app.updateKeyframeGizmos?.();
+        };
+        customRow.append(customLabel, reset);
+        framing.appendChild(customRow);
+        body.appendChild(framing);
+
+        // Focus block.
+        const focus = document.createElement('fieldset');
+        focus.className = 'sd-fieldset';
+        const focusLegend = document.createElement('legend');
+        focusLegend.textContent = 'Focus';
+        focus.append(
+            focusLegend,
+            rangeRow('Blur at start', shot.blurStart || 0, 0, 20, 0.5, v => String(v), v => { shot.blurStart = v; }),
+            rangeRow('Blur at end', shot.blurEnd || 0, 0, 20, 0.5, v => String(v), v => { shot.blurEnd = v; })
         );
-        body.appendChild(blurField);
+        body.appendChild(focus);
+
+        // Transition block (to next shot).
+        const transitionField = document.createElement('fieldset');
+        transitionField.className = 'sd-fieldset';
+        transitionField.innerHTML = '<legend>Transition to next shot</legend>';
+        const transition = shot.transition || { type: 'none', length: 1, color: '#000000', opacity: 1, ease: 2 };
+        const transitionType = document.createElement('select');
+        transitionType.className = 'shot-designer-select';
+        transitionType.innerHTML = [
+            ['none', 'Cut / none'], ['dip', 'Dip to colour'], ['fade', 'Fade through colour']
+        ].map(([v, label]) => `<option value="${v}"${transition.type === v ? ' selected' : ''}>${label}</option>`).join('');
+        transitionType.onchange = () => {
+            shot.transition = transitionType.value === 'none' ? null : { ...transition, type: transitionType.value };
+            this.renderShotDesignerList();
+        };
+        transitionField.appendChild(row('Type', transitionType));
+        if (transition.type !== 'none') {
+            transitionField.appendChild(rangeRow('Length', transition.length || 1, 0.25, 4, 0.25, v => `${v}s`, v => { shot.transition.length = v; }));
+            const color = document.createElement('input');
+            color.type = 'color';
+            color.value = transition.color || '#000000';
+            color.oninput = () => { shot.transition.color = color.value; };
+            transitionField.appendChild(row('Colour', color));
+            transitionField.appendChild(rangeRow('Opacity', transition.opacity ?? 1, 0, 1, 0.05, v => v.toFixed(2), v => { shot.transition.opacity = v; }));
+            transitionField.appendChild(rangeRow('Ease', transition.ease ?? 2, 1, 4, 1, v => String(v), v => { shot.transition.ease = v; }));
+        }
+        body.appendChild(transitionField);
+
+        // Advanced / animation curve block.
+        const advanced = document.createElement('fieldset');
+        advanced.className = 'sd-fieldset';
+        const advancedLegend = document.createElement('legend');
+        advancedLegend.textContent = 'Advanced';
+        advanced.appendChild(advancedLegend);
+        const curveButton = document.createElement('button');
+        curveButton.type = 'button';
+        curveButton.className = 'sd-curve-toggle';
+        const curveOpen = this._openCurveShotId === shot.id;
+        curveButton.textContent = `Animation curve ${curveOpen ? '▴' : '▾'}`;
+        curveButton.onclick = () => {
+            this._openCurveShotId = curveOpen ? null : shot.id;
+            this.renderShotDesignerList();
+        };
+        advanced.appendChild(curveButton);
+        if (curveOpen) advanced.appendChild(this.buildCurveEditor(shot));
+        body.appendChild(advanced);
 
         const notes = document.createElement('textarea');
         notes.className = 'sd-notes';
@@ -2362,23 +2412,157 @@ export class UI {
         notes.placeholder = 'Camera notes, lens, movement, performance notes…';
         notes.value = shot.notes || '';
         notes.oninput = () => { shot.notes = notes.value; };
-        body.appendChild(row('Notes', notes));
+        body.appendChild(row('Notes', notes, 'sd-notes-row'));
 
-        const actions = document.createElement('div');
-        actions.className = 'sd-shot-footer';
-        const up = document.createElement('button'); up.textContent = '▲'; up.title = 'Move earlier';
-        up.onclick = () => { shotManager.moveShot(shot.id, -1); this.renderShotDesignerList(); };
-        const down = document.createElement('button'); down.textContent = '▼'; down.title = 'Move later';
-        down.onclick = () => { shotManager.moveShot(shot.id, 1); this.renderShotDesignerList(); };
-        const dup = document.createElement('button'); dup.textContent = 'Duplicate';
-        dup.onclick = () => { shotManager.duplicateShot(shot.id); this.renderShotDesignerList(); };
-        const del = document.createElement('button'); del.textContent = 'Delete shot'; del.className = 'danger';
-        del.onclick = () => { shotManager.removeShot(shot.id); this._shotDesignerOpenIndex = null; this.renderShotDesignerList(); };
-        actions.append(up, down, dup, del);
-        body.appendChild(actions);
-
-        function initialiseHelp() {}
         return body;
+    }
+
+    buildCurveEditor(shot) {
+        const wrap = document.createElement('div');
+        wrap.className = 'sd-curve-editor';
+
+        const currentCurve = () => {
+            if (Array.isArray(shot.curve)) return shot.curve;
+            const presets = {
+                lin: [0, 0, 1, 1],
+                io: [0.42, 0, 0.58, 1],
+                in: [0.42, 0, 1, 1],
+                out: [0, 0, 0.58, 1],
+                ramp: [0.7, 0, 0.3, 1]
+            };
+            return [...(presets[shot.easing] || presets.io)];
+        };
+
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('viewBox', '0 0 260 160');
+        svg.setAttribute('class', 'sd-curve-svg');
+
+        const plot = { left: 24, top: 20, width: 200, height: 112 };
+        const xToPx = x => plot.left + x * plot.width;
+        const yToPx = y => plot.top + (1 - y) * plot.height;
+        const pxToX = x => (x - plot.left) / plot.width;
+        const pxToY = y => 1 - (y - plot.top) / plot.height;
+
+        const reference = document.createElementNS(svgNS, 'line');
+        reference.setAttribute('x1', plot.left); reference.setAttribute('y1', yToPx(0));
+        reference.setAttribute('x2', plot.left + plot.width); reference.setAttribute('y2', yToPx(1));
+        reference.setAttribute('stroke', 'rgba(255,255,255,0.25)');
+        reference.setAttribute('stroke-dasharray', '4 4');
+        svg.appendChild(reference);
+
+        const frame = document.createElementNS(svgNS, 'rect');
+        frame.setAttribute('x', plot.left); frame.setAttribute('y', plot.top);
+        frame.setAttribute('width', plot.width); frame.setAttribute('height', plot.height);
+        frame.setAttribute('fill', 'none');
+        frame.setAttribute('stroke', 'rgba(255,255,255,0.28)');
+        svg.appendChild(frame);
+
+        const path = document.createElementNS(svgNS, 'path');
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#f3b63f');
+        path.setAttribute('stroke-width', '2.5');
+        svg.appendChild(path);
+
+        const handleA = document.createElementNS(svgNS, 'circle');
+        const handleB = document.createElementNS(svgNS, 'circle');
+        [handleA, handleB].forEach(node => {
+            node.setAttribute('r', '7');
+            node.setAttribute('fill', '#f3b63f');
+            node.setAttribute('cursor', 'grab');
+            svg.appendChild(node);
+        });
+
+        const labels = [
+            ['progress ↑', 4, 14, 'start'],
+            ['time →', 224, 152, 'end']
+        ];
+        labels.forEach(([text, x, y, anchor]) => {
+            const label = document.createElementNS(svgNS, 'text');
+            label.textContent = text;
+            label.setAttribute('x', x); label.setAttribute('y', y);
+            label.setAttribute('fill', '#9d8b6c');
+            label.setAttribute('font-size', '9');
+            label.setAttribute('text-anchor', anchor);
+            svg.appendChild(label);
+        });
+
+        const draw = () => {
+            const curve = currentCurve();
+            const [x1, y1, x2, y2] = curve;
+            path.setAttribute('d', `M ${xToPx(0)} ${yToPx(0)} C ${xToPx(x1)} ${yToPx(y1)} ${xToPx(x2)} ${yToPx(y2)} ${xToPx(1)} ${yToPx(1)}`);
+            handleA.setAttribute('cx', xToPx(x1)); handleA.setAttribute('cy', yToPx(y1));
+            handleB.setAttribute('cx', xToPx(x2)); handleB.setAttribute('cy', yToPx(y2));
+            handleA.dataset.control = '0'; handleB.dataset.control = '2';
+        };
+        draw();
+
+        let dragging = null;
+        const point = event => {
+            const rect = svg.getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 260;
+            const y = ((event.clientY - rect.top) / rect.height) * 160;
+            return { x: Math.min(1, Math.max(0, pxToX(x))), y: Math.min(1.5, Math.max(-0.5, pxToY(y))) };
+        };
+        const down = control => event => {
+            event.preventDefault();
+            dragging = control;
+            if (!Array.isArray(shot.curve)) shot.curve = currentCurve();
+            svg.setPointerCapture?.(event.pointerId);
+        };
+        handleA.addEventListener('pointerdown', down(0));
+        handleB.addEventListener('pointerdown', down(2));
+        svg.addEventListener('pointermove', event => {
+            if (dragging == null || !Array.isArray(shot.curve)) return;
+            const p = point(event);
+            shot.curve[dragging] = p.x;
+            shot.curve[dragging + 1] = p.y;
+            draw();
+        });
+        const stop = () => { dragging = null; };
+        svg.addEventListener('pointerup', stop);
+        svg.addEventListener('pointercancel', stop);
+
+        wrap.appendChild(svg);
+
+        const presets = document.createElement('div');
+        presets.className = 'sd-curve-presets';
+        [
+            ['Linear', [0, 0, 1, 1]],
+            ['Ease', [0.42, 0, 0.58, 1]],
+            ['In', [0.42, 0, 1, 1]],
+            ['Out', [0, 0, 0.58, 1]],
+            ['In-Out', [0.42, 0, 0.58, 1]],
+            ['Overshoot', [0.34, 1.56, 0.64, 1]]
+        ].forEach(([label, curve]) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = label;
+            button.onclick = () => {
+                shot.curve = [...curve];
+                draw();
+                this.renderShotDesignerList();
+            };
+            presets.appendChild(button);
+        });
+        const reset = document.createElement('button');
+        reset.type = 'button';
+        reset.textContent = 'Reset';
+        reset.onclick = () => {
+            shot.curve = null;
+            this.renderShotDesignerList();
+        };
+        presets.appendChild(reset);
+        wrap.appendChild(presets);
+
+        const hint = document.createElement('small');
+        hint.className = 'sd-help';
+        hint.textContent = Array.isArray(shot.curve)
+            ? 'Drag the handles. Progress above 1 or below 0 creates overshoot.'
+            : 'Using the move default easing. Drag a handle to create a custom curve.';
+        wrap.appendChild(hint);
+
+        return wrap;
     }
 
     // PALETTE MANAGEMENT (from pixelArt)

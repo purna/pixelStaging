@@ -23,7 +23,7 @@ import { ShotBoard } from './staging/shots/shotBoard.js';
 import { ShotManager } from './staging/shots/shotManager.js';
 import { SceneManager } from './staging/scenes/sceneManager.js';
 import { buildFrustumVisual } from './staging/cameras/frustumRenderer.js';
-import { exportStoryboardPDF } from './storyboardExporter.js';
+import { exportStoryboardPDF, openStoryboardReport } from './storyboardExporter.js';
 
 class StageApp {
     constructor() {
@@ -675,6 +675,10 @@ class StageApp {
 
     async exportStoryboardPDF() {
         return exportStoryboardPDF(this);
+    }
+
+    async openStoryboardReport() {
+        return openStoryboardReport(this);
     }
 
     // --- SCENE MANAGER ---

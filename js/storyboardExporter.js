@@ -137,7 +137,7 @@ class PDFBuilder {
     }
 }
 
-function makePage(builder, sceneName, shot, frames) {
+function makePage(builder, sceneName, shot, frames, sceneNotes = '') {
     const imageObjects = frames.map(frame => builder.addImage(frame.dataUrl, frame.width, frame.height));
     const imageIds = imageObjects;
 
@@ -145,6 +145,10 @@ function makePage(builder, sceneName, shot, frames) {
     lines.push(`BT /F1 18 Tf 44 742 Td (${pdfText(sceneName)} - ${pdfText(shot.name)}) Tj ET`);
     lines.push(`BT /F1 10 Tf 44 714 Td (Camera: ${pdfText(shot.cameraName)}) Tj ET`);
     lines.push(`BT /F1 10 Tf 44 698 Td (Move: ${pdfText(shot.move)}    Duration: ${shot.duration.toFixed(1)}s    Speed: x${shot.speed}    Easing: ${pdfText(shot.easing)}) Tj ET`);
+    lines.push(`BT /F1 9 Tf 44 684 Td (Lens: ${pdfText(shot.cameraLens || '—')}    Sensor: ${pdfText(shot.cameraSensor || '—')}    Aspect: ${pdfText(shot.cameraAspect || '—')}) Tj ET`);
+    const startPos = frames[0]?.position ? frames[0].position.map(v => v.toFixed(2)).join(', ') : '—';
+    const endPos = frames[1]?.position ? frames[1].position.map(v => v.toFixed(2)).join(', ') : '—';
+    lines.push(`BT /F1 9 Tf 44 670 Td (Start XYZ: ${pdfText(startPos)}    End XYZ: ${pdfText(endPos)}) Tj ET`);
 
     const framing = [];
     if (shot.startFrame) framing.push('start keyframe');
@@ -165,6 +169,7 @@ function makePage(builder, sceneName, shot, frames) {
     const notes = shot.notes || '';
     const textLines = [
         `Camera movement: ${shot.move}. Starts at the first frame and arrives at the second frame over ${shot.duration.toFixed(1)} seconds at x${shot.speed} speed.`,
+        shot.transitionLabel || '' ,
         framing.length ? `Use the stored ${framing.join(' and ')} camera framing.` : 'The move is generated automatically from the shot preset.',
         notes
     ].filter(Boolean);
@@ -226,7 +231,7 @@ function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) 
     renderer.setViewport(oldViewport);
     renderer.setScissorTest(oldScissorTest);
 
-    return { dataUrl, width, height };
+    return { dataUrl, width, height, position: camera.position.toArray() };
 }
 
 function collectShotsForScene(app) {
@@ -244,10 +249,16 @@ function collectShotsForScene(app) {
                 rig,
                 name: shot.name,
                 cameraName: rig?.name ? `Camera ${rig.name}` : 'Default Camera',
+                cameraLens: rig?.lens ? `${rig.lens.focalLength}mm` : '',
+                cameraSensor: rig?.lens?.sensor || '',
+                cameraAspect: rig?.aspect || '',
                 move: shot.move || 'Static',
                 duration: Number.isFinite(shot.duration) ? shot.duration : 3,
                 speed: Number.isFinite(shot.speed) ? shot.speed : 1,
                 easing: shot.easing || 'io',
+                transitionLabel: shot.transition?.type && shot.transition.type !== 'none'
+                    ? `Transition to next shot: ${shot.transition.type}, ${(shot.transition.length || 1).toFixed(2)}s, opacity ${shot.transition.opacity ?? 1}.`
+                    : 'Transition to next shot: cut.',
                 startFrame: !!shot.startFrame,
                 endFrame: !!shot.endFrame,
                 notes: shot.notes || ''
@@ -261,6 +272,9 @@ function collectShotsForScene(app) {
         rig: defaultRig,
         name: 'Scene camera',
         cameraName: defaultRig.name ? `Camera ${defaultRig.name}` : 'Default Camera',
+        cameraLens: defaultRig.lens ? `${defaultRig.lens.focalLength}mm` : '',
+        cameraSensor: defaultRig.lens?.sensor || '',
+        cameraAspect: defaultRig.aspect || '',
         move: 'Static',
         duration: 0,
         speed: 1,
@@ -269,6 +283,48 @@ function collectShotsForScene(app) {
         endFrame: false,
         notes: 'No shot timeline has been added to this scene yet.'
     }];
+}
+
+async function collectStoryboardData(app) {
+    const scenes = app.staging?.scenes;
+    if (!scenes) return [];
+    const originalScene = scenes.currentSceneName;
+    const sceneNames = scenes.getSceneNames();
+    const data = [];
+
+    try {
+        scenes.saveCurrentSceneState();
+        for (const sceneName of sceneNames) {
+            if (scenes.currentSceneName !== sceneName) scenes.switchToScene(sceneName);
+            const sceneNotes = scenes.getSceneNotes?.(sceneName) || '';
+            const items = collectShotsForScene(app);
+            for (const item of items) {
+                const frames = [];
+                if (item.shot) {
+                    const shot = item.shot;
+                    const keyframes = [
+                        { label: `Start keyframe (${shot.startFrame ? 'custom' : 'auto'})`, frame: shot.startFrame, t: 0 },
+                        { label: `End keyframe (${shot.endFrame ? 'custom' : 'auto'})`, frame: shot.endFrame, t: item.duration }
+                    ];
+                    for (const keyframe of keyframes) {
+                        const rendered = renderFrame(app, item.rig, shot, app.staging.shotManager, keyframe.t, keyframe.frame);
+                        rendered.label = keyframe.label;
+                        frames.push(rendered);
+                    }
+                } else {
+                    const rendered = renderFrame(app, item.rig, null, null, 0);
+                    rendered.label = 'Scene camera overview';
+                    frames.push(rendered);
+                }
+                data.push({ sceneName, sceneNotes, item, frames });
+            }
+        }
+    } finally {
+        if (scenes.currentSceneName !== originalScene) {
+            try { scenes.switchToScene(originalScene); } catch (error) { console.warn(error); }
+        }
+    }
+    return data;
 }
 
 export async function exportStoryboardPDF(app) {
@@ -289,45 +345,10 @@ export async function exportStoryboardPDF(app) {
 
     const pages = [];
     const builder = new PDFBuilder();
+    const storyboard = await collectStoryboardData(app);
 
-    try {
-        scenes.saveCurrentSceneState();
-
-        for (const sceneName of sceneNames) {
-            if (scenes.currentSceneName !== sceneName) {
-                scenes.switchToScene(sceneName);
-            }
-
-            const items = collectShotsForScene(app);
-            for (const item of items) {
-                const frames = [];
-                if (item.shot) {
-                    const shot = item.shot;
-                    const keyframes = [
-                        { type: 'start', label: `Start keyframe (${shot.startFrame ? 'custom' : 'auto'})`, frame: shot.startFrame, t: 0 },
-                        { type: 'end', label: `End keyframe (${shot.endFrame ? 'custom' : 'auto'})`, frame: shot.endFrame, t: item.duration }
-                    ];
-                    for (const keyframe of keyframes) {
-                        const rendered = renderFrame(
-                            app, item.rig, shot, app.staging.shotManager,
-                            keyframe.t, keyframe.frame
-                        );
-                        rendered.label = keyframe.label;
-                        frames.push(rendered);
-                    }
-                } else {
-                    const rendered = renderFrame(app, item.rig, null, null, 0);
-                    rendered.label = 'Scene camera overview';
-                    frames.push(rendered);
-                }
-                pages.push(makePage(builder, sceneName, item, frames));
-            }
-        }
-    } finally {
-        // Return to the scene the user was editing.
-        if (scenes.currentSceneName !== originalScene) {
-            try { scenes.switchToScene(originalScene); } catch (error) { console.warn(error); }
-        }
+    for (const { sceneName, sceneNotes, item, frames } of storyboard) {
+        pages.push(makePage(builder, sceneName, item, frames, sceneNotes));
     }
 
     if (!pages.length) {
@@ -344,4 +365,126 @@ export async function exportStoryboardPDF(app) {
     setTimeout(() => URL.revokeObjectURL(url), 1500);
 
     app.ui?.showNotification?.(`Storyboard exported (${pages.length} pages)`, 'success');
+}
+
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+export async function openStoryboardReport(app) {
+    const storyboard = await collectStoryboardData(app);
+    if (!storyboard.length) {
+        app.ui?.showNotification?.('No shots to report', 'error');
+        return;
+    }
+
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) {
+        app.ui?.showNotification?.('Allow pop-ups to open the storyboard report', 'error');
+        return;
+    }
+
+    const sections = storyboard.map(({ sceneName, sceneNotes, item, frames }) => {
+        const shot = item.shot;
+        const start = frames[0]?.position?.map(v => v.toFixed(2)).join(', ') || '—';
+        const end = frames[1]?.position?.map(v => v.toFixed(2)).join(', ') || '—';
+        return `
+            <section class="shot">
+                <header>
+                    <div>
+                        <span class="eyebrow">${escapeHtml(sceneName)}</span>
+                        <h2>${escapeHtml(item.name)}</h2>
+                    </div>
+                    <div class="badge">${escapeHtml(item.transitionLabel || 'Transition: cut')}</div>
+                </header>
+                <div class="frames">
+                    ${frames.map(frame => `
+                        <figure>
+                            <img src="${frame.dataUrl}" alt="${escapeHtml(frame.label)}">
+                            <figcaption>${escapeHtml(frame.label)}</figcaption>
+                        </figure>
+                    `).join('')}
+                </div>
+                <div class="meta-grid">
+                    <div><span>Camera</span><b>${escapeHtml(item.cameraName)}</b></div>
+                    <div><span>Lens</span><b>${escapeHtml(item.cameraLens || '—')}</b></div>
+                    <div><span>Sensor</span><b>${escapeHtml(item.cameraSensor || '—')}</b></div>
+                    <div><span>Aspect</span><b>${escapeHtml(item.cameraAspect || '—')}</b></div>
+                    <div><span>Move</span><b>${escapeHtml(item.move)}</b></div>
+                    <div><span>Duration</span><b>${item.duration.toFixed(1)}s</b></div>
+                    <div><span>Speed</span><b>×${item.speed}</b></div>
+                    <div><span>Easing</span><b>${escapeHtml(item.easing)}</b></div>
+                    <div><span>Start XYZ</span><b>${escapeHtml(start)}</b></div>
+                    <div><span>End XYZ</span><b>${escapeHtml(end)}</b></div>
+                </div>
+                <div class="notes">
+                    <h3>Scene notes</h3>
+                    <p>${escapeHtml(sceneNotes || 'No notes recorded for this scene.')}</p>
+                    <h3>Camera / shot notes</h3>
+                    <p>${escapeHtml(shot?.notes || 'No notes recorded for this shot.')}</p>
+                </div>
+            </section>
+        `;
+    }).join('');
+
+    reportWindow.document.write(`<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pixel Staging — Storyboard Report</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #17120c; color: #f4e8d2; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 28px; }
+  h1 { margin: 0 0 6px; font-size: 30px; }
+  .sub { color: #bda987; }
+  .print { background: #f3b63f; color: #1b1308; border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
+  .shot { break-inside: avoid; background: #120e09; border: 1px solid #3c2e1b; border-radius: 12px; padding: 18px; margin-bottom: 22px; }
+  .shot header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; border-bottom: 1px solid #3c2e1b; padding-bottom: 12px; margin-bottom: 14px; }
+  .eyebrow { color: #d5aa5f; text-transform: uppercase; letter-spacing: .08em; font-size: 10px; }
+  h2 { margin: 4px 0 0; font-size: 22px; }
+  .badge { color: #d7c19b; border: 1px solid #4a3a21; border-radius: 999px; padding: 6px 10px; font-size: 11px; }
+  .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  figure { margin: 0; }
+  figure img { width: 100%; display: block; border-radius: 7px; border: 1px solid #3c2e1b; }
+  figcaption { color: #bda987; font-size: 11px; margin-top: 5px; }
+  .meta-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
+  .meta-grid div { background: #1b140d; border: 1px solid #302516; border-radius: 7px; padding: 8px; }
+  .meta-grid span { display: block; color: #a9926c; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+  .meta-grid b { font-size: 12px; }
+  .notes h3 { margin: 0 0 5px; font-size: 12px; color: #d5aa5f; }
+  .notes p { margin: 0; color: #e3d3b6; line-height: 1.45; white-space: pre-wrap; }
+  @media print {
+    body { background: white; color: #111; }
+    .wrap { max-width: none; padding: 12mm; }
+    .print { display: none; }
+    .shot { background: white; border-color: #ccc; }
+    .shot header { border-color: #ddd; }
+    .meta-grid div { background: #f7f7f7; border-color: #ddd; }
+    .notes h3, .eyebrow { color: #8a5a00; }
+    .sub, .badge, figcaption, .meta-grid span { color: #555; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Storyboard & Shot Report</h1>
+      <div class="sub">${storyboard.length} shot${storyboard.length === 1 ? '' : 's'} across ${new Set(storyboard.map(s => s.sceneName)).size} scene(s)</div>
+    </div>
+    <button class="print" onclick="window.print()">Export PDF</button>
+  </div>
+  ${sections}
+</div>
+</body>
+</html>`);
+    reportWindow.document.close();
 }
