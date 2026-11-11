@@ -23,6 +23,7 @@ import { ShotBoard } from './staging/shots/shotBoard.js';
 import { ShotManager } from './staging/shots/shotManager.js';
 import { SceneManager } from './staging/scenes/sceneManager.js';
 import { buildFrustumVisual } from './staging/cameras/frustumRenderer.js';
+import { AxisGizmo } from './axisGizmo.js';
 import { exportStoryboardPDF, openStoryboardReport } from './storyboardExporter.js';
 
 class StageApp {
@@ -37,6 +38,7 @@ class StageApp {
         this.keyframeDragging = false;
         this.poseControls = null;
         this.poseEditState = null;
+        this.axisGizmo = null;
 
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
@@ -215,6 +217,8 @@ class StageApp {
 
         // Initialize undo/redo buttons state
         this.historyManager.updateUndoRedoButtons();
+
+        this.axisGizmo = new AxisGizmo(document.getElementById('axis-gizmo-canvas'));
 
         // Start Loop
         this.animate();
@@ -1656,6 +1660,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         const rigCam = shotCam || this.staging.cameras.getRenderCamera();
         const guides = document.getElementById('camera-guides');
         if (guides) guides.classList.toggle('hidden', !(this.cameraGuidesEnabled && rigCam));
+        this.axisGizmo?.update(rigCam || this.camera);
         if (rigCam) {
             const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);
             if (vp) {

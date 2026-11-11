@@ -298,9 +298,21 @@ export class ShotManager {
         camera.updateMatrixWorld(true);
 
         if (this.app.orbit) {
-            const target = frame?.target ? new V3().fromArray(frame.target) : rig.target.clone();
+            let target;
+            if (frame) {
+                // Derive the orbit target from the stored camera orientation.
+                // A stale target otherwise makes the editor view differ from
+                // the exported keyframe.
+                const frameQuat = new THREE.Quaternion().fromArray(frame.quaternion);
+                const forward = new V3(0, 0, -1).applyQuaternion(frameQuat);
+                target = new V3().fromArray(frame.position).addScaledVector(forward, 10);
+            } else {
+                target = rig.target.clone();
+            }
             this.app.orbit.target.copy(target);
             this.app.orbit.update();
+            camera.quaternion.copy(temp.quaternion);
+            camera.updateMatrixWorld(true);
         }
 
         this.editingFrame = frameType;
@@ -329,10 +341,11 @@ export class ShotManager {
         camera.getWorldPosition(position);
         camera.getWorldQuaternion(quaternion);
         const targetFrame = this.editingFrame === 'end' ? 'endFrame' : 'startFrame';
+        const forward = new V3(0, 0, -1).applyQuaternion(quaternion);
         shot[targetFrame] = {
             position: position.toArray(),
             quaternion: quaternion.toArray(),
-            target: this.app.orbit?.target?.toArray?.() || null,
+            target: position.clone().addScaledVector(forward, 10).toArray(),
             fov: camera.fov ?? 55
         };
         this.previewActive = false;

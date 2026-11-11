@@ -7136,3 +7136,24 @@ input[type="number"].color-slider-value-compact {
         display: flex;
     }
 }
+
+/* Scene orientation gizmo */
+#axis-gizmo {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 92px;
+    height: 92px;
+    display: grid;
+    place-items: center;
+    background: rgba(26, 24, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    pointer-events: none;
+    z-index: 41;
+    backdrop-filter: blur(6px);
+}
+
+#axis-gizmo-canvas {
+    display: block;
+}

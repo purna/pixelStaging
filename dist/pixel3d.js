@@ -45783,9 +45783,18 @@ ${elements.join("\n")}
       }
       camera.updateMatrixWorld(true);
       if (this.app.orbit) {
-        const target = frame?.target ? new V3().fromArray(frame.target) : rig.target.clone();
+        let target;
+        if (frame) {
+          const frameQuat = new Quaternion().fromArray(frame.quaternion);
+          const forward = new V3(0, 0, -1).applyQuaternion(frameQuat);
+          target = new V3().fromArray(frame.position).addScaledVector(forward, 10);
+        } else {
+          target = rig.target.clone();
+        }
         this.app.orbit.target.copy(target);
         this.app.orbit.update();
+        camera.quaternion.copy(temp.quaternion);
+        camera.updateMatrixWorld(true);
       }
       this.editingFrame = frameType;
       this.viewMode = "frame";
@@ -45811,10 +45820,11 @@ ${elements.join("\n")}
       camera.getWorldPosition(position);
       camera.getWorldQuaternion(quaternion);
       const targetFrame = this.editingFrame === "end" ? "endFrame" : "startFrame";
+      const forward = new V3(0, 0, -1).applyQuaternion(quaternion);
       shot[targetFrame] = {
         position: position.toArray(),
         quaternion: quaternion.toArray(),
-        target: this.app.orbit?.target?.toArray?.() || null,
+        target: position.clone().addScaledVector(forward, 10).toArray(),
         fov: camera.fov ?? 55
       };
       this.previewActive = false;
@@ -47086,6 +47096,84 @@ ${elements.join("\n")}
     }
   };
 
+  // js/axisGizmo.js
+  init_three_module();
+  var AxisGizmo = class {
+    constructor(canvas) {
+      this.canvas = canvas;
+      this.ctx = canvas?.getContext("2d") || null;
+      this.size = 92;
+      this.dpr = 1;
+      this._resize();
+      this.axisX = new Vector3(1, 0, 0);
+      this.axisY = new Vector3(0, 1, 0);
+      this.axisZ = new Vector3(0, 0, 1);
+      this.inverse = new Quaternion();
+      this.vector = new Vector3();
+    }
+    _resize() {
+      if (!this.canvas) return;
+      this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      this.canvas.width = this.size * this.dpr;
+      this.canvas.height = this.size * this.dpr;
+      this.canvas.style.width = `${this.size}px`;
+      this.canvas.style.height = `${this.size}px`;
+    }
+    update(camera) {
+      if (!this.ctx || !camera) return;
+      const ctx = this.ctx;
+      const size = this.size;
+      const center = size / 2;
+      const radius = size * 0.34;
+      const dpr = this.dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, size, size);
+      this.inverse.copy(camera.quaternion).invert();
+      const axes = [
+        { axis: this.axisX, color: "#ff4d5a", sign: 1 },
+        { axis: this.axisY, color: "#7dff6a", sign: 1 },
+        { axis: this.axisZ, color: "#4d7cff", sign: 1 },
+        { axis: this.axisX, color: "#292929", sign: -1 },
+        { axis: this.axisY, color: "#292929", sign: -1 },
+        { axis: this.axisZ, color: "#292929", sign: -1 }
+      ].map(({ axis, color, sign: sign2 }) => {
+        const v = this.vector.copy(axis).multiplyScalar(sign2).applyQuaternion(this.inverse);
+        return {
+          color,
+          sign: sign2,
+          x: center + v.x * radius,
+          y: center - v.y * radius,
+          z: v.z
+        };
+      }).sort((a, b) => a.z - b.z);
+      const drawPositive = axes.filter((a) => a.sign === 1);
+      drawPositive.forEach((a) => {
+        ctx.beginPath();
+        ctx.moveTo(center, center);
+        ctx.lineTo(a.x, a.y);
+        ctx.strokeStyle = a.color;
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.stroke();
+      });
+      axes.forEach((a) => {
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.sign === 1 ? 6.3 : 6, 0, Math.PI * 2);
+        ctx.fillStyle = a.color;
+        ctx.fill();
+        if (a.sign === 1) {
+          ctx.strokeStyle = "rgba(0,0,0,0.35)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      });
+      ctx.beginPath();
+      ctx.arc(center, center, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#4d7cff";
+      ctx.fill();
+    }
+  };
+
   // js/storyboardExporter.js
   init_three_module();
   var PAGE_W = 612;
@@ -47638,6 +47726,7 @@ ${xrefOffset}
       this.keyframeDragging = false;
       this.poseControls = null;
       this.poseEditState = null;
+      this.axisGizmo = null;
       this.raycaster = new Raycaster();
       this.mouse = new Vector2();
       this.clock = new Clock();
@@ -47776,6 +47865,7 @@ ${xrefOffset}
       this.staging.cameras.ensureDefaultRig();
       this.initializeEditorModules();
       this.historyManager.updateUndoRedoButtons();
+      this.axisGizmo = new AxisGizmo(document.getElementById("axis-gizmo-canvas"));
       this.animate();
     }
     initializeEditorModules() {
@@ -48904,6 +48994,7 @@ ${xrefOffset}
       const rigCam = shotCam || this.staging.cameras.getRenderCamera();
       const guides = document.getElementById("camera-guides");
       if (guides) guides.classList.toggle("hidden", !(this.cameraGuidesEnabled && rigCam));
+      this.axisGizmo?.update(rigCam || this.camera);
       if (rigCam) {
         const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);
         if (vp) {
