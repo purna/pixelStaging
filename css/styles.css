@@ -6672,3 +6672,101 @@ input[type="number"].color-slider-value-compact {
 .selection-info-box {
     bottom: 244px !important;
 }
+
+.camera-name-input {
+    width: 100%;
+    min-width: 0;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    padding: 5px 7px;
+    font-size: 11px;
+}
+
+.camera-name-input:focus {
+    border-color: var(--accent-primary);
+    outline: none;
+}
+
+.camera-delete-btn {
+    margin-top: 3px;
+    width: 100%;
+    border: 1px solid rgba(244, 67, 54, 0.35);
+    background: rgba(244, 67, 54, 0.1);
+    color: #ff9a9a;
+    border-radius: 5px;
+    padding: 6px;
+    font-size: 9px;
+    cursor: pointer;
+}
+
+.camera-delete-btn:hover {
+    border-color: #f44336;
+    background: rgba(244, 67, 54, 0.18);
+}
+
+/* Readable property fields */
+:root {
+    --right-panel-width: 360px;
+}
+
+#props-content .property-group {
+    background: #1b1b2d;
+    border-color: #3d3d55;
+}
+
+#props-content .input-row {
+    gap: 5px;
+}
+
+#props-content .input-row > span {
+    flex: 0 0 46px;
+    width: 46px;
+    color: #cbd5e1;
+    font-size: 0.68rem;
+}
+
+#props-content .input-group {
+    min-width: 0;
+    flex: 1;
+    padding: 2px 5px;
+    background: #202033;
+    border-color: #4b4b63;
+}
+
+#props-content .input-group span {
+    width: 11px;
+    flex: 0 0 11px;
+    color: #9fb0c8;
+    font-size: 0.62rem;
+    font-weight: 700;
+}
+
+#props-content .input-group input[type="number"],
+#props-content .input-group input[type="text"] {
+    min-width: 0;
+    width: 100%;
+    color: #f8fbff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 2px 1px;
+    text-align: left;
+}
+
+#props-content .input-group input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+#props-content .input-group input[type="number"]::-webkit-inner-spin-button,
+#props-content .input-group input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+#props-content input[type="number"]:focus,
+#props-content input[type="text"]:focus {
+    outline: none;
+    color: #ffffff;
+}

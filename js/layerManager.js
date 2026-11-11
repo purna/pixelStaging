@@ -257,7 +257,15 @@ export class LayerManager {
         // Determine Name
         let name = obj.userData.name || obj.userData.shapeType || obj.userData.lightType || 'Object';
         if (obj.userData.type === 'figure') name = obj.userData.gender + ' Figure';
-        else if (obj.userData.type === 'character') name = obj.userData.characterType === 'ybot' ? 'Male Character' : 'Female Character';
+        else if (obj.userData.type === 'character') {
+            const labels = {
+                xbot: 'Female Character',
+                ybot: 'Male Character',
+                xbot_child: 'Child Female Character',
+                ybot_child: 'Child Male Character'
+            };
+            name = labels[obj.userData.characterType] || '3D Character';
+        }
         else if (obj.userData.type === 'staging') {
             const staging = obj.userData.staging;
             if (staging) {

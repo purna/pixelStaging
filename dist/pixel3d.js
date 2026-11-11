@@ -34575,7 +34575,7 @@
         header.className = "camera-rig-accordion-header";
         header.innerHTML = `
                 <span class="camera-rig-color" style="background:${color}"></span>
-                <span class="camera-rig-name">${rig.isDefault ? "Default Camera" : `Cam ${rig.name}`}</span>
+                <span class="camera-rig-name">${rig.name}${rig.isDefault ? " (default)" : ""}</span>
                 <span class="camera-rig-summary">${rig.lens.focalLength}mm ${rig.lens.sensor} \xB7 ${rig.aspect}</span>
                 <span class="camera-rig-chevron">${open ? "\u25BE" : "\u25B8"}</span>
             `;
@@ -34624,57 +34624,45 @@
             this.refreshCameraRigList();
           };
           aspectRow.appendChild(aspect2);
-          const actions = document.createElement("div");
-          actions.className = "camera-rig-actions";
-          const view = document.createElement("button");
-          view.textContent = cameras.viewingRigId === rig.id ? "Exit view" : "View";
-          view.className = cameras.viewingRigId === rig.id ? "active" : "";
-          view.onclick = () => {
-            cameras.viewingRigId = cameras.viewingRigId === rig.id ? null : rig.id;
-            if (this.app.orbit) this.app.orbit.enabled = cameras.viewingRigId === null && this.app.controlMode === "camera";
-            this.refreshCameraRigList();
-          };
-          const frame = document.createElement("button");
-          frame.textContent = "Frame";
-          frame.onclick = () => {
-            this.app.selectObject(rig.group);
-            cameras.frameCameraFromView();
-            this.refreshCameraRigList();
-          };
-          const remove = document.createElement("button");
-          remove.textContent = "Delete";
-          remove.className = "danger";
-          remove.disabled = !!rig.isDefault;
-          remove.title = rig.isDefault ? "The default camera cannot be deleted" : "Delete camera";
-          remove.onclick = () => {
-            if (rig.isDefault) return;
-            cameras.removeRig(rig.id);
-            this._openCameraRigId = cameras.defaultRig?.id || null;
-            this.refreshCameraRigList();
-          };
-          actions.append(view, frame, remove);
-          const moveMode = document.createElement("div");
-          moveMode.className = "camera-rig-move-mode";
-          const orbit = document.createElement("button");
-          orbit.textContent = "Orbit";
-          orbit.className = this._cameraMoveMode !== "pan" ? "active" : "";
-          const pan = document.createElement("button");
-          pan.textContent = "Pan";
-          pan.className = this._cameraMoveMode === "pan" ? "active" : "";
-          const setMode = (mode) => {
-            this._cameraMoveMode = mode;
-            if (this.app.orbit) {
-              this.app.orbit.enableRotate = mode !== "pan";
-              this.app.orbit.enablePan = mode === "pan";
-              this.app.orbit.enabled = this.app.controlMode === "camera";
+          const nameRow = document.createElement("label");
+          nameRow.className = "camera-rig-field";
+          nameRow.innerHTML = "<span>Name</span>";
+          const nameInput = document.createElement("input");
+          nameInput.type = "text";
+          nameInput.className = "camera-name-input";
+          nameInput.value = rig.name;
+          nameInput.placeholder = "Camera name";
+          const saveName = () => {
+            const next = nameInput.value.trim();
+            if (!next) {
+              nameInput.value = rig.name;
+              return;
             }
-            orbit.classList.toggle("active", mode !== "pan");
-            pan.classList.toggle("active", mode === "pan");
+            rig.name = next;
+            rig.group.name = `Camera ${next}`;
+            this.app.staging.shotManager.refreshUI();
+            this.renderShotDesignerList?.();
+            this.refreshCameraRigList();
           };
-          orbit.onclick = () => setMode("orbit");
-          pan.onclick = () => setMode("pan");
-          moveMode.append(orbit, pan);
-          body.append(lensRow, sensorRow, aspectRow, actions, moveMode);
+          nameInput.addEventListener("change", saveName);
+          nameInput.addEventListener("blur", saveName);
+          nameInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") nameInput.blur();
+          });
+          nameRow.appendChild(nameInput);
+          body.append(nameRow, lensRow, sensorRow, aspectRow);
+          if (!rig.isDefault) {
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.textContent = "Delete camera";
+            remove.className = "camera-delete-btn";
+            remove.onclick = () => {
+              cameras.removeRig(rig.id);
+              this._openCameraRigId = cameras.defaultRig?.id || null;
+              this.refreshCameraRigList();
+            };
+            body.appendChild(remove);
+          }
           item.appendChild(body);
         }
         listDiv.appendChild(item);
@@ -40922,8 +40910,15 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       }
       let name = obj.userData.name || obj.userData.shapeType || obj.userData.lightType || "Object";
       if (obj.userData.type === "figure") name = obj.userData.gender + " Figure";
-      else if (obj.userData.type === "character") name = obj.userData.characterType === "ybot" ? "Male Character" : "Female Character";
-      else if (obj.userData.type === "staging") {
+      else if (obj.userData.type === "character") {
+        const labels = {
+          xbot: "Female Character",
+          ybot: "Male Character",
+          xbot_child: "Child Female Character",
+          ybot_child: "Child Male Character"
+        };
+        name = labels[obj.userData.characterType] || "3D Character";
+      } else if (obj.userData.type === "staging") {
         const staging = obj.userData.staging;
         if (staging) {
           name = obj.userData.name || `${staging.kind}:${staging.presetId}`;
@@ -42065,7 +42060,9 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       this.loader = new GLTFLoader();
       this.models = {
         "xbot": "./Art/Xbot.glb",
-        "ybot": "./Art/Ybot.glb"
+        "ybot": "./Art/Ybot.glb",
+        "xbot_child": "./Art/Xbot_child.glb",
+        "ybot_child": "./Art/Ybot_child.glb"
       };
     }
     addCharacter(type = "xbot") {
@@ -42125,8 +42122,13 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
             this.characters.push(charData);
             document.body.style.cursor = "default";
             if (this.app.ui && this.app.ui.showNotification) {
-              const gender = type === "xbot" ? "Female" : "Male";
-              this.app.ui.showNotification(`${gender} character loaded!`, "success");
+              const labels = {
+                xbot: "Female",
+                ybot: "Male",
+                xbot_child: "Child Female",
+                ybot_child: "Child Male"
+              };
+              this.app.ui.showNotification(`${labels[type] || "Character"} loaded!`, "success");
             }
             resolve(model);
           } catch (error) {
@@ -44509,9 +44511,11 @@ ${elements.join("\n")}
         this.defaultRigId = existing.id;
         return existing;
       }
-      const rig = this.addRig("Camera", new Vector3(10, 8, 10), {
+      const rig = this.addRig("Camera", new Vector3(8, 6.5, 12), {
         isDefault: true,
-        target: new Vector3(0, 1.5, 0)
+        target: new Vector3(0, 1.2, -1),
+        lens: { focalLength: 35, sensor: "fullFrame" },
+        aspect: "16:9"
       });
       this.defaultRigId = rig.id;
       return rig;
@@ -44712,35 +44716,13 @@ ${elements.join("\n")}
     }
     /** Refresh the camera rig list display. */
     refreshUI() {
-      const listDiv = document.getElementById("camera-rig-list");
-      if (!listDiv) return;
-      if (this.rigs.length === 0) {
-        listDiv.innerHTML = '<div class="camera-rig-empty">No virtual cameras. Click + to add.</div>';
+      if (this.app.ui?.refreshCameraRigList) {
+        this.app.ui.refreshCameraRigList();
         return;
       }
-      listDiv.innerHTML = this.rigs.map((rig) => `
-            <div class="camera-rig-item ${this.viewingRigId === rig.id ? "active-view" : ""} ${this.selectedRig?.id === rig.id ? "selected" : ""}" data-rig-id="${rig.id}">
-                <span class="camera-rig-color" style="background:#${rig.color.toString(16).padStart(6, "0")}"></span>
-                <span class="camera-rig-name">Cam ${rig.name}</span>
-                <span class="camera-rig-lens">${rig.lens.focalLength}mm ${rig.lens.sensor}</span>
-                <span class="camera-rig-aspect">${rig.aspect}</span>
-            </div>
-        `).join("");
-      listDiv.querySelectorAll(".camera-rig-item").forEach((item) => {
-        item.addEventListener("click", () => {
-          const rigId = item.dataset.rigId;
-          const rig = this.get(rigId);
-          if (rig) {
-            this.app.selectObject(rig.group);
-          }
-        });
-        item.addEventListener("dblclick", () => {
-          const rigId = item.dataset.rigId;
-          this.viewingRigId = rigId;
-          if (this.app.orbit) this.app.orbit.enabled = false;
-          this.refreshUI();
-        });
-      });
+      const listDiv = document.getElementById("camera-rig-list");
+      if (!listDiv) return;
+      listDiv.innerHTML = this.rigs.length ? this.rigs.map((rig) => `<div class="camera-rig-item" data-rig-id="${rig.id}">${rig.name}</div>`).join("") : '<div class="camera-rig-empty">No cameras.</div>';
     }
     /** Delete the currently selected rig. */
     deleteSelectedRig() {
@@ -46212,7 +46194,7 @@ ${elements.join("\n")}
       return true;
     }
     makeStarterObjects() {
-      const staging = (name, presetId, position, rotation = [0, 0, 0]) => ({
+      const staging = (name, presetId, position, rotation = [0, 0, 0], params = {}) => ({
         type: "staging",
         name,
         position: { x: position[0], y: position[1], z: position[2] },
@@ -46226,21 +46208,21 @@ ${elements.join("\n")}
             id: `starter_${presetId}_${Math.random().toString(36).slice(2, 7)}`,
             kind: presetId === "figure-standing" ? "figure" : "architecture",
             presetId,
-            params: {},
+            params: { ...params },
             colorOverride: null
           }
         },
         staging: {
           kind: presetId === "figure-standing" ? "figure" : "architecture",
           presetId,
-          params: {},
+          params: { ...params },
           colorOverride: null
         }
       });
       return [
-        staging("Floor", "floor", [0, 0, 0]),
-        staging("Wall (straight)", "wall-straight", [0, 0, -5]),
-        staging("Wall (straight)", "wall-straight", [-5, 0, 0], [0, Math.PI / 2, 0]),
+        staging("Floor", "floor", [0, 0, 0], [0, 0, 0], { width: 12, depth: 12 }),
+        staging("Wall (straight)", "wall-straight", [0, 0, -6], [0, 0, 0], { length: 12, height: 3 }),
+        staging("Wall (straight)", "wall-straight", [-6, 0, 0], [0, Math.PI / 2, 0], { length: 12, height: 3 }),
         staging("Actor (standing)", "figure-standing", [0, 0, 0])
       ];
     }
@@ -46249,10 +46231,10 @@ ${elements.join("\n")}
         id: "default_camera",
         name: "Camera",
         isDefault: true,
-        position: [10, 8, 10],
-        target: [0, 1.5, 0],
+        position: [8, 6.5, 12],
+        target: [0, 1.2, -1],
         rotation: null,
-        lens: { focalLength: 50, sensor: "fullFrame" },
+        lens: { focalLength: 35, sensor: "fullFrame" },
         aspect: "16:9",
         color: 58879
       };
@@ -48036,13 +48018,13 @@ ${xrefOffset}
       this.scene.background = new Color(2763342);
     }
     addDefaultTestObjects() {
-      const floor = this.staging.place("architecture", "floor");
+      const floor = this.staging.place("architecture", "floor", { params: { width: 12, depth: 12 } });
       if (floor) floor.position.set(0, 0, 0);
-      const backWall = this.staging.place("architecture", "wall-straight");
-      if (backWall) backWall.position.set(0, 0, -5);
-      const sideWall = this.staging.place("architecture", "wall-straight");
+      const backWall = this.staging.place("architecture", "wall-straight", { params: { length: 12, height: 3 } });
+      if (backWall) backWall.position.set(0, 0, -6);
+      const sideWall = this.staging.place("architecture", "wall-straight", { params: { length: 12, height: 3 } });
       if (sideWall) {
-        sideWall.position.set(-5, 0, 0);
+        sideWall.position.set(-6, 0, 0);
         sideWall.rotation.y = Math.PI / 2;
       }
       this.staging.place("figure", "figure-standing");

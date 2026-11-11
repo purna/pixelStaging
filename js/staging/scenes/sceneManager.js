@@ -114,7 +114,7 @@ export class SceneManager {
     }
 
     makeStarterObjects() {
-        const staging = (name, presetId, position, rotation = [0, 0, 0]) => ({
+        const staging = (name, presetId, position, rotation = [0, 0, 0], params = {}) => ({
             type: 'staging',
             name,
             position: { x: position[0], y: position[1], z: position[2] },
@@ -128,22 +128,22 @@ export class SceneManager {
                     id: `starter_${presetId}_${Math.random().toString(36).slice(2, 7)}`,
                     kind: presetId === 'figure-standing' ? 'figure' : 'architecture',
                     presetId,
-                    params: {},
+                    params: { ...params },
                     colorOverride: null
                 }
             },
             staging: {
                 kind: presetId === 'figure-standing' ? 'figure' : 'architecture',
                 presetId,
-                params: {},
+                params: { ...params },
                 colorOverride: null
             }
         });
 
         return [
-            staging('Floor', 'floor', [0, 0, 0]),
-            staging('Wall (straight)', 'wall-straight', [0, 0, -5]),
-            staging('Wall (straight)', 'wall-straight', [-5, 0, 0], [0, Math.PI / 2, 0]),
+            staging('Floor', 'floor', [0, 0, 0], [0, 0, 0], { width: 12, depth: 12 }),
+            staging('Wall (straight)', 'wall-straight', [0, 0, -6], [0, 0, 0], { length: 12, height: 3 }),
+            staging('Wall (straight)', 'wall-straight', [-6, 0, 0], [0, Math.PI / 2, 0], { length: 12, height: 3 }),
             staging('Actor (standing)', 'figure-standing', [0, 0, 0])
         ];
     }
@@ -153,10 +153,10 @@ export class SceneManager {
             id: 'default_camera',
             name: 'Camera',
             isDefault: true,
-            position: [10, 8, 10],
-            target: [0, 1.5, 0],
+            position: [8, 6.5, 12],
+            target: [0, 1.2, -1],
             rotation: null,
-            lens: { focalLength: 50, sensor: 'fullFrame' },
+            lens: { focalLength: 35, sensor: 'fullFrame' },
             aspect: '16:9',
             color: 0x00e5ff
         };

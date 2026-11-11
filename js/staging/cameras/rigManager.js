@@ -40,9 +40,11 @@ export class CameraRigManager {
             return existing;
         }
 
-        const rig = this.addRig('Camera', new THREE.Vector3(10, 8, 10), {
+        const rig = this.addRig('Camera', new THREE.Vector3(8, 6.5, 12), {
             isDefault: true,
-            target: new THREE.Vector3(0, 1.5, 0)
+            target: new THREE.Vector3(0, 1.2, -1),
+            lens: { focalLength: 35, sensor: 'fullFrame' },
+            aspect: '16:9'
         });
         this.defaultRigId = rig.id;
         return rig;
@@ -268,40 +270,16 @@ export class CameraRigManager {
 
     /** Refresh the camera rig list display. */
     refreshUI() {
-        const listDiv = document.getElementById('camera-rig-list');
-        if (!listDiv) return;
-
-        if (this.rigs.length === 0) {
-            listDiv.innerHTML = '<div class="camera-rig-empty">No virtual cameras. Click + to add.</div>';
+        if (this.app.ui?.refreshCameraRigList) {
+            this.app.ui.refreshCameraRigList();
             return;
         }
 
-        listDiv.innerHTML = this.rigs.map(rig => `
-            <div class="camera-rig-item ${this.viewingRigId === rig.id ? 'active-view' : ''} ${this.selectedRig?.id === rig.id ? 'selected' : ''}" data-rig-id="${rig.id}">
-                <span class="camera-rig-color" style="background:#${rig.color.toString(16).padStart(6, '0')}"></span>
-                <span class="camera-rig-name">Cam ${rig.name}</span>
-                <span class="camera-rig-lens">${rig.lens.focalLength}mm ${rig.lens.sensor}</span>
-                <span class="camera-rig-aspect">${rig.aspect}</span>
-            </div>
-        `).join('');
-
-        // Add click handlers
-        listDiv.querySelectorAll('.camera-rig-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const rigId = item.dataset.rigId;
-                const rig = this.get(rigId);
-                if (rig) {
-                    // Select the rig in the scene
-                    this.app.selectObject(rig.group);
-                }
-            });
-            item.addEventListener('dblclick', () => {
-                const rigId = item.dataset.rigId;
-                this.viewingRigId = rigId;
-                if (this.app.orbit) this.app.orbit.enabled = false;
-                this.refreshUI();
-            });
-        });
+        const listDiv = document.getElementById('camera-rig-list');
+        if (!listDiv) return;
+        listDiv.innerHTML = this.rigs.length
+            ? this.rigs.map(rig => `<div class="camera-rig-item" data-rig-id="${rig.id}">${rig.name}</div>`).join('')
+            : '<div class="camera-rig-empty">No cameras.</div>';
     }
 
     /** Delete the currently selected rig. */

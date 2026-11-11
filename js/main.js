@@ -1465,15 +1465,15 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
     addDefaultTestObjects() {
         // Default staging scene: floor, two walls, one standing actor centrally
-        const floor = this.staging.place('architecture', 'floor');
+        const floor = this.staging.place('architecture', 'floor', { params: { width: 12, depth: 12 } });
         if (floor) floor.position.set(0, 0, 0);
 
-        const backWall = this.staging.place('architecture', 'wall-straight');
-        if (backWall) backWall.position.set(0, 0, -5);
+        const backWall = this.staging.place('architecture', 'wall-straight', { params: { length: 12, height: 3 } });
+        if (backWall) backWall.position.set(0, 0, -6);
 
-        const sideWall = this.staging.place('architecture', 'wall-straight');
+        const sideWall = this.staging.place('architecture', 'wall-straight', { params: { length: 12, height: 3 } });
         if (sideWall) {
-            sideWall.position.set(-5, 0, 0);
+            sideWall.position.set(-6, 0, 0);
             sideWall.rotation.y = Math.PI / 2;
         }
 

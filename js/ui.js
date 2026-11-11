@@ -1951,7 +1951,7 @@ export class UI {
             header.className = 'camera-rig-accordion-header';
             header.innerHTML = `
                 <span class="camera-rig-color" style="background:${color}"></span>
-                <span class="camera-rig-name">${rig.isDefault ? 'Default Camera' : `Cam ${rig.name}`}</span>
+                <span class="camera-rig-name">${rig.name}${rig.isDefault ? ' (default)' : ''}</span>
                 <span class="camera-rig-summary">${rig.lens.focalLength}mm ${rig.lens.sensor} · ${rig.aspect}</span>
                 <span class="camera-rig-chevron">${open ? '▾' : '▸'}</span>
             `;
@@ -2007,61 +2007,48 @@ export class UI {
                 };
                 aspectRow.appendChild(aspect);
 
-                const actions = document.createElement('div');
-                actions.className = 'camera-rig-actions';
-                const view = document.createElement('button');
-                view.textContent = cameras.viewingRigId === rig.id ? 'Exit view' : 'View';
-                view.className = cameras.viewingRigId === rig.id ? 'active' : '';
-                view.onclick = () => {
-                    cameras.viewingRigId = cameras.viewingRigId === rig.id ? null : rig.id;
-                    if (this.app.orbit) this.app.orbit.enabled = cameras.viewingRigId === null && this.app.controlMode === 'camera';
-                    this.refreshCameraRigList();
-                };
-
-                const frame = document.createElement('button');
-                frame.textContent = 'Frame';
-                frame.onclick = () => {
-                    this.app.selectObject(rig.group);
-                    cameras.frameCameraFromView();
-                    this.refreshCameraRigList();
-                };
-
-                const remove = document.createElement('button');
-                remove.textContent = 'Delete';
-                remove.className = 'danger';
-                remove.disabled = !!rig.isDefault;
-                remove.title = rig.isDefault ? 'The default camera cannot be deleted' : 'Delete camera';
-                remove.onclick = () => {
-                    if (rig.isDefault) return;
-                    cameras.removeRig(rig.id);
-                    this._openCameraRigId = cameras.defaultRig?.id || null;
-                    this.refreshCameraRigList();
-                };
-                actions.append(view, frame, remove);
-
-                const moveMode = document.createElement('div');
-                moveMode.className = 'camera-rig-move-mode';
-                const orbit = document.createElement('button');
-                orbit.textContent = 'Orbit';
-                orbit.className = this._cameraMoveMode !== 'pan' ? 'active' : '';
-                const pan = document.createElement('button');
-                pan.textContent = 'Pan';
-                pan.className = this._cameraMoveMode === 'pan' ? 'active' : '';
-                const setMode = mode => {
-                    this._cameraMoveMode = mode;
-                    if (this.app.orbit) {
-                        this.app.orbit.enableRotate = mode !== 'pan';
-                        this.app.orbit.enablePan = mode === 'pan';
-                        this.app.orbit.enabled = this.app.controlMode === 'camera';
+                const nameRow = document.createElement('label');
+                nameRow.className = 'camera-rig-field';
+                nameRow.innerHTML = '<span>Name</span>';
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.className = 'camera-name-input';
+                nameInput.value = rig.name;
+                nameInput.placeholder = 'Camera name';
+                const saveName = () => {
+                    const next = nameInput.value.trim();
+                    if (!next) {
+                        nameInput.value = rig.name;
+                        return;
                     }
-                    orbit.classList.toggle('active', mode !== 'pan');
-                    pan.classList.toggle('active', mode === 'pan');
+                    rig.name = next;
+                    rig.group.name = `Camera ${next}`;
+                    this.app.staging.shotManager.refreshUI();
+                    this.renderShotDesignerList?.();
+                    this.refreshCameraRigList();
                 };
-                orbit.onclick = () => setMode('orbit');
-                pan.onclick = () => setMode('pan');
-                moveMode.append(orbit, pan);
+                nameInput.addEventListener('change', saveName);
+                nameInput.addEventListener('blur', saveName);
+                nameInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') nameInput.blur();
+                });
+                nameRow.appendChild(nameInput);
 
-                body.append(lensRow, sensorRow, aspectRow, actions, moveMode);
+                body.append(nameRow, lensRow, sensorRow, aspectRow);
+
+                if (!rig.isDefault) {
+                    const remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.textContent = 'Delete camera';
+                    remove.className = 'camera-delete-btn';
+                    remove.onclick = () => {
+                        cameras.removeRig(rig.id);
+                        this._openCameraRigId = cameras.defaultRig?.id || null;
+                        this.refreshCameraRigList();
+                    };
+                    body.appendChild(remove);
+                }
+
                 item.appendChild(body);
             }
 

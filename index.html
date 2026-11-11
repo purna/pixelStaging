@@ -172,6 +172,10 @@ Animated male character with idle/walk/run animations"><span class="icon-svg"><s
                                 <path d="M6 21v-2.5a6 6 0 0112 0V21" fill="currentColor" fill-opacity="0.2" />
                                 <path d="M6 21v-2.5a6 6 0 0112 0V21" />
                             </svg></span></div>
+                    <div class="tool-btn" data-action="addCharacter" data-type="xbot_child" data-tooltip="**Xbot Child Character**
+Animated child female character"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="2.8" fill="currentColor" fill-opacity="0.3"/><circle cx="12" cy="8" r="2.8"/><path d="M12 5.2V4"/><path d="M7 21v-1.5a5 5 0 0110 0V21" fill="currentColor" fill-opacity="0.2"/><path d="M7 21v-1.5a5 5 0 0110 0V21"/></svg></span></div>
+                    <div class="tool-btn" data-action="addCharacter" data-type="ybot_child" data-tooltip="**Ybot Child Character**
+Animated child male character"><span class="icon-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="5" width="6" height="5" rx="1.5" fill="currentColor" fill-opacity="0.3"/><rect x="9" y="5" width="6" height="5" rx="1.5"/><path d="M7 21v-1.5a5 5 0 0110 0V21" fill="currentColor" fill-opacity="0.2"/><path d="M7 21v-1.5a5 5 0 0110 0V21"/></svg></span></div>
                 </div>
             </div>
 
@@ -635,47 +639,16 @@ Block actors, props and architecture">
                         </div>
                         <div class="panel-content" id="camera-content">
                             <div class="camera-toolbar">
-                                <button class="tool-btn camera-rig-btn" id="tool-add-camera-rig" title="Add Virtual Camera" data-tooltip="**Add Virtual Camera**\nCreate a new movie camera for shot planning">
+                                <button class="tool-btn camera-rig-btn" id="tool-add-camera-rig" title="Add Camera" data-tooltip="**Add Camera**\nCreate a new camera for shot planning">
                                     <i class="fas fa-plus"></i>
-                                </button>
-                                <button class="tool-btn camera-rig-btn" id="tool-view-camera" title="View Through Camera" data-tooltip="**View Through Camera**\nCycle through virtual cameras (Layout → Cam A → Cam B → … → Layout)">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="tool-btn camera-rig-btn" id="tool-frame-camera" title="Frame Camera from View" data-tooltip="**Frame Camera from View**\nLock the selected camera to match the current editor view">
-                                    <i class="fas fa-lock"></i>
-                                </button>
-                                <button class="tool-btn camera-rig-btn" id="tool-delete-camera" title="Delete Camera" data-tooltip="**Delete Camera**\nRemove the selected virtual camera">
-                                    <i class="fas fa-trash"></i>
                                 </button>
                                 <button class="tool-btn camera-rig-btn" id="tool-toggle-camera-guides" title="Camera Guides" data-tooltip="**Camera Guides**\nShow thirds, centre and safe-area guides">
                                     <i class="fas fa-border-all"></i>
                                 </button>
                             </div>
 
-                            <div class="camera-presets-group">
-                                <div class="preset-select-row">
-                                    <label for="camera-lens-preset" class="preset-label">Lens</label>
-                                    <select id="camera-lens-preset" class="camera-preset-select"></select>
-                                </div>
-                                <div class="preset-select-row">
-                                    <label for="camera-sensor-preset" class="preset-label">Sensor</label>
-                                    <select id="camera-sensor-preset" class="camera-preset-select"></select>
-                                </div>
-                                <div class="preset-select-row">
-                                    <label for="camera-aspect-preset" class="preset-label">Aspect</label>
-                                    <select id="camera-aspect-preset" class="camera-preset-select"></select>
-                                </div>
-                            </div>
-
                             <div class="camera-rig-list-container">
                                 <div id="camera-rig-list" class="camera-rig-list"></div>
-                            </div>
-
-                            <!-- Shot Timeline Toggle -->
-                            <div class="shot-timeline-toggle">
-                                <button class="btn" id="tool-toggle-shot-timeline">
-                                    <i class="fas fa-film"></i> Shot Timeline
-                                </button>
                             </div>
                         </div>
                     </div>

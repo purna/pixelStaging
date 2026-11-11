@@ -10,7 +10,9 @@ export class CharacterManager {
         // Models from Three.js examples (Mixamo Xbot/Ybot)
         this.models = {
             'xbot': './Art/Xbot.glb',
-            'ybot': './Art/Ybot.glb'
+            'ybot': './Art/Ybot.glb',
+            'xbot_child': './Art/Xbot_child.glb',
+            'ybot_child': './Art/Ybot_child.glb'
         };
     }
 
@@ -90,8 +92,13 @@ export class CharacterManager {
                     
                     // Show notification if UI is available
                     if (this.app.ui && this.app.ui.showNotification) {
-                        const gender = type === 'xbot' ? 'Female' : 'Male';
-                        this.app.ui.showNotification(`${gender} character loaded!`, 'success');
+                        const labels = {
+                            xbot: 'Female',
+                            ybot: 'Male',
+                            xbot_child: 'Child Female',
+                            ybot_child: 'Child Male'
+                        };
+                        this.app.ui.showNotification(`${labels[type] || 'Character'} loaded!`, 'success');
                     }
                     
                     resolve(model);
