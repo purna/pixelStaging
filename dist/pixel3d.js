@@ -34996,6 +34996,7 @@
         (value) => {
           shotManager.selectedShotIndex = index;
           shotManager.editingFrame = value;
+          shotManager.jumpToFrame(shot, value);
         }
       ));
       framing.appendChild(segmented(
@@ -37383,8 +37384,22 @@
       let isFigurePart = false;
       const isFigure = obj.userData.type === "figure";
       const isStaging = obj.userData.type === "staging";
-      const isCharacter = obj.userData.type === "character";
-      if (obj.userData.name) {
+      let characterRoot = obj.userData.type === "character" ? obj : null;
+      if (!characterRoot) {
+        let cursor = obj;
+        while (cursor && cursor !== this.app.scene) {
+          if (cursor.userData?.type === "character") {
+            characterRoot = cursor;
+            break;
+          }
+          cursor = cursor.parent;
+        }
+      }
+      const isCharacter = !!characterRoot;
+      const characterModel = characterRoot || obj;
+      if (isCharacter) {
+        title = characterModel.userData.characterType?.includes("child") ? "Child Character" : "3D Character";
+      } else if (obj.userData.name) {
         title = obj.userData.name;
         if (obj.userData.name.includes("Joint")) isFigurePart = true;
       } else if (obj.userData.type === "shape") {
@@ -37402,8 +37417,6 @@
         } else {
           title = "Staging Object";
         }
-      } else if (isCharacter) {
-        title = obj.userData.characterType?.includes("child") ? "Child Character" : "3D Character";
       }
       const header = document.createElement("div");
       header.className = "property-group";
@@ -37477,7 +37490,7 @@
         this.propsContent.appendChild(figureGroup);
       }
       if (isCharacter) {
-        const poses = this.app.characterManager?.listPoses?.(obj) || [];
+        const poses = this.app.characterManager?.listPoses?.(characterModel) || [];
         if (poses.length) {
           const poseGroup = document.createElement("div");
           poseGroup.className = "property-group character-pose-group";
@@ -37488,10 +37501,10 @@
           select.className = "character-pose-select";
           select.innerHTML = poses.map((pose) => {
             const label = pose.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-            return `<option value="${pose}"${obj.userData.currentPose === pose ? " selected" : ""}>${label}</option>`;
+            return `<option value="${pose}"${characterModel.userData.currentPose === pose ? " selected" : ""}>${label}</option>`;
           }).join("");
           select.onchange = () => {
-            this.app.characterManager.setPose(obj, select.value);
+            this.app.characterManager.setPose(characterModel, select.value);
           };
           const reset = document.createElement("button");
           reset.type = "button";
@@ -37499,7 +37512,7 @@
           reset.textContent = "Reset";
           reset.title = "Return to T-pose";
           reset.onclick = () => {
-            this.app.characterManager.resetPose(obj);
+            this.app.characterManager.resetPose(characterModel);
             select.value = "t_pose";
           };
           row.append(select, reset);
@@ -41911,6 +41924,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       this.object.userData.commandId = this.generateObjectId();
       this.app.addToScene(this.object);
       this.app.selectObject(this.object);
+      this.app.setControlMode?.("scene");
       return true;
     }
     undo() {
@@ -42057,6 +42071,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
         if (model) {
           this.app.addToScene(model);
           this.app.selectObject(model);
+          this.app.setControlMode?.("scene");
           return true;
         }
         return false;
@@ -45445,6 +45460,41 @@ ${elements.join("\n")}
         this.app.renderer.domElement.style.filter = "";
       }
     }
+    jumpToFrame(shot, frameType) {
+      const cameras = this.app.staging?.cameras;
+      const rig = shot ? cameras?.get(shot.cameraId) : null;
+      if (!shot || !rig) return;
+      const frame = shot[frameType === "start" ? "startFrame" : "endFrame"];
+      const temp = rig.camera.clone();
+      if (frame) {
+        temp.position.fromArray(frame.position);
+        temp.quaternion.fromArray(frame.quaternion);
+        if (Number.isFinite(frame.fov)) temp.fov = frame.fov;
+      } else {
+        this.applyShotMove(temp, rig, shot, frameType === "start" ? 0 : shot.duration, 0);
+      }
+      const camera = this.app.camera;
+      camera.position.copy(temp.position);
+      camera.quaternion.copy(temp.quaternion);
+      if (camera.isPerspectiveCamera) {
+        camera.fov = Number.isFinite(temp.fov) ? temp.fov : camera.fov;
+        camera.updateProjectionMatrix();
+      }
+      camera.updateMatrixWorld(true);
+      if (this.app.orbit) {
+        const target = frame?.target ? new V3().fromArray(frame.target) : rig.target.clone();
+        this.app.orbit.target.copy(target);
+        this.app.orbit.update();
+      }
+      this.selectedShotIndex = this.shots.indexOf(shot);
+      this.editingFrame = frameType;
+      this.viewMode = "frame";
+      this.previewActive = false;
+      this.clearPreviewBlur();
+      this.clearTransitionOverlay();
+      this.app.setControlMode?.("camera");
+      this.refreshUI();
+    }
     updateAlignButton() {
       const button = document.getElementById("align-frame-btn");
       if (!button) return;
@@ -46275,6 +46325,7 @@ ${elements.join("\n")}
             this.previewActive = false;
             this.clearPreviewBlur();
             this.refreshUI();
+            this.jumpToFrame(shot, frameType);
           };
           block.appendChild(kf);
         });
@@ -47600,10 +47651,17 @@ ${xrefOffset}
       const activeType = shotManager.editingFrame === "end" ? "end" : "start";
       const active = this.keyframeGizmos.get(activeType);
       if (active) {
-        this.keyframeControls.attach(active.group);
-        this.keyframeControls.setMode("translate");
-        this.keyframeControls.visible = true;
-        this.keyframeControls.enabled = true;
+        const distance = this.camera.position.distanceTo(active.group.position);
+        if (distance < 0.35) {
+          this.keyframeControls.detach();
+          this.keyframeControls.visible = false;
+          this.keyframeControls.enabled = false;
+        } else {
+          this.keyframeControls.attach(active.group);
+          this.keyframeControls.setMode("translate");
+          this.keyframeControls.visible = true;
+          this.keyframeControls.enabled = true;
+        }
       }
     }
     syncActiveKeyframeFromGizmo() {

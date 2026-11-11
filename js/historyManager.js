@@ -131,8 +131,10 @@ export class AddObjectCommand {
         // Add to scene
         this.app.addToScene(this.object);
         
-        // Select the new object
+        // Select the new object and switch to scene controls so its move
+        // gizmo is immediately available.
         this.app.selectObject(this.object);
+        this.app.setControlMode?.('scene');
         
         return true;
     }
@@ -319,9 +321,10 @@ export class AddCharacterCommand {
             this.characterModel = model;
             
             if (model) {
-                // Add to scene and select
+                // Add to scene, select, and expose the move gizmo.
                 this.app.addToScene(model);
                 this.app.selectObject(model);
+                this.app.setControlMode?.('scene');
                 return true;
             }
             return false;

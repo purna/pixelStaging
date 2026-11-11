@@ -269,6 +269,46 @@ export class ShotManager {
         }
     }
 
+    jumpToFrame(shot, frameType) {
+        const cameras = this.app.staging?.cameras;
+        const rig = shot ? cameras?.get(shot.cameraId) : null;
+        if (!shot || !rig) return;
+
+        const frame = shot[frameType === 'start' ? 'startFrame' : 'endFrame'];
+        const temp = rig.camera.clone();
+        if (frame) {
+            temp.position.fromArray(frame.position);
+            temp.quaternion.fromArray(frame.quaternion);
+            if (Number.isFinite(frame.fov)) temp.fov = frame.fov;
+        } else {
+            this.applyShotMove(temp, rig, shot, frameType === 'start' ? 0 : shot.duration, 0);
+        }
+
+        const camera = this.app.camera;
+        camera.position.copy(temp.position);
+        camera.quaternion.copy(temp.quaternion);
+        if (camera.isPerspectiveCamera) {
+            camera.fov = Number.isFinite(temp.fov) ? temp.fov : camera.fov;
+            camera.updateProjectionMatrix();
+        }
+        camera.updateMatrixWorld(true);
+
+        if (this.app.orbit) {
+            const target = frame?.target ? new V3().fromArray(frame.target) : rig.target.clone();
+            this.app.orbit.target.copy(target);
+            this.app.orbit.update();
+        }
+
+        this.selectedShotIndex = this.shots.indexOf(shot);
+        this.editingFrame = frameType;
+        this.viewMode = 'frame';
+        this.previewActive = false;
+        this.clearPreviewBlur();
+        this.clearTransitionOverlay();
+        this.app.setControlMode?.('camera');
+        this.refreshUI();
+    }
+
     updateAlignButton() {
         const button = document.getElementById('align-frame-btn');
         if (!button) return;
@@ -1247,6 +1287,7 @@ export class ShotManager {
                     this.previewActive = false;
                     this.clearPreviewBlur();
                     this.refreshUI();
+                    this.jumpToFrame(shot, frameType);
                 };
                 block.appendChild(kf);
             });

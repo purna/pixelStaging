@@ -2410,7 +2410,11 @@ export class UI {
         framing.appendChild(segmented(
             [['Start frame', 'start'], ['End frame', 'end']],
             shotManager.editingFrame,
-            value => { shotManager.selectedShotIndex = index; shotManager.editingFrame = value; }
+            value => {
+                shotManager.selectedShotIndex = index;
+                shotManager.editingFrame = value;
+                shotManager.jumpToFrame(shot, value);
+            }
         ));
 
         framing.appendChild(segmented(
@@ -4886,10 +4890,21 @@ export class UI {
         let isFigurePart = false;
         const isFigure = obj.userData.type === 'figure';
         const isStaging = obj.userData.type === 'staging';
-        const isCharacter = obj.userData.type === 'character';
+        let characterRoot = obj.userData.type === 'character' ? obj : null;
+        if (!characterRoot) {
+            let cursor = obj;
+            while (cursor && cursor !== this.app.scene) {
+                if (cursor.userData?.type === 'character') { characterRoot = cursor; break; }
+                cursor = cursor.parent;
+            }
+        }
+        const isCharacter = !!characterRoot;
+        const characterModel = characterRoot || obj;
 
         // Determine Title based on name override or type
-        if (obj.userData.name) {
+        if (isCharacter) {
+            title = characterModel.userData.characterType?.includes('child') ? 'Child Character' : '3D Character';
+        } else if (obj.userData.name) {
             title = obj.userData.name;
             if (obj.userData.name.includes('Joint')) isFigurePart = true;
         } else if (obj.userData.type === 'shape') {
@@ -4907,8 +4922,6 @@ export class UI {
             } else {
                 title = 'Staging Object';
             }
-        } else if (isCharacter) {
-            title = obj.userData.characterType?.includes('child') ? 'Child Character' : '3D Character';
         }
 
         // Header
@@ -4990,7 +5003,7 @@ export class UI {
 
         // CHARACTER POSE CONTROLS
         if (isCharacter) {
-            const poses = this.app.characterManager?.listPoses?.(obj) || [];
+            const poses = this.app.characterManager?.listPoses?.(characterModel) || [];
             if (poses.length) {
                 const poseGroup = document.createElement('div');
                 poseGroup.className = 'property-group character-pose-group';
@@ -5003,10 +5016,10 @@ export class UI {
                 select.className = 'character-pose-select';
                 select.innerHTML = poses.map(pose => {
                     const label = pose.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                    return `<option value="${pose}"${obj.userData.currentPose === pose ? ' selected' : ''}>${label}</option>`;
+                    return `<option value="${pose}"${characterModel.userData.currentPose === pose ? ' selected' : ''}>${label}</option>`;
                 }).join('');
                 select.onchange = () => {
-                    this.app.characterManager.setPose(obj, select.value);
+                    this.app.characterManager.setPose(characterModel, select.value);
                 };
 
                 const reset = document.createElement('button');
@@ -5015,7 +5028,7 @@ export class UI {
                 reset.textContent = 'Reset';
                 reset.title = 'Return to T-pose';
                 reset.onclick = () => {
-                    this.app.characterManager.resetPose(obj);
+                    this.app.characterManager.resetPose(characterModel);
                     select.value = 't_pose';
                 };
 

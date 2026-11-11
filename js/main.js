@@ -433,10 +433,17 @@ class StageApp {
         const activeType = shotManager.editingFrame === 'end' ? 'end' : 'start';
         const active = this.keyframeGizmos.get(activeType);
         if (active) {
-            this.keyframeControls.attach(active.group);
-            this.keyframeControls.setMode('translate');
-            this.keyframeControls.visible = true;
-            this.keyframeControls.enabled = true;
+            const distance = this.camera.position.distanceTo(active.group.position);
+            if (distance < 0.35) {
+                this.keyframeControls.detach();
+                this.keyframeControls.visible = false;
+                this.keyframeControls.enabled = false;
+            } else {
+                this.keyframeControls.attach(active.group);
+                this.keyframeControls.setMode('translate');
+                this.keyframeControls.visible = true;
+                this.keyframeControls.enabled = true;
+            }
         }
     }
 
