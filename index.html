@@ -62,7 +62,6 @@
             <button id="undoBtn" class="btn icon-only" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
             <button id="redoBtn" class="btn icon-only" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
             <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
-            <button class="btn" id="btn-clear"><i class="fas fa-trash-alt"></i> Clear</button>
             <input type="file" id="file-input" accept=".json" style="display:none">
             <button class="btn" id="btn-load"><i class="fas fa-folder-open"></i> Load</button>
             <button class="btn primary" id="btn-save"><i class="fas fa-save"></i> Save to Browser</button>
@@ -534,6 +533,11 @@ Block actors, props and architecture">
                                         <label class="property-label" for="scene-notes">Scene Notes:</label>
                                         <textarea id="scene-notes" rows="4" placeholder="Set description, lighting notes, continuity notes…"
                                                 style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.8rem; color: var(--text-primary); width: 100%; margin-top: 6px; resize: vertical;"></textarea>
+                                    </div>
+                                    <div class="property-group">
+                                        <button type="button" id="scene-clear-button" class="scene-clear-button">
+                                            <i class="fas fa-trash-alt"></i> Clear Scene…
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1282,6 +1286,26 @@ Block actors, props and architecture">
 
 
 
+
+
+        <!-- CLEAR SCENE CONFIRMATION -->
+        <div class="modal-overlay" id="clear-scene-modal">
+            <div class="modal clear-scene-modal">
+                <header>
+                    <div class="modal-title"><i class="fas fa-triangle-exclamation"></i> Clear Scene</div>
+                    <button class="modal-close-btn" id="clear-scene-close" title="Close">×</button>
+                </header>
+                <div class="clear-scene-warning">
+                    <p><b>This will remove everything currently in the scene.</b></p>
+                    <p>Objects, characters, staging pieces, lights and shot positions will be deleted.</p>
+                    <p>Use Undo if you need to restore the previous scene.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="clear-scene-cancel">Cancel</button>
+                    <button class="btn scene-clear-confirm" id="clear-scene-confirm">Clear Scene</button>
+                </div>
+            </div>
+        </div>
 
         <!-- EXPORT MODAL -->
         <div class="modal-overlay" id="export-modal">

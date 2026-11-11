@@ -7596,3 +7596,46 @@ input[type="number"].color-slider-value-compact {
     gap: 7px !important;
     margin-top: 10px !important;
 }
+
+/* Toggle Overlays also hides the axis gizmo */
+#axis-gizmo.overlay-hidden {
+    display: none !important;
+}
+
+/* Final navigation layout cleanup */
+.mobile-nav {
+    bottom: 190px !important;
+}
+.camera-nudge {
+    display: none !important;
+}
+
+/* Scene clear action */
+.scene-clear-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 0, 110, 0.35);
+    border-radius: 6px;
+    background: rgba(255, 0, 110, 0.08);
+    color: var(--accent-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+.scene-clear-button:hover {
+    border-color: var(--accent-secondary);
+    background: rgba(255, 0, 110, 0.16);
+}
+.clear-scene-modal { width: 470px; }
+.clear-scene-warning { padding: 16px 18px; color: var(--text-secondary); font-size: 0.78rem; line-height: 1.5; }
+.clear-scene-warning p { margin: 0 0 9px; }
+.clear-scene-warning b { color: var(--text-primary); }
+.scene-clear-confirm {
+    background: rgba(255, 0, 110, 0.16) !important;
+    border-color: rgba(255, 0, 110, 0.5) !important;
+    color: var(--accent-secondary) !important;
+}
+.scene-clear-confirm:hover { background: rgba(255, 0, 110, 0.3) !important; }

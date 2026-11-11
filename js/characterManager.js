@@ -80,6 +80,36 @@ export class CharacterManager {
                     const runClip = animations.find(a => a.name.toLowerCase().includes('run')) || animations[1];
                     const walkClip = animations.find(a => a.name.toLowerCase().includes('walk')) || animations[3];
 
+                    // Add reusable default action poses for every character.
+                    if (poser) {
+                        if (walkClip) poser.addPoseFromClip('walk', walkClip, walkClip.duration * 0.5);
+                        if (runClip) poser.addPoseFromClip('run', runClip, runClip.duration * 0.45);
+                        poser.addDeltaPose('skip', {
+                            Hips: [0, 8, -4],
+                            Spine: [4, -6, 6],
+                            LeftUpLeg: [-38, 0, 5],
+                            LeftLeg: [48, 0, 0],
+                            RightUpLeg: [12, 0, -4],
+                            RightLeg: [8, 0, 0],
+                            LeftArm: [-58, 0, -18],
+                            LeftForeArm: [-25, 0, 0],
+                            RightArm: [28, 0, 18],
+                            RightForeArm: [-15, 0, 0]
+                        }, -0.04);
+                        poser.addDeltaPose('jump', {
+                            Hips: [-8, 0, 0],
+                            Spine: [10, 0, 0],
+                            LeftUpLeg: [-28, 0, 4],
+                            LeftLeg: [55, 0, 0],
+                            RightUpLeg: [-28, 0, -4],
+                            RightLeg: [55, 0, 0],
+                            LeftArm: [-118, 0, -12],
+                            LeftForeArm: [-18, 0, 0],
+                            RightArm: [-118, 0, 12],
+                            RightForeArm: [-18, 0, 0]
+                        }, 0.08);
+                    }
+
                     // 4. Create Actions
                     if (idleClip) {
                         const action = mixer.clipAction(idleClip);

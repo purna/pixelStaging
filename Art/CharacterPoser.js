@@ -67,6 +67,66 @@ export class CharacterPoser {
   list() { return [...this.poses.keys()]; }
   has(name) { return this.poses.has(name); }
 
+  /** Add a static pose sampled from an animation clip (walk/run/etc). */
+  addPoseFromClip(name, clip, time = null) {
+    if (!clip || this.poses.has(name)) return this;
+    const sampleTime = time == null ? clip.duration * 0.5 : time;
+
+    for (const [n, b] of this.bones) {
+      b.quaternion.copy(this.rest.get(n));
+      const p = this.restPositions.get(n);
+      if (p) b.position.copy(p);
+    }
+
+    for (const track of clip.tracks) {
+      const dot = track.name.lastIndexOf('.');
+      if (dot === -1) continue;
+      const boneName = short(track.name.slice(0, dot));
+      const prop = track.name.slice(dot + 1);
+      const bone = this.bones.get(boneName);
+      if (!bone) continue;
+
+      let index = 0;
+      while (index < track.times.length - 1 && track.times[index + 1] <= sampleTime) index++;
+      const valueSize = track.getValueSize();
+      const offset = index * valueSize;
+
+      if (prop === 'quaternion') bone.quaternion.fromArray(track.values, offset);
+      if (prop === 'position' && boneName === 'Hips') bone.position.fromArray(track.values, offset);
+    }
+
+    const rotations = new Map();
+    for (const [n, b] of this.bones) rotations.set(n, b.quaternion.clone());
+    const hipsScale = this.hips && this.restHipsY ? this.hips.position.y / this.restHipsY : 1;
+    this.poses.set(name, { rotations, hipsScale });
+    this._clips.set(name, clip);
+
+    for (const [n, b] of this.bones) {
+      b.quaternion.copy(this.rest.get(n));
+      const p = this.restPositions.get(n);
+      if (p) b.position.copy(p);
+    }
+    return this;
+  }
+
+  /** Add a pose defined as bone rotation offsets in degrees. */
+  addDeltaPose(name, degrees = {}, hipsDrop = 0) {
+    if (this.poses.has(name)) return this;
+    const rotations = new Map();
+    for (const [n] of this.bones) {
+      const euler = degrees[n] || [0, 0, 0];
+      const delta = new Quaternion().setFromEuler(new Euler(
+        MathUtils.degToRad(euler[0] || 0),
+        MathUtils.degToRad(euler[1] || 0),
+        MathUtils.degToRad(euler[2] || 0),
+        'ZYX'
+      ));
+      rotations.set(n, delta.multiply(this.rest.get(n)));
+    }
+    this.poses.set(name, { rotations, hipsScale: 1 + hipsDrop });
+    return this;
+  }
+
   // ---- applying poses ------------------------------------------------------------------------------------------
   /** Pose the character. duration = seconds to blend from the current pose (0 = instant). Call update(dt) each frame. */
   apply(name, { duration = 0 } = {}) {

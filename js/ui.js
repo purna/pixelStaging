@@ -145,7 +145,7 @@ export class UI {
         });
 
         // Main action buttons
-        document.getElementById('btn-clear').addEventListener('click', () => {
+        document.getElementById('btn-clear')?.addEventListener('click', () => {
             if (this.app.clearScene) this.app.clearScene();
         });
         document.getElementById('btn-save').addEventListener('click', () => {
@@ -903,6 +903,9 @@ export class UI {
                 obj.visible = shouldShow;
             }
         });
+
+        // The orientation gizmo is an overlay too.
+        document.getElementById('axis-gizmo')?.classList.toggle('overlay-hidden', !shouldShow);
 
         // Update button active state
         const overlayBtn = document.getElementById('tool-toggle-overlays');
@@ -1860,6 +1863,27 @@ export class UI {
             });
         }
 
+        const clearSceneBtn = document.getElementById('scene-clear-button');
+        const clearSceneModal = document.getElementById('clear-scene-modal');
+        const closeClearScene = () => clearSceneModal?.classList.remove('open');
+        if (clearSceneBtn && !clearSceneBtn.dataset.wired) {
+            clearSceneBtn.dataset.wired = 'true';
+            clearSceneBtn.addEventListener('click', () => clearSceneModal?.classList.add('open'));
+        }
+        if (clearSceneModal && !clearSceneModal.dataset.wired) {
+            clearSceneModal.dataset.wired = 'true';
+            document.getElementById('clear-scene-close')?.addEventListener('click', closeClearScene);
+            document.getElementById('clear-scene-cancel')?.addEventListener('click', closeClearScene);
+            clearSceneModal.addEventListener('click', (event) => {
+                if (event.target === clearSceneModal) closeClearScene();
+            });
+            document.getElementById('clear-scene-confirm')?.addEventListener('click', () => {
+                closeClearScene();
+                this.app.clearScene?.();
+                this.showNotification('Scene cleared', 'info');
+            });
+        }
+
         const notesInput = document.getElementById('scene-notes');
         if (notesInput && !notesInput.dataset.wired) {
             notesInput.dataset.wired = 'true';
@@ -1889,6 +1913,27 @@ export class UI {
         if (!list || !scenes) return;
 
         const titleInput = document.getElementById('scene-title');
+        const clearSceneBtn = document.getElementById('scene-clear-button');
+        const clearSceneModal = document.getElementById('clear-scene-modal');
+        const closeClearScene = () => clearSceneModal?.classList.remove('open');
+        if (clearSceneBtn && !clearSceneBtn.dataset.wired) {
+            clearSceneBtn.dataset.wired = 'true';
+            clearSceneBtn.addEventListener('click', () => clearSceneModal?.classList.add('open'));
+        }
+        if (clearSceneModal && !clearSceneModal.dataset.wired) {
+            clearSceneModal.dataset.wired = 'true';
+            document.getElementById('clear-scene-close')?.addEventListener('click', closeClearScene);
+            document.getElementById('clear-scene-cancel')?.addEventListener('click', closeClearScene);
+            clearSceneModal.addEventListener('click', (event) => {
+                if (event.target === clearSceneModal) closeClearScene();
+            });
+            document.getElementById('clear-scene-confirm')?.addEventListener('click', () => {
+                closeClearScene();
+                this.app.clearScene?.();
+                this.showNotification('Scene cleared', 'info');
+            });
+        }
+
         const notesInput = document.getElementById('scene-notes');
         if (titleInput && document.activeElement !== titleInput) titleInput.value = scenes.currentSceneName;
         if (notesInput && document.activeElement !== notesInput) notesInput.value = scenes.getSceneNotes();
