@@ -371,6 +371,34 @@ Block actors, props and architecture">
                 </div>
             </div>
 
+            <!-- Floating camera nudge menu -->
+            <div id="camera-nudge" class="camera-nudge">
+                <div class="camera-nudge-title">Camera</div>
+                <div class="camera-nudge-group">
+                    <span>Move</span>
+                    <button data-cam-action="left" title="Move left">◀</button>
+                    <button data-cam-action="up" title="Move up">▲</button>
+                    <button data-cam-action="down" title="Move down">▼</button>
+                    <button data-cam-action="right" title="Move right">▶</button>
+                </div>
+                <div class="camera-nudge-group">
+                    <span>Rotate</span>
+                    <button data-cam-action="rot-left" title="Rotate left">↺</button>
+                    <button data-cam-action="rot-up" title="Tilt up">⤒</button>
+                    <button data-cam-action="rot-down" title="Tilt down">⤓</button>
+                    <button data-cam-action="rot-right" title="Rotate right">↻</button>
+                </div>
+                <div class="camera-nudge-group">
+                    <span>Zoom</span>
+                    <button data-cam-action="push" title="Push in">＋</button>
+                    <button data-cam-action="pull" title="Pull out">－</button>
+                </div>
+                <div class="camera-nudge-frame-actions">
+                    <button id="camera-nudge-set-frame" title="Set the current framing as this shot keyframe">Set keyframe</button>
+                    <button id="camera-nudge-cancel-frame" title="Cancel framing">Cancel</button>
+                </div>
+            </div>
+
             <!-- Shot Timeline Panel (bottom bar) -->
             <div id="shot-timeline">
                 <div class="shot-timeline-top">
@@ -382,7 +410,6 @@ Block actors, props and architecture">
                     <button class="btn" id="timeline-loop" title="Loop" style="padding: 4px 8px;">➡</button>
                     <button class="btn" id="timeline-export-pdf" title="Export storyboard PDF">PDF</button>
                 </div>
-                <div id="shot-cards"></div>
                 <div class="shot-timeline-track">
                     <div class="shot-timeline-ruler" id="shot-timeline-ruler"></div>
                     <div class="shot-time-indicator" id="shot-time-indicator"></div>

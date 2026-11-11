@@ -27,3 +27,16 @@ export function lerpArray(arr, u) {
     if (arr.length === 1) return arr[0];
     return lerp(arr, u);
 }
+/** Cubic bezier easing with x1,y1,x2,y2 control points. */
+export function cubicBezierEasing(curve, x) {
+    if (!Array.isArray(curve) || curve.length !== 4) return x;
+    const [x1, y1, x2, y2] = curve;
+    let lo = 0, hi = 1, t = x;
+    for (let i = 0; i < 24; i++) {
+        t = (lo + hi) / 2;
+        const X = 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+        if (X < x) lo = t;
+        else hi = t;
+    }
+    return 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+}

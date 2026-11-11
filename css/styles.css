@@ -5709,3 +5709,340 @@ input[type="number"].color-slider-value-compact {
     border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: 50%;
 }
+
+/* Timeline keyframes */
+.shot-timeline-kf {
+    position: absolute;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: rgba(15, 15, 30, 0.9);
+    border: 2px solid #4caf50;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.55);
+    z-index: 8;
+    cursor: pointer;
+}
+
+.shot-timeline-kf[data-frame-type="end"] {
+    border-color: #f44336;
+    box-shadow: 0 0 5px rgba(244, 67, 54, 0.55);
+}
+
+.shot-timeline-kf.custom {
+    background: #4caf50;
+}
+
+.shot-timeline-kf[data-frame-type="end"].custom {
+    background: #f44336;
+}
+
+.shot-timeline-kf.active {
+    width: 13px;
+    height: 13px;
+    border-color: #fff;
+    box-shadow: 0 0 0 2px currentColor, 0 0 9px currentColor;
+}
+
+.shot-timeline-kf:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+}
+
+/* Floating camera nudge menu */
+.camera-nudge {
+    position: absolute;
+    left: 12px;
+    bottom: 186px;
+    z-index: 45;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px;
+    background: rgba(15, 15, 30, 0.92);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    color: var(--text-primary);
+    font-size: 10px;
+    backdrop-filter: blur(8px);
+}
+
+.camera-nudge-title {
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-primary);
+}
+
+.camera-nudge-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.camera-nudge-group span {
+    width: 42px;
+    color: var(--text-secondary);
+}
+
+.camera-nudge button {
+    width: 24px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+}
+
+.camera-nudge button:hover {
+    border-color: var(--accent-primary);
+    background: rgba(0, 255, 65, 0.16);
+}
+
+.camera-nudge button:active {
+    background: rgba(0, 255, 65, 0.3);
+}
+
+.camera-nudge-frame-actions {
+    display: flex;
+    gap: 4px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.camera-nudge-frame-actions button {
+    flex: 1;
+    width: auto;
+    height: 24px;
+    font-size: 9px;
+    padding: 0 6px;
+}
+
+/* Shot Designer accordion */
+.sd-shot-item {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    margin-bottom: 5px;
+    background: rgba(255, 255, 255, 0.025);
+    overflow: hidden;
+}
+
+.sd-shot-item.selected {
+    border-color: rgba(0, 255, 65, 0.45);
+}
+
+.sd-shot-item.open {
+    background: rgba(0, 255, 65, 0.055);
+    border-color: rgba(0, 255, 65, 0.6);
+}
+
+.sd-shot-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: transparent;
+    border: 0;
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+}
+
+.sd-shot-number {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    display: grid;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.sd-shot-heading {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.sd-shot-heading b {
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sd-shot-heading small {
+    color: var(--text-secondary);
+    font-size: 0.63rem;
+    margin-top: 2px;
+}
+
+.sd-shot-chevron {
+    color: var(--text-secondary);
+    font-size: 10px;
+}
+
+.sd-shot-body {
+    padding: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sd-field {
+    display: grid;
+    grid-template-columns: 66px 1fr;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.sd-field > input,
+.sd-field > select,
+.sd-field > textarea,
+.sd-range-wrap {
+    min-width: 0;
+}
+
+.sd-range-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sd-range-wrap input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--accent-primary);
+}
+
+.sd-value {
+    width: 40px;
+    text-align: right;
+    color: var(--text-primary);
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+}
+
+.sd-fieldset {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    padding: 7px;
+    margin: 0;
+}
+
+.sd-fieldset legend {
+    padding: 0 4px;
+    color: var(--text-secondary);
+    font-size: 9px;
+}
+
+.sd-secondary-btn,
+.sd-action,
+.sd-shot-footer button {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.055);
+    color: var(--text-primary);
+    border-radius: 4px;
+    padding: 4px 7px;
+    font-size: 9px;
+    cursor: pointer;
+}
+
+.sd-secondary-btn:hover,
+.sd-action:hover,
+.sd-shot-footer button:hover {
+    border-color: var(--accent-primary);
+}
+
+.sd-btn-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 5px;
+}
+
+.sd-btn-row .sd-action {
+    flex: 1;
+}
+
+.sd-action-primary {
+    background: rgba(76, 175, 80, 0.22) !important;
+}
+
+.sd-action-danger,
+.sd-shot-footer .danger {
+    color: #ff7676;
+    background: rgba(244, 67, 54, 0.12) !important;
+}
+
+.sd-help {
+    display: block;
+    margin-top: 5px;
+    color: var(--text-secondary);
+    font-size: 9px;
+}
+
+.sd-curve-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    margin-top: 6px;
+}
+
+.sd-curve-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 9px;
+    color: var(--text-secondary);
+}
+
+.sd-curve-grid input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent-primary);
+}
+
+.sd-curve-grid b {
+    color: var(--text-primary);
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+}
+
+.sd-notes {
+    width: 100%;
+    resize: vertical;
+    background: #0d0d1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: var(--text-primary);
+    padding: 5px;
+    font-size: 10px;
+}
+
+.sd-shot-footer {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.sd-shot-footer button {
+    flex: 1;
+    min-width: 48px;
+}
+
+.shot-designer-empty {
+    padding: 10px;
+    color: var(--text-secondary);
+    font-size: 10px;
+    text-align: center;
+}

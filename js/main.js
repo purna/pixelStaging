@@ -22,6 +22,7 @@ import { CameraRigManager } from './staging/cameras/rigManager.js';
 import { ShotBoard } from './staging/shots/shotBoard.js';
 import { ShotManager } from './staging/shots/shotManager.js';
 import { SceneManager } from './staging/scenes/sceneManager.js';
+import { buildFrustumVisual } from './staging/cameras/frustumRenderer.js';
 import { exportStoryboardPDF } from './storyboardExporter.js';
 
 class StageApp {
@@ -31,6 +32,9 @@ class StageApp {
         this.renderer = null;
         this.orbit = null;
         this.transformControl = null;
+        this.keyframeControls = null;
+        this.keyframeGizmos = new Map();
+        this.keyframeDragging = false;
 
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
@@ -343,8 +347,114 @@ class StageApp {
 
             this.scene.add(this.transformControl);
             this.transformControl.setMode('translate');
+            this.setupKeyframeGizmos();
             this.setControlMode('camera');
         }, APP_DEFAULTS.init.uiInitDelay);
+    }
+
+    setupKeyframeGizmos() {
+        this.keyframeControls = new TransformControls(this.camera, this.renderer.domElement);
+        this.keyframeControls.setSize(0.65);
+        this.keyframeControls.visible = false;
+        this.keyframeControls.enabled = false;
+        this.scene.add(this.keyframeControls);
+
+        this.keyframeControls.addEventListener('dragging-changed', (event) => {
+            this.keyframeDragging = event.value;
+            if (this.orbit) this.orbit.enabled = !event.value && this.controlMode === 'camera';
+            if (this.cameraManager) this.cameraManager.setCameraEnabled(!event.value);
+        });
+        this.keyframeControls.addEventListener('change', () => this.syncActiveKeyframeFromGizmo());
+        this.keyframeControls.addEventListener('mouseUp', () => {
+            this.staging.shotManager.refreshUI();
+        });
+
+        for (const [type, color] of [['start', 0x4caf50], ['end', 0xf44336]]) {
+            const group = new THREE.Group();
+            group.name = `${type} keyframe`;
+            group.visible = false;
+            group.userData.isKeyframeGizmo = true;
+
+            const bodyMat = new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.95 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.28), bodyMat);
+            const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.2, 12), bodyMat);
+            lens.rotation.x = Math.PI / 2;
+            lens.position.z = -0.24;
+            body.renderOrder = 20;
+            lens.renderOrder = 20;
+            group.add(body, lens);
+
+            const frustum = buildFrustumVisual(color);
+            frustum.setVisible(false);
+            group.add(frustum.group);
+            group.userData.frameType = type;
+            this.scene.add(group);
+            this.keyframeGizmos.set(type, { group, frustum });
+        }
+    }
+
+    updateKeyframeGizmos() {
+        if (!this.keyframeControls) return;
+        const shotManager = this.staging?.shotManager;
+        const shot = shotManager?.selectedShot;
+        const rig = shot ? this.staging.cameras.get(shot.cameraId) : null;
+
+        if (!shot || !rig || shotManager.framingControls || shotManager.previewActive || shotManager.playing) {
+            for (const { group } of this.keyframeGizmos.values()) group.visible = false;
+            this.keyframeControls.detach();
+            this.keyframeControls.visible = false;
+            this.keyframeControls.enabled = false;
+            return;
+        }
+
+        for (const frameType of ['start', 'end']) {
+            const gizmo = this.keyframeGizmos.get(frameType);
+            if (!gizmo) continue;
+            const custom = shot[frameType === 'start' ? 'startFrame' : 'endFrame'];
+            const temp = rig.camera.clone();
+
+            if (custom) {
+                temp.position.fromArray(custom.position);
+                temp.quaternion.fromArray(custom.quaternion);
+                if (Number.isFinite(custom.fov)) temp.fov = custom.fov;
+            } else {
+                shotManager.applyShotMove(temp, rig, shot, frameType === 'start' ? 0 : shot.duration, 0);
+            }
+            temp.updateMatrixWorld(true);
+
+            gizmo.group.position.copy(temp.position);
+            gizmo.group.quaternion.copy(temp.quaternion);
+            gizmo.group.visible = true;
+            gizmo.frustum.setVisible(true);
+            gizmo.frustum.update(temp.fov || rig.camera.fov, rig.camera.aspect, 1.15);
+            gizmo.group.userData.keyframe = { shotId: shot.id, frameType, fov: temp.fov || rig.camera.fov };
+        }
+
+        const activeType = shotManager.editingFrame === 'end' ? 'end' : 'start';
+        const active = this.keyframeGizmos.get(activeType);
+        if (active) {
+            this.keyframeControls.attach(active.group);
+            this.keyframeControls.setMode('translate');
+            this.keyframeControls.visible = true;
+            this.keyframeControls.enabled = true;
+        }
+    }
+
+    syncActiveKeyframeFromGizmo() {
+        if (!this.keyframeDragging) return;
+        const gizmo = this.keyframeControls?.object;
+        if (!gizmo?.userData?.keyframe) return;
+        const { shotId, frameType, fov } = gizmo.userData.keyframe;
+        const shot = this.staging.shotManager.shots.find(s => s.id === shotId);
+        const rig = shot ? this.staging.cameras.get(shot.cameraId) : null;
+        if (!shot || !rig) return;
+
+        shot[frameType === 'start' ? 'startFrame' : 'endFrame'] = {
+            position: gizmo.position.toArray(),
+            quaternion: gizmo.quaternion.toArray(),
+            target: rig.target?.toArray?.() || null,
+            fov
+        };
     }
 
     /**
@@ -870,6 +980,9 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     }
 
     onPointerDown(event) {
+        // Let the keyframe gizmo handle its own drag.
+        if (this.keyframeControls?.axis) return;
+
         // Camera mode: let OrbitControls handle the drag on the canvas.
         if (this.controlMode === 'camera') {
             this.renderer.domElement.style.cursor = 'grabbing';

@@ -32985,6 +32985,7 @@
         ["saved settings", () => this.loadSettings()],
         ["panel tabs", () => this.setupPanelTabs()],
         ["floating camera controls", () => this.setupFloatingCameraControls()],
+        ["camera nudge", () => this.setupCameraNudge()],
         ["scene list", () => this.setupSceneList()],
         ["color editor", () => this.setupColorEditor()],
         ["hierarchy", () => this.renderHierarchyPanel()],
@@ -34314,6 +34315,93 @@
         }
       }
     }
+    setupCameraNudge() {
+      const panel = document.getElementById("camera-nudge");
+      if (!panel) return;
+      panel.querySelectorAll("[data-cam-action]").forEach((button) => {
+        button.addEventListener("click", () => this.applyCameraNudge(button.dataset.camAction));
+      });
+      document.getElementById("camera-nudge-set-frame")?.addEventListener("click", () => {
+        const sm = this.app.staging?.shotManager;
+        if (!sm?.framingControls || !sm.framingRig) {
+          this.showNotification("Click a start or end keyframe on the timeline first", "info");
+          return;
+        }
+        sm.commitFraming(sm.editingFrame);
+        this.setupShotDesignerTab();
+      });
+      document.getElementById("camera-nudge-cancel-frame")?.addEventListener("click", () => {
+        const sm = this.app.staging?.shotManager;
+        if (sm?.framingControls) {
+          sm.cancelFraming();
+          this.setupShotDesignerTab();
+        }
+      });
+    }
+    applyCameraNudge(action) {
+      const shotManager = this.app.staging?.shotManager;
+      const framing = shotManager?.framingControls && shotManager.framingRig ? {
+        camera: shotManager.framingRig.camera,
+        target: shotManager.framingControls.target,
+        controls: shotManager.framingControls
+      } : null;
+      const camera = framing?.camera || this.app.camera;
+      const target = framing?.target || this.app.orbit?.target;
+      if (!camera || !target) return;
+      const step = 0.45;
+      const angle = MathUtils.degToRad(5);
+      const forward = new Vector3();
+      camera.getWorldDirection(forward);
+      const right = new Vector3().crossVectors(forward, camera.up).normalize();
+      const up = new Vector3().crossVectors(right, forward).normalize();
+      const worldUp = new Vector3(0, 1, 0);
+      switch (action) {
+        case "left":
+          camera.position.addScaledVector(right, -step);
+          target.addScaledVector(right, -step);
+          break;
+        case "right":
+          camera.position.addScaledVector(right, step);
+          target.addScaledVector(right, step);
+          break;
+        case "up":
+          camera.position.addScaledVector(up, step);
+          target.addScaledVector(up, step);
+          break;
+        case "down":
+          camera.position.addScaledVector(up, -step);
+          target.addScaledVector(up, -step);
+          break;
+        case "push":
+          camera.position.addScaledVector(forward, step);
+          break;
+        case "pull":
+          camera.position.addScaledVector(forward, -step);
+          break;
+        case "rot-left":
+        case "rot-right": {
+          const offset = camera.position.clone().sub(target);
+          offset.applyAxisAngle(worldUp, action === "rot-left" ? angle : -angle);
+          camera.position.copy(target).add(offset);
+          break;
+        }
+        case "rot-up":
+        case "rot-down": {
+          const offset = camera.position.clone().sub(target);
+          offset.applyAxisAngle(right, action === "rot-up" ? -angle : angle);
+          camera.position.copy(target).add(offset);
+          break;
+        }
+      }
+      camera.lookAt(target);
+      camera.updateMatrixWorld(true);
+      if (framing?.controls) {
+        framing.controls.update();
+      } else if (this.app.orbit) {
+        this.app.orbit.target.copy(target);
+        this.app.orbit.update();
+      }
+    }
     setupSceneList() {
       const scenes = this.app.staging?.scenes;
       if (!scenes) return;
@@ -34587,179 +34675,353 @@
       const cameras = this.app.staging?.cameras;
       const cameraSelect = document.getElementById("sd-camera-select");
       const shotsList = document.getElementById("sd-shots-list");
-      const shotDetails = document.getElementById("sd-shot-details");
+      const details = document.getElementById("sd-shot-details");
       const emptyState = document.getElementById("sd-empty");
-      if (!shotManager || !cameras || !cameraSelect || !shotsList || !shotDetails || !emptyState) return;
+      if (!shotManager || !cameras || !cameraSelect || !shotsList) return;
+      if (details) details.style.display = "none";
       cameraSelect.innerHTML = '<option value="">-- Select Camera --</option>';
       cameras.rigs.forEach((rig) => {
-        const opt = document.createElement("option");
-        opt.value = rig.id;
-        opt.textContent = `Cam ${rig.name}`;
-        cameraSelect.appendChild(opt);
+        const option = document.createElement("option");
+        option.value = rig.id;
+        option.textContent = rig.isDefault ? "Default Camera" : `Cam ${rig.name}`;
+        cameraSelect.appendChild(option);
       });
-      const renderShots = () => {
-        shotsList.innerHTML = "";
-        if (shotManager.shots.length === 0) {
-          shotsList.innerHTML = '<div style="color:#666; font-size:10px; padding:8px;">No shots yet. Add a shot above.</div>';
-          shotDetails.style.display = "none";
-          emptyState.style.display = shotManager.shots.length === 0 && cameras.rigs.length > 0 ? "block" : "none";
-          return;
-        }
-        emptyState.style.display = "none";
-        shotManager.shots.forEach((shot, i) => {
-          const rig = cameras.get(shot.cameraId);
-          const isSelected = i === shotManager.selectedShotIndex;
-          const item = document.createElement("div");
-          item.className = "shot-designer-shot-item" + (isSelected ? " selected" : "");
-          item.dataset.index = i;
-          item.innerHTML = `
-                    <span style="width:8px;height:8px;border-radius:50%;background:${rig?.color ? "#" + rig.color.toString(16).padStart(6, "0") : "#888"};"></span>
-                    <span style="flex:1;">${shot.name} \u2014 ${shot.move} \u2014 ${shot.duration.toFixed(1)}s</span>
-                    <span style="color:#666;">${shot.easing}</span>
-                `;
-          item.onclick = () => {
-            shotManager.selectedShotIndex = i;
-            shotManager.seek(shotManager.getShotStartTime(i));
-            renderShots();
-            renderShotDetails(shot);
-          };
-          shotsList.appendChild(item);
-        });
-      };
-      const renderShotDetails = (shot) => {
-        shotDetails.style.display = "block";
-        const rig = cameras.get(shot.cameraId);
-        cameraSelect.value = shot.cameraId;
-        const moveSelect = document.getElementById("sd-move-select");
-        moveSelect.innerHTML = shotManager.getMoveOptions(shot.move);
-        moveSelect.onchange = (e) => {
-          shot.move = e.target.value;
-          shot.spec = { ...getMoveSpec(shot.move) };
-          if (shot.spec.d) shot.duration = shot.spec.d;
-          renderShots();
-          renderShotDetails(shot);
-        };
-        const durInput = document.getElementById("sd-duration");
-        const durVal = document.getElementById("sd-duration-val");
-        durInput.value = shot.duration;
-        durVal.textContent = `${shot.duration.toFixed(1)}s`;
-        durInput.oninput = (e) => {
-          shot.duration = parseFloat(e.target.value);
-          durVal.textContent = `${shot.duration.toFixed(1)}s`;
-          renderShots();
-        };
-        const spdInput = document.getElementById("sd-speed");
-        const spdVal = document.getElementById("sd-speed-val");
-        spdInput.value = shot.speed;
-        spdVal.textContent = `\xD7${shot.speed}`;
-        spdInput.oninput = (e) => {
-          shot.speed = parseFloat(e.target.value);
-          spdVal.textContent = `\xD7${shot.speed}`;
-        };
-        const easeSelect = document.getElementById("sd-easing");
-        easeSelect.innerHTML = ["io", "in", "out", "lin", "ramp"].map((e) => `<option value="${e}"${e === shot.easing ? " selected" : ""}>${e}</option>`).join("");
-        easeSelect.onchange = (e) => {
-          shot.easing = e.target.value;
-        };
-        const fovInput = document.getElementById("sd-fov");
-        const fovVal = document.getElementById("sd-fov-val");
-        const fov2 = shot.spec?.f?.[0] ?? 55;
-        fovInput.value = fov2;
-        fovVal.textContent = `${Math.round(fov2)}\xB0`;
-        fovInput.oninput = (e) => {
-          const value = parseFloat(e.target.value);
-          shot.spec.f = [value, value];
-          fovVal.textContent = `${Math.round(value)}\xB0`;
-        };
-        const blurStart = document.getElementById("sd-blur-start");
-        const blurStartVal = document.getElementById("sd-blur-start-val");
-        const blurEnd = document.getElementById("sd-blur-end");
-        const blurEndVal = document.getElementById("sd-blur-end-val");
-        blurStart.value = shot.blurStart || 0;
-        blurStartVal.textContent = String(shot.blurStart || 0);
-        blurEnd.value = shot.blurEnd || 0;
-        blurEndVal.textContent = String(shot.blurEnd || 0);
-        blurStart.oninput = (e) => {
-          shot.blurStart = parseFloat(e.target.value);
-          blurStartVal.textContent = e.target.value;
-        };
-        blurEnd.oninput = (e) => {
-          shot.blurEnd = parseFloat(e.target.value);
-          blurEndVal.textContent = e.target.value;
-        };
-        const notesInput = document.getElementById("sd-notes");
-        notesInput.value = shot.notes || "";
-        notesInput.oninput = (e) => {
-          shot.notes = e.target.value;
-        };
-        cameraSelect.onchange = (e) => {
-          if (e.target.value) shot.cameraId = e.target.value;
-        };
-        const frameStatus = document.getElementById("sd-frame-status");
-        const hasStart = !!shot.startFrame;
-        const hasEnd = !!shot.endFrame;
-        frameStatus.textContent = `Start: ${hasStart ? "set" : "unset"} | End: ${hasEnd ? "set" : "unset"}`;
-        document.getElementById("sd-edit-start").onclick = () => {
-          shotManager.editingFrame = "start";
-          shotManager.viewMode = "frame";
-          shotManager.enterFramingMode(shot, "start");
-          renderShots();
-        };
-        document.getElementById("sd-edit-end").onclick = () => {
-          shotManager.editingFrame = "end";
-          shotManager.viewMode = "frame";
-          shotManager.enterFramingMode(shot, "end");
-          renderShots();
-        };
-        document.getElementById("sd-commit-frame").onclick = () => {
-          shotManager.commitFraming(shotManager.editingFrame);
-          renderShots();
-          renderShotDetails(shot);
-        };
-        document.getElementById("sd-cancel-frame").onclick = () => {
-          shotManager.cancelFraming();
-          renderShots();
-          renderShotDetails(shot);
-        };
-        document.getElementById("sd-delete-shot").onclick = () => {
-          shotManager.removeShot(shot.id);
-          renderShots();
-          shotDetails.style.display = "none";
-        };
-      };
-      document.getElementById("sd-add-shot").onclick = () => {
-        if (cameras.rigs.length === 0) {
-          this.app.ui?.showNotification("Add a virtual camera first", "error");
-          return;
-        }
-        const rig = cameraSelect.value ? cameras.get(cameraSelect.value) : cameras.rigs[0];
+      cameraSelect.value = shotManager.selectedShot?.cameraId || cameras.defaultRig?.id || "";
+      const addBtn = document.getElementById("sd-add-shot");
+      if (addBtn) addBtn.onclick = () => {
+        const rig = cameraSelect.value ? cameras.get(cameraSelect.value) : cameras.defaultRig || cameras.ensureDefaultRig();
+        if (!rig) return this.showNotification("No camera available", "error");
         shotManager.createShot(rig.id);
-        renderShots();
+        this._shotDesignerOpenIndex = shotManager.selectedShotIndex;
+        this.renderShotDesignerList();
       };
       const playBtn = document.getElementById("sd-play");
       const pauseBtn = document.getElementById("sd-pause");
-      playBtn.onclick = () => {
+      if (playBtn) playBtn.onclick = () => {
         shotManager.play();
         playBtn.style.display = "none";
-        pauseBtn.style.display = "inline-block";
+        if (pauseBtn) pauseBtn.style.display = "inline-block";
       };
-      pauseBtn.onclick = () => {
+      if (pauseBtn) pauseBtn.onclick = () => {
         shotManager.pause();
-        playBtn.style.display = "inline-block";
         pauseBtn.style.display = "none";
+        if (playBtn) playBtn.style.display = "inline-block";
       };
-      document.getElementById("sd-refresh").onclick = () => {
-        renderShots();
-        shotDetails.style.display = "none";
-      };
-      document.getElementById("sd-timeline").onclick = () => {
-        shotManager.toggleUI();
-      };
-      const exportPdfBtn = document.getElementById("sd-export-pdf");
-      if (exportPdfBtn) exportPdfBtn.onclick = () => this.app.exportStoryboardPDF?.();
-      renderShots();
+      const refreshBtn = document.getElementById("sd-refresh");
+      if (refreshBtn) refreshBtn.onclick = () => this.renderShotDesignerList();
+      const timelineBtn = document.getElementById("sd-timeline");
+      if (timelineBtn) timelineBtn.onclick = () => shotManager.toggleUI();
+      const exportBtn = document.getElementById("sd-export-pdf");
+      if (exportBtn) exportBtn.onclick = () => this.app.exportStoryboardPDF?.();
+      if (emptyState) emptyState.style.display = "none";
+      if (shotManager.selectedShotIndex != null) this._shotDesignerOpenIndex = shotManager.selectedShotIndex;
+      this.renderShotDesignerList();
     }
-    // =============================================
+    renderShotDesignerList() {
+      const shotManager = this.app.staging?.shotManager;
+      const cameras = this.app.staging?.cameras;
+      const list = document.getElementById("sd-shots-list");
+      if (!list || !shotManager || !cameras) return;
+      if (!shotManager.shots.length) {
+        list.innerHTML = '<div class="shot-designer-empty">No shots yet. Click + to add the first shot.</div>';
+        return;
+      }
+      if (this._shotDesignerOpenIndex == null) this._shotDesignerOpenIndex = shotManager.selectedShotIndex;
+      list.innerHTML = "";
+      shotManager.shots.forEach((shot, index) => {
+        const rig = cameras.get(shot.cameraId);
+        const color = rig?.color ? "#" + rig.color.toString(16).padStart(6, "0") : "#888";
+        const open = this._shotDesignerOpenIndex === index;
+        const selected = shotManager.selectedShotIndex === index;
+        const item = document.createElement("div");
+        item.className = `sd-shot-item${open ? " open" : ""}${selected ? " selected" : ""}`;
+        item.dataset.index = index;
+        const header = document.createElement("button");
+        header.type = "button";
+        header.className = "sd-shot-header";
+        header.innerHTML = `
+                <span class="sd-shot-number" style="border-color:${color};color:${color}">${index + 1}</span>
+                <span class="sd-shot-heading">
+                    <b>${shot.name}</b>
+                    <small>${shot.move} \xB7 ${shot.duration.toFixed(1)}s \xB7 \xD7${shot.speed}</small>
+                </span>
+                <span class="sd-shot-chevron">${open ? "\u25BE" : "\u25B8"}</span>
+            `;
+        header.onclick = () => {
+          shotManager.selectedShotIndex = index;
+          this._shotDesignerOpenIndex = open ? null : index;
+          shotManager.currentTime = shotManager.getShotStartTime(index);
+          shotManager.previewActive = false;
+          shotManager.clearPreviewBlur();
+          this.renderShotDesignerList();
+          this.app.updateKeyframeGizmos?.();
+        };
+        item.appendChild(header);
+        if (open) item.appendChild(this.buildShotEditor(shot, index));
+        list.appendChild(item);
+      });
+    }
+    buildShotEditor(shot, index) {
+      const shotManager = this.app.staging.shotManager;
+      const cameras = this.app.staging.cameras;
+      const rig = cameras.get(shot.cameraId);
+      const body = document.createElement("div");
+      body.className = "sd-shot-body";
+      const row = (label, input) => {
+        const el = document.createElement("label");
+        el.className = "sd-field";
+        const span = document.createElement("span");
+        span.textContent = label;
+        el.append(span, input);
+        return el;
+      };
+      const moveSelect = document.createElement("select");
+      moveSelect.className = "shot-designer-select";
+      moveSelect.innerHTML = shotManager.getMoveOptions(shot.move);
+      moveSelect.onchange = () => {
+        shot.move = moveSelect.value;
+        shot.spec = { ...getMoveSpec(shot.move) };
+        if (shot.spec.d) shot.duration = shot.spec.d;
+        initialiseHelp();
+        this.renderShotDesignerList();
+      };
+      const duration = document.createElement("input");
+      duration.type = "range";
+      duration.min = "0.5";
+      duration.max = "30";
+      duration.step = "0.5";
+      duration.value = shot.duration;
+      const durationValue = document.createElement("b");
+      durationValue.className = "sd-value";
+      durationValue.textContent = `${shot.duration.toFixed(1)}s`;
+      duration.oninput = () => {
+        shot.duration = parseFloat(duration.value);
+        durationValue.textContent = `${shot.duration.toFixed(1)}s`;
+      };
+      const speed = document.createElement("input");
+      speed.type = "range";
+      speed.min = "0.05";
+      speed.max = "8";
+      speed.step = "0.05";
+      speed.value = shot.speed;
+      const speedValue = document.createElement("b");
+      speedValue.className = "sd-value";
+      speedValue.textContent = `\xD7${shot.speed}`;
+      speed.oninput = () => {
+        shot.speed = parseFloat(speed.value);
+        speedValue.textContent = `\xD7${shot.speed}`;
+      };
+      const easing = document.createElement("select");
+      easing.className = "shot-designer-select";
+      easing.innerHTML = ["io", "in", "out", "lin", "ramp"].map((e) => `<option value="${e}"${e === shot.easing ? " selected" : ""}>${e}</option>`).join("");
+      easing.onchange = () => {
+        shot.easing = easing.value;
+      };
+      const fov2 = document.createElement("input");
+      fov2.type = "range";
+      fov2.min = "15";
+      fov2.max = "120";
+      fov2.step = "1";
+      fov2.value = shot.spec?.f?.[0] ?? 55;
+      const fovValue = document.createElement("b");
+      fovValue.className = "sd-value";
+      fovValue.textContent = `${Math.round(fov2.value)}\xB0`;
+      fov2.oninput = () => {
+        const value = parseFloat(fov2.value);
+        shot.spec.f = [value, value];
+        fovValue.textContent = `${Math.round(value)}\xB0`;
+      };
+      const blurStart = document.createElement("input");
+      blurStart.type = "range";
+      blurStart.min = "0";
+      blurStart.max = "20";
+      blurStart.step = "0.5";
+      blurStart.value = shot.blurStart || 0;
+      const blurStartValue = document.createElement("b");
+      blurStartValue.className = "sd-value";
+      blurStartValue.textContent = String(shot.blurStart || 0);
+      blurStart.oninput = () => {
+        shot.blurStart = parseFloat(blurStart.value);
+        blurStartValue.textContent = blurStart.value;
+      };
+      const blurEnd = document.createElement("input");
+      blurEnd.type = "range";
+      blurEnd.min = "0";
+      blurEnd.max = "20";
+      blurEnd.step = "0.5";
+      blurEnd.value = shot.blurEnd || 0;
+      const blurEndValue = document.createElement("b");
+      blurEndValue.className = "sd-value";
+      blurEndValue.textContent = String(shot.blurEnd || 0);
+      blurEnd.oninput = () => {
+        shot.blurEnd = parseFloat(blurEnd.value);
+        blurEndValue.textContent = blurEnd.value;
+      };
+      const cameraSelect = document.createElement("select");
+      cameraSelect.className = "shot-designer-select";
+      cameraSelect.innerHTML = cameras.rigs.map((cam) => `<option value="${cam.id}"${cam.id === shot.cameraId ? " selected" : ""}>${cam.isDefault ? "Default Camera" : `Cam ${cam.name}`}</option>`).join("");
+      cameraSelect.onchange = () => {
+        shot.cameraId = cameraSelect.value;
+        this.renderShotDesignerList();
+      };
+      body.append(
+        row("Camera", cameraSelect),
+        row("Move", moveSelect),
+        row("Duration", (() => {
+          const w = document.createElement("span");
+          w.className = "sd-range-wrap";
+          w.append(duration, durationValue);
+          return w;
+        })()),
+        row("Speed", (() => {
+          const w = document.createElement("span");
+          w.className = "sd-range-wrap";
+          w.append(speed, speedValue);
+          return w;
+        })()),
+        row("Easing", easing),
+        row("FOV", (() => {
+          const w = document.createElement("span");
+          w.className = "sd-range-wrap";
+          w.append(fov2, fovValue);
+          return w;
+        })())
+      );
+      const curveField = document.createElement("fieldset");
+      curveField.className = "sd-fieldset";
+      const curveLegend = document.createElement("legend");
+      curveLegend.textContent = "Animation curve";
+      curveField.appendChild(curveLegend);
+      const curveToggle = document.createElement("button");
+      curveToggle.type = "button";
+      curveToggle.className = "sd-secondary-btn";
+      curveToggle.textContent = Array.isArray(shot.curve) ? "Use preset easing" : "Custom bezier curve";
+      curveToggle.onclick = () => {
+        shot.curve = Array.isArray(shot.curve) ? null : [0.42, 0, 0.58, 1];
+        this.renderShotDesignerList();
+      };
+      curveField.appendChild(curveToggle);
+      if (Array.isArray(shot.curve)) {
+        const curveGrid = document.createElement("div");
+        curveGrid.className = "sd-curve-grid";
+        ["x1", "y1", "x2", "y2"].forEach((label, i) => {
+          const control = document.createElement("label");
+          control.innerHTML = `<span>${label}</span>`;
+          const input = document.createElement("input");
+          input.type = "range";
+          input.min = i % 2 === 0 ? "0" : "-1";
+          input.max = i % 2 === 0 ? "1" : "2";
+          input.step = "0.01";
+          input.value = shot.curve[i];
+          const value = document.createElement("b");
+          value.textContent = Number(shot.curve[i]).toFixed(2);
+          input.oninput = () => {
+            shot.curve[i] = parseFloat(input.value);
+            value.textContent = Number(input.value).toFixed(2);
+          };
+          control.append(input, value);
+          curveGrid.appendChild(control);
+        });
+        curveField.appendChild(curveGrid);
+      }
+      body.appendChild(curveField);
+      const framingField = document.createElement("fieldset");
+      framingField.className = "sd-fieldset";
+      framingField.innerHTML = `
+            <legend>Framing</legend>
+            <div class="sd-btn-row">
+                <button type="button" class="sd-action" data-frame="start">\u25CB Start frame</button>
+                <button type="button" class="sd-action" data-frame="end">\u25CB End frame</button>
+            </div>
+            <div class="sd-btn-row">
+                <button type="button" class="sd-action sd-action-primary" data-frame-action="commit">Confirm frame</button>
+                <button type="button" class="sd-action sd-action-danger" data-frame-action="cancel">Cancel</button>
+            </div>
+            <small class="sd-help">Start: ${shot.startFrame ? "custom" : "auto"} \xB7 End: ${shot.endFrame ? "custom" : "auto"}</small>
+        `;
+      framingField.querySelectorAll("[data-frame]").forEach((button) => {
+        button.onclick = () => {
+          shotManager.selectedShotIndex = index;
+          shotManager.editingFrame = button.dataset.frame;
+          shotManager.viewMode = "frame";
+          shotManager.enterFramingMode(shot, button.dataset.frame);
+          this.renderShotDesignerList();
+        };
+      });
+      framingField.querySelector('[data-frame-action="commit"]').onclick = () => {
+        shotManager.commitFraming(shotManager.editingFrame);
+        this.renderShotDesignerList();
+      };
+      framingField.querySelector('[data-frame-action="cancel"]').onclick = () => {
+        shotManager.cancelFraming();
+        this.renderShotDesignerList();
+      };
+      body.appendChild(framingField);
+      const blurField = document.createElement("fieldset");
+      blurField.className = "sd-fieldset";
+      const blurLegend = document.createElement("legend");
+      blurLegend.textContent = "Blur";
+      blurField.append(
+        blurLegend,
+        row("Start", (() => {
+          const w = document.createElement("span");
+          w.className = "sd-range-wrap";
+          w.append(blurStart, blurStartValue);
+          return w;
+        })()),
+        row("End", (() => {
+          const w = document.createElement("span");
+          w.className = "sd-range-wrap";
+          w.append(blurEnd, blurEndValue);
+          return w;
+        })())
+      );
+      body.appendChild(blurField);
+      const notes = document.createElement("textarea");
+      notes.className = "sd-notes";
+      notes.rows = 3;
+      notes.placeholder = "Camera notes, lens, movement, performance notes\u2026";
+      notes.value = shot.notes || "";
+      notes.oninput = () => {
+        shot.notes = notes.value;
+      };
+      body.appendChild(row("Notes", notes));
+      const actions = document.createElement("div");
+      actions.className = "sd-shot-footer";
+      const up = document.createElement("button");
+      up.textContent = "\u25B2";
+      up.title = "Move earlier";
+      up.onclick = () => {
+        shotManager.moveShot(shot.id, -1);
+        this.renderShotDesignerList();
+      };
+      const down = document.createElement("button");
+      down.textContent = "\u25BC";
+      down.title = "Move later";
+      down.onclick = () => {
+        shotManager.moveShot(shot.id, 1);
+        this.renderShotDesignerList();
+      };
+      const dup = document.createElement("button");
+      dup.textContent = "Duplicate";
+      dup.onclick = () => {
+        shotManager.duplicateShot(shot.id);
+        this.renderShotDesignerList();
+      };
+      const del = document.createElement("button");
+      del.textContent = "Delete shot";
+      del.className = "danger";
+      del.onclick = () => {
+        shotManager.removeShot(shot.id);
+        this._shotDesignerOpenIndex = null;
+        this.renderShotDesignerList();
+      };
+      actions.append(up, down, dup, del);
+      body.appendChild(actions);
+      function initialiseHelp() {
+      }
+      return body;
+    }
     // PALETTE MANAGEMENT (from pixelArt)
     // =============================================
     renderPalette() {
@@ -44443,6 +44705,18 @@ ${elements.join("\n")}
     if (arr.length === 1) return arr[0];
     return lerp2(arr, u);
   }
+  function cubicBezierEasing(curve, x) {
+    if (!Array.isArray(curve) || curve.length !== 4) return x;
+    const [x1, y1, x2, y2] = curve;
+    let lo = 0, hi = 1, t = x;
+    for (let i = 0; i < 24; i++) {
+      t = (lo + hi) / 2;
+      const X = 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
+      if (X < x) lo = t;
+      else hi = t;
+    }
+    return 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t;
+  }
 
   // js/staging/shots/shotManager.js
   var V3 = Vector3;
@@ -44510,6 +44784,7 @@ ${elements.join("\n")}
       };
       this.shots.push(shot);
       this.selectedShotIndex = this.shots.length - 1;
+      this.previewActive = false;
       this.refreshUI();
       return shot;
     }
@@ -44627,7 +44902,7 @@ ${elements.join("\n")}
       const globalTime = this.app?.clock?.getElapsedTime() || 0;
       this.applyShotMove(previewCamera, rig, active.shot, active.localT, globalTime);
       const u = clamp2(active.localT / active.shot.duration);
-      const blur = lerp2([active.shot.blurStart || 0, active.shot.blurEnd || 0], getEasing(active.shot.easing)(u));
+      const blur = lerp2([active.shot.blurStart || 0, active.shot.blurEnd || 0], this.getEasingForShot(active.shot)(u));
       if (this.app.renderer?.domElement) {
         this.app.renderer.domElement.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : "";
       }
@@ -44640,7 +44915,7 @@ ${elements.join("\n")}
     }
     applyShotMove(camera, rig, shot, localT, time) {
       const u = clamp2(localT / shot.duration);
-      const easingFn = getEasing(shot.easing);
+      const easingFn = this.getEasingForShot(shot);
       const easedU = easingFn(u);
       const spec = shot.spec;
       const hasCustomStart = shot.startFrame;
@@ -44663,6 +44938,12 @@ ${elements.join("\n")}
         this.applyMoveAuto(camera, rig, shot, easedU, time);
       }
       camera.updateMatrixWorld(true);
+    }
+    getEasingForShot(shot) {
+      if (Array.isArray(shot?.curve) && shot.curve.length === 4) {
+        return (u) => cubicBezierEasing(shot.curve, clamp2(u));
+      }
+      return getEasing(shot?.easing);
     }
     getMoveScale() {
       const now2 = performance.now();
@@ -44687,8 +44968,7 @@ ${elements.join("\n")}
     applyMoveAuto(camera, rig, shot, u, time) {
       const spec = shot.spec;
       const moveScale = this.getMoveScale();
-      const e = shot.easing === "lin" ? "lin" : shot.easing;
-      const easingFn = getEasing(e);
+      const easingFn = this.getEasingForShot(shot);
       const ph = spec.ph || 0;
       const ua = easingFn(ph === 2 ? clamp2(2 * u - 1) : ph === 1 ? clamp2(2 * u) : u);
       const ub = easingFn(ph === 2 ? clamp2(2 * u) : ph === 1 ? clamp2(2 * u - 1) : u);
@@ -45095,6 +45375,7 @@ ${elements.join("\n")}
       this.framingState.target.copy(rig.target);
       this.framingState.fov = rig.camera.fov;
       this.framingRig = rig;
+      this.app.updateKeyframeGizmos?.();
       this.clearPreviewBlur();
       const worldPosition = new V3();
       const worldQuaternion = new Quaternion();
@@ -45171,6 +45452,7 @@ ${elements.join("\n")}
       }
       this.framingRig = null;
       this.clearPreviewBlur();
+      this.app.updateKeyframeGizmos?.();
       if (this.app.orbit) this.app.orbit.enabled = this.app.controlMode === "camera";
     }
     buildTimelineTrack(container) {
@@ -45369,23 +45651,24 @@ ${elements.join("\n")}
         resizeRight.onmousedown = (e) => onResizeStart(e, "right");
         ["start", "end"].forEach((frameType) => {
           const frame = shot[frameType === "start" ? "startFrame" : "endFrame"];
-          if (frame) {
-            const kf = document.createElement("i");
-            kf.style.cssText = `
-                        position: absolute;
-                        left: ${frameType === "start" ? "0" : "100%"};
-                        top: 50%;
-                        transform: translate(-50%, -50%);
-                        width: 8px;
-                        height: 8px;
-                        border-radius: 50%;
-                        background: ${frameType === "start" ? "#4caf50" : "#f44336"};
-                        border: 2px solid #fff;
-                        box-shadow: 0 0 4px ${frameType === "start" ? "#4caf50" : "#f44336"};
-                    `;
-            kf.title = `${frameType} frame`;
-            block.appendChild(kf);
-          }
+          const isCurrent = i === this.selectedShotIndex && this.editingFrame === frameType;
+          const kf = document.createElement("i");
+          kf.className = "shot-timeline-kf" + (frame ? " custom" : "") + (isCurrent ? " active" : "");
+          kf.dataset.shotIndex = i;
+          kf.dataset.frameType = frameType;
+          kf.style.left = frameType === "start" ? "0" : "100%";
+          kf.title = `${frameType === "start" ? "Start" : "End"} keyframe ${frame ? "(custom)" : "(auto)"} \u2014 click to edit`;
+          kf.onmousedown = (event) => event.stopPropagation();
+          kf.onclick = (event) => {
+            event.stopPropagation();
+            this.selectedShotIndex = i;
+            this.editingFrame = frameType;
+            this.viewMode = "frame";
+            this.previewActive = false;
+            this.clearPreviewBlur();
+            this.refreshUI();
+          };
+          block.appendChild(kf);
         });
         container.appendChild(block);
         elapsed += shot.duration;
@@ -45432,6 +45715,7 @@ ${elements.join("\n")}
       if (!this.ui) return;
       this.buildTimelineUI();
       this.ui.updateScrubber();
+      this.app.updateKeyframeGizmos?.();
     }
     toggleUI() {
       this.buildUI();
@@ -45909,11 +46193,12 @@ ${xrefOffset}
 `;
       imageCommand += `q 250 0 0 140 318 500 cm /Im1 Do Q
 `;
-      lines.push(`BT /F1 9 Tf 44 646 Td (Start frame) Tj ET`);
-      lines.push(`BT /F1 9 Tf 318 646 Td (End frame) Tj ET`);
+      lines.push(`BT /F1 9 Tf 44 646 Td (${pdfText(frames[0].label || "Start keyframe")}) Tj ET`);
+      lines.push(`BT /F1 9 Tf 318 646 Td (${pdfText(frames[1].label || "End keyframe")}) Tj ET`);
     } else {
       imageCommand += `524 0 0 294 44 420 cm /Im0 Do Q
 `;
+      if (frames[0]?.label) lines.push(`BT /F1 9 Tf 44 410 Td (${pdfText(frames[0].label)}) Tj ET`);
     }
     const notes = shot.notes || "";
     const textLines = [
@@ -45933,7 +46218,7 @@ ${xrefOffset}
     const contentId = builder.addContent(imageCommand + "\n" + lines.join("\n"));
     return builder.addPage(contentId, imageIds);
   }
-  function renderFrame(app, rig, shot, shotManager, localT) {
+  function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) {
     const renderer = app.renderer;
     const canvas = renderer.domElement;
     const width = canvas.width;
@@ -45945,7 +46230,12 @@ ${xrefOffset}
     const camera = rig.camera.clone();
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    if (shot && shotManager) {
+    if (explicitFrame) {
+      camera.position.fromArray(explicitFrame.position);
+      camera.quaternion.fromArray(explicitFrame.quaternion);
+      if (Number.isFinite(explicitFrame.fov)) camera.fov = explicitFrame.fov;
+      camera.updateProjectionMatrix();
+    } else if (shot && shotManager) {
       shotManager.applyShotMove(camera, rig, shot, localT, 0);
     } else {
       rig.group.updateMatrixWorld(true);
@@ -46027,10 +46317,27 @@ ${xrefOffset}
         for (const item of items) {
           const frames = [];
           if (item.shot) {
-            frames.push(renderFrame(app, item.rig, item.shot, app.staging.shotManager, 0));
-            frames.push(renderFrame(app, item.rig, item.shot, app.staging.shotManager, item.duration));
+            const shot = item.shot;
+            const keyframes = [
+              { type: "start", label: `Start keyframe (${shot.startFrame ? "custom" : "auto"})`, frame: shot.startFrame, t: 0 },
+              { type: "end", label: `End keyframe (${shot.endFrame ? "custom" : "auto"})`, frame: shot.endFrame, t: item.duration }
+            ];
+            for (const keyframe of keyframes) {
+              const rendered = renderFrame(
+                app,
+                item.rig,
+                shot,
+                app.staging.shotManager,
+                keyframe.t,
+                keyframe.frame
+              );
+              rendered.label = keyframe.label;
+              frames.push(rendered);
+            }
           } else {
-            frames.push(renderFrame(app, item.rig, null, null, 0));
+            const rendered = renderFrame(app, item.rig, null, null, 0);
+            rendered.label = "Scene camera overview";
+            frames.push(rendered);
           }
           pages.push(makePage(builder, sceneName, item, frames));
         }
@@ -46066,6 +46373,9 @@ ${xrefOffset}
       this.renderer = null;
       this.orbit = null;
       this.transformControl = null;
+      this.keyframeControls = null;
+      this.keyframeGizmos = /* @__PURE__ */ new Map();
+      this.keyframeDragging = false;
       this.raycaster = new Raycaster();
       this.mouse = new Vector2();
       this.clock = new Clock();
@@ -46306,8 +46616,101 @@ ${xrefOffset}
         this.transformControl.space = "local";
         this.scene.add(this.transformControl);
         this.transformControl.setMode("translate");
+        this.setupKeyframeGizmos();
         this.setControlMode("camera");
       }, APP_DEFAULTS2.init.uiInitDelay);
+    }
+    setupKeyframeGizmos() {
+      this.keyframeControls = new TransformControls(this.camera, this.renderer.domElement);
+      this.keyframeControls.setSize(0.65);
+      this.keyframeControls.visible = false;
+      this.keyframeControls.enabled = false;
+      this.scene.add(this.keyframeControls);
+      this.keyframeControls.addEventListener("dragging-changed", (event) => {
+        this.keyframeDragging = event.value;
+        if (this.orbit) this.orbit.enabled = !event.value && this.controlMode === "camera";
+        if (this.cameraManager) this.cameraManager.setCameraEnabled(!event.value);
+      });
+      this.keyframeControls.addEventListener("change", () => this.syncActiveKeyframeFromGizmo());
+      this.keyframeControls.addEventListener("mouseUp", () => {
+        this.staging.shotManager.refreshUI();
+      });
+      for (const [type, color] of [["start", 5025616], ["end", 16007990]]) {
+        const group = new Group();
+        group.name = `${type} keyframe`;
+        group.visible = false;
+        group.userData.isKeyframeGizmo = true;
+        const bodyMat = new MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.95 });
+        const body = new Mesh(new BoxGeometry(0.2, 0.15, 0.28), bodyMat);
+        const lens = new Mesh(new CylinderGeometry(0.06, 0.06, 0.2, 12), bodyMat);
+        lens.rotation.x = Math.PI / 2;
+        lens.position.z = -0.24;
+        body.renderOrder = 20;
+        lens.renderOrder = 20;
+        group.add(body, lens);
+        const frustum = buildFrustumVisual(color);
+        frustum.setVisible(false);
+        group.add(frustum.group);
+        group.userData.frameType = type;
+        this.scene.add(group);
+        this.keyframeGizmos.set(type, { group, frustum });
+      }
+    }
+    updateKeyframeGizmos() {
+      if (!this.keyframeControls) return;
+      const shotManager = this.staging?.shotManager;
+      const shot = shotManager?.selectedShot;
+      const rig = shot ? this.staging.cameras.get(shot.cameraId) : null;
+      if (!shot || !rig || shotManager.framingControls || shotManager.previewActive || shotManager.playing) {
+        for (const { group } of this.keyframeGizmos.values()) group.visible = false;
+        this.keyframeControls.detach();
+        this.keyframeControls.visible = false;
+        this.keyframeControls.enabled = false;
+        return;
+      }
+      for (const frameType of ["start", "end"]) {
+        const gizmo = this.keyframeGizmos.get(frameType);
+        if (!gizmo) continue;
+        const custom = shot[frameType === "start" ? "startFrame" : "endFrame"];
+        const temp = rig.camera.clone();
+        if (custom) {
+          temp.position.fromArray(custom.position);
+          temp.quaternion.fromArray(custom.quaternion);
+          if (Number.isFinite(custom.fov)) temp.fov = custom.fov;
+        } else {
+          shotManager.applyShotMove(temp, rig, shot, frameType === "start" ? 0 : shot.duration, 0);
+        }
+        temp.updateMatrixWorld(true);
+        gizmo.group.position.copy(temp.position);
+        gizmo.group.quaternion.copy(temp.quaternion);
+        gizmo.group.visible = true;
+        gizmo.frustum.setVisible(true);
+        gizmo.frustum.update(temp.fov || rig.camera.fov, rig.camera.aspect, 1.15);
+        gizmo.group.userData.keyframe = { shotId: shot.id, frameType, fov: temp.fov || rig.camera.fov };
+      }
+      const activeType = shotManager.editingFrame === "end" ? "end" : "start";
+      const active = this.keyframeGizmos.get(activeType);
+      if (active) {
+        this.keyframeControls.attach(active.group);
+        this.keyframeControls.setMode("translate");
+        this.keyframeControls.visible = true;
+        this.keyframeControls.enabled = true;
+      }
+    }
+    syncActiveKeyframeFromGizmo() {
+      if (!this.keyframeDragging) return;
+      const gizmo = this.keyframeControls?.object;
+      if (!gizmo?.userData?.keyframe) return;
+      const { shotId, frameType, fov: fov2 } = gizmo.userData.keyframe;
+      const shot = this.staging.shotManager.shots.find((s) => s.id === shotId);
+      const rig = shot ? this.staging.cameras.get(shot.cameraId) : null;
+      if (!shot || !rig) return;
+      shot[frameType === "start" ? "startFrame" : "endFrame"] = {
+        position: gizmo.position.toArray(),
+        quaternion: gizmo.quaternion.toArray(),
+        target: rig.target?.toArray?.() || null,
+        fov: fov2
+      };
     }
     /**
      * Switch the viewport controls between the camera and scene objects.
@@ -46713,6 +47116,7 @@ ${xrefOffset}
       }
     }
     onPointerDown(event) {
+      if (this.keyframeControls?.axis) return;
       if (this.controlMode === "camera") {
         this.renderer.domElement.style.cursor = "grabbing";
         return;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { D2R, clamp, lerp, lerpArray, EASING, getEasing } from './easing.js';
+import { D2R, clamp, lerp, lerpArray, EASING, getEasing, cubicBezierEasing } from './easing.js';
 import { getMoveSpec, getMoveDefaultDuration, ALL_MOVES, SHOT_CATEGORIES } from './shotMoves.js';
 
 const V3 = THREE.Vector3;
@@ -79,6 +79,7 @@ export class ShotManager {
         
         this.shots.push(shot);
         this.selectedShotIndex = this.shots.length - 1;
+        this.previewActive = false;
         this.refreshUI();
         return shot;
     }
@@ -215,7 +216,7 @@ export class ShotManager {
         this.applyShotMove(previewCamera, rig, active.shot, active.localT, globalTime);
 
         const u = clamp(active.localT / active.shot.duration);
-        const blur = lerp([active.shot.blurStart || 0, active.shot.blurEnd || 0], getEasing(active.shot.easing)(u));
+        const blur = lerp([active.shot.blurStart || 0, active.shot.blurEnd || 0], this.getEasingForShot(active.shot)(u));
         if (this.app.renderer?.domElement) {
             this.app.renderer.domElement.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '';
         }
@@ -231,7 +232,7 @@ export class ShotManager {
 
     applyShotMove(camera, rig, shot, localT, time) {
         const u = clamp(localT / shot.duration);
-        const easingFn = getEasing(shot.easing);
+        const easingFn = this.getEasingForShot(shot);
         const easedU = easingFn(u);
         
         const spec = shot.spec;
@@ -266,6 +267,13 @@ export class ShotManager {
         camera.updateMatrixWorld(true);
     }
 
+    getEasingForShot(shot) {
+        if (Array.isArray(shot?.curve) && shot.curve.length === 4) {
+            return (u) => cubicBezierEasing(shot.curve, clamp(u));
+        }
+        return getEasing(shot?.easing);
+    }
+
     getMoveScale() {
         const now = performance.now();
         if (now - this._moveScaleAt < 500) return this._moveScale;
@@ -292,8 +300,7 @@ export class ShotManager {
     applyMoveAuto(camera, rig, shot, u, time) {
         const spec = shot.spec;
         const moveScale = this.getMoveScale();
-        const e = shot.easing === 'lin' ? 'lin' : shot.easing;
-        const easingFn = getEasing(e);
+        const easingFn = this.getEasingForShot(shot);
         
         // Handle phase for in/out easing
         const ph = spec.ph || 0;
@@ -769,6 +776,7 @@ export class ShotManager {
         this.framingState.target.copy(rig.target);
         this.framingState.fov = rig.camera.fov;
         this.framingRig = rig;
+        this.app.updateKeyframeGizmos?.();
         this.clearPreviewBlur();
 
         // Detach the real camera while orbiting, otherwise OrbitControls would
@@ -861,6 +869,7 @@ export class ShotManager {
         }
         this.framingRig = null;
         this.clearPreviewBlur();
+        this.app.updateKeyframeGizmos?.();
         if (this.app.orbit) this.app.orbit.enabled = this.app.controlMode === 'camera';
     }
 
@@ -1097,26 +1106,29 @@ export class ShotManager {
             resizeLeft.onmousedown = (e) => onResizeStart(e, 'left');
             resizeRight.onmousedown = (e) => onResizeStart(e, 'right');
             
-            // Keyframe markers
+            // Keyframe markers — always visible, custom frames are filled.
             ['start', 'end'].forEach(frameType => {
                 const frame = shot[frameType === 'start' ? 'startFrame' : 'endFrame'];
-                if (frame) {
-                    const kf = document.createElement('i');
-                    kf.style.cssText = `
-                        position: absolute;
-                        left: ${frameType === 'start' ? '0' : '100%'};
-                        top: 50%;
-                        transform: translate(-50%, -50%);
-                        width: 8px;
-                        height: 8px;
-                        border-radius: 50%;
-                        background: ${frameType === 'start' ? '#4caf50' : '#f44336'};
-                        border: 2px solid #fff;
-                        box-shadow: 0 0 4px ${frameType === 'start' ? '#4caf50' : '#f44336'};
-                    `;
-                    kf.title = `${frameType} frame`;
-                    block.appendChild(kf);
-                }
+                const isCurrent = i === this.selectedShotIndex && this.editingFrame === frameType;
+                const kf = document.createElement('i');
+                kf.className = 'shot-timeline-kf'
+                    + (frame ? ' custom' : '')
+                    + (isCurrent ? ' active' : '');
+                kf.dataset.shotIndex = i;
+                kf.dataset.frameType = frameType;
+                kf.style.left = frameType === 'start' ? '0' : '100%';
+                kf.title = `${frameType === 'start' ? 'Start' : 'End'} keyframe ${frame ? '(custom)' : '(auto)'} — click to edit`;
+                kf.onmousedown = (event) => event.stopPropagation();
+                kf.onclick = (event) => {
+                    event.stopPropagation();
+                    this.selectedShotIndex = i;
+                    this.editingFrame = frameType;
+                    this.viewMode = 'frame';
+                    this.previewActive = false;
+                    this.clearPreviewBlur();
+                    this.refreshUI();
+                };
+                block.appendChild(kf);
             });
             
             container.appendChild(block);
@@ -1174,6 +1186,7 @@ export class ShotManager {
         if (!this.ui) return;
         this.buildTimelineUI();
         this.ui.updateScrubber();
+        this.app.updateKeyframeGizmos?.();
     }
 
     toggleUI() {

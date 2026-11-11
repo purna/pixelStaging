@@ -155,10 +155,11 @@ function makePage(builder, sceneName, shot, frames) {
     if (frames.length >= 2) {
         imageCommand += `250 0 0 140 44 500 cm /Im0 Do Q\n`;
         imageCommand += `q 250 0 0 140 318 500 cm /Im1 Do Q\n`;
-        lines.push(`BT /F1 9 Tf 44 646 Td (Start frame) Tj ET`);
-        lines.push(`BT /F1 9 Tf 318 646 Td (End frame) Tj ET`);
+        lines.push(`BT /F1 9 Tf 44 646 Td (${pdfText(frames[0].label || 'Start keyframe')}) Tj ET`);
+        lines.push(`BT /F1 9 Tf 318 646 Td (${pdfText(frames[1].label || 'End keyframe')}) Tj ET`);
     } else {
         imageCommand += `524 0 0 294 44 420 cm /Im0 Do Q\n`;
+        if (frames[0]?.label) lines.push(`BT /F1 9 Tf 44 410 Td (${pdfText(frames[0].label)}) Tj ET`);
     }
 
     const notes = shot.notes || '';
@@ -183,7 +184,7 @@ function makePage(builder, sceneName, shot, frames) {
     return builder.addPage(contentId, imageIds);
 }
 
-function renderFrame(app, rig, shot, shotManager, localT) {
+function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) {
     const renderer = app.renderer;
     const canvas = renderer.domElement;
     const width = canvas.width;
@@ -200,7 +201,12 @@ function renderFrame(app, rig, shot, shotManager, localT) {
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
 
-    if (shot && shotManager) {
+    if (explicitFrame) {
+        camera.position.fromArray(explicitFrame.position);
+        camera.quaternion.fromArray(explicitFrame.quaternion);
+        if (Number.isFinite(explicitFrame.fov)) camera.fov = explicitFrame.fov;
+        camera.updateProjectionMatrix();
+    } else if (shot && shotManager) {
         shotManager.applyShotMove(camera, rig, shot, localT, 0);
     } else {
         rig.group.updateMatrixWorld(true);
@@ -296,10 +302,23 @@ export async function exportStoryboardPDF(app) {
             for (const item of items) {
                 const frames = [];
                 if (item.shot) {
-                    frames.push(renderFrame(app, item.rig, item.shot, app.staging.shotManager, 0));
-                    frames.push(renderFrame(app, item.rig, item.shot, app.staging.shotManager, item.duration));
+                    const shot = item.shot;
+                    const keyframes = [
+                        { type: 'start', label: `Start keyframe (${shot.startFrame ? 'custom' : 'auto'})`, frame: shot.startFrame, t: 0 },
+                        { type: 'end', label: `End keyframe (${shot.endFrame ? 'custom' : 'auto'})`, frame: shot.endFrame, t: item.duration }
+                    ];
+                    for (const keyframe of keyframes) {
+                        const rendered = renderFrame(
+                            app, item.rig, shot, app.staging.shotManager,
+                            keyframe.t, keyframe.frame
+                        );
+                        rendered.label = keyframe.label;
+                        frames.push(rendered);
+                    }
                 } else {
-                    frames.push(renderFrame(app, item.rig, null, null, 0));
+                    const rendered = renderFrame(app, item.rig, null, null, 0);
+                    rendered.label = 'Scene camera overview';
+                    frames.push(rendered);
                 }
                 pages.push(makePage(builder, sceneName, item, frames));
             }
