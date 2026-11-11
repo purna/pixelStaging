@@ -170,3 +170,8 @@
 .loading-spinner.active {
     display: block;
 }
+/* Default modal width */
+.modal {
+    width: 600px;
+    max-width: calc(100% - 40px);
+}
