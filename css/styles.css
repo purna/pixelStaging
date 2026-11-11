@@ -6770,3 +6770,32 @@ input[type="number"].color-slider-value-compact {
     outline: none;
     color: #ffffff;
 }
+
+/* Character pose controls */
+.character-pose-select {
+    flex: 1;
+    min-width: 0;
+    background: #202033;
+    border: 1px solid #4b4b63;
+    border-radius: 5px;
+    color: #f8fbff;
+    padding: 7px 9px;
+    font-size: 0.78rem;
+    text-transform: capitalize;
+}
+
+.character-pose-reset {
+    flex: 0 0 auto;
+    border: 1px solid #4b4b63;
+    background: #2a2a42;
+    color: #e8e8f0;
+    border-radius: 5px;
+    padding: 0 12px;
+    cursor: pointer;
+    font-size: 0.72rem;
+}
+
+.character-pose-reset:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}

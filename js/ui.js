@@ -4886,6 +4886,7 @@ export class UI {
         let isFigurePart = false;
         const isFigure = obj.userData.type === 'figure';
         const isStaging = obj.userData.type === 'staging';
+        const isCharacter = obj.userData.type === 'character';
 
         // Determine Title based on name override or type
         if (obj.userData.name) {
@@ -4906,6 +4907,8 @@ export class UI {
             } else {
                 title = 'Staging Object';
             }
+        } else if (isCharacter) {
+            title = obj.userData.characterType?.includes('child') ? 'Child Character' : '3D Character';
         }
 
         // Header
@@ -4983,6 +4986,43 @@ export class UI {
             figureControls.appendChild(genderSwitch);
             figureGroup.appendChild(figureControls);
             this.propsContent.appendChild(figureGroup);
+        }
+
+        // CHARACTER POSE CONTROLS
+        if (isCharacter) {
+            const poses = this.app.characterManager?.listPoses?.(obj) || [];
+            if (poses.length) {
+                const poseGroup = document.createElement('div');
+                poseGroup.className = 'property-group character-pose-group';
+                poseGroup.innerHTML = '<div class="property-label">Pose</div>';
+
+                const row = document.createElement('div');
+                row.className = 'input-row';
+
+                const select = document.createElement('select');
+                select.className = 'character-pose-select';
+                select.innerHTML = poses.map(pose => {
+                    const label = pose.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    return `<option value="${pose}"${obj.userData.currentPose === pose ? ' selected' : ''}>${label}</option>`;
+                }).join('');
+                select.onchange = () => {
+                    this.app.characterManager.setPose(obj, select.value);
+                };
+
+                const reset = document.createElement('button');
+                reset.type = 'button';
+                reset.className = 'character-pose-reset';
+                reset.textContent = 'Reset';
+                reset.title = 'Return to T-pose';
+                reset.onclick = () => {
+                    this.app.characterManager.resetPose(obj);
+                    select.value = 't_pose';
+                };
+
+                row.append(select, reset);
+                poseGroup.appendChild(row);
+                this.propsContent.appendChild(poseGroup);
+            }
         }
 
         // TRANSFORM CONTROLS - grouped to save vertical space

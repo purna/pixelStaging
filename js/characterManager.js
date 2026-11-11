@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { CharacterPoser } from '../Art/CharacterPoser.js';
 
 export class CharacterManager {
     constructor(app) {
         this.app = app;
         this.characters = [];
         this.loader = new GLTFLoader();
+        this.poseLibrary = null;
+        this._poseLibraryPromise = null;
         
         // Models from Three.js examples (Mixamo Xbot/Ybot)
         this.models = {
@@ -16,8 +19,20 @@ export class CharacterManager {
         };
     }
 
-    addCharacter(type = 'xbot') {
+    async loadPoseLibrary() {
+        if (this.poseLibrary) return this.poseLibrary;
+        if (!this._poseLibraryPromise) {
+            this._poseLibraryPromise = fetch('./Art/poses.json')
+                .then(response => response.ok ? response.json() : null)
+                .then(data => { this.poseLibrary = data; return data; })
+                .catch(error => { console.warn('Could not load pose library:', error); return null; });
+        }
+        return this._poseLibraryPromise;
+    }
+
+    async addCharacter(type = 'xbot') {
         const url = this.models[type] || this.models['xbot'];
+        const poseLibrary = await this.loadPoseLibrary();
         
         // Show loading state
         document.body.style.cursor = 'wait';
@@ -35,10 +50,16 @@ export class CharacterManager {
                     });
                     model.position.set(0, 0, 0);
 
-                    // 2. Setup Animation Mixer
+                    // 2. Setup Animation Mixer and poser
                     const mixer = new THREE.AnimationMixer(model);
                     const animations = gltf.animations;
                     const actions = {};
+                    let poser = null;
+                    try {
+                        poser = new CharacterPoser(model, animations, poseLibrary);
+                    } catch (error) {
+                        console.warn('Pose system unavailable for this character:', error);
+                    }
 
                     // 3. Find specific clips (Idle, Walk, Run)
                     // Mixamo files usually have them in specific indices or names
@@ -76,14 +97,17 @@ export class CharacterManager {
                         id: Date.now(),
                         manager: this,
                         mixer: mixer,
-                        actions: actions
+                        actions: actions,
+                        poser: poser
                     };
 
                     const charData = {
                         model: model,
                         mixer: mixer,
                         actions: actions,
-                        state: 'idle'
+                        poser: poser,
+                        state: 'idle',
+                        pose: null
                     };
 
                     this.characters.push(charData);
@@ -124,10 +148,40 @@ export class CharacterManager {
     update(delta) {
         // Update all mixers (advances animation frames)
         for (const char of this.characters) {
-            if (char.mixer) {
-                char.mixer.update(delta);
-            }
+            if (char.mixer) char.mixer.update(delta);
+            if (char.poser?.blending) char.poser.update(delta);
         }
+    }
+
+    setPose(model, poseName, duration = 0.3) {
+        const char = this.characters.find(c => c.model === model);
+        if (!char?.poser) return false;
+
+        // Bone posing and AnimationMixer clips fight each other, so stop mixer
+        // actions before applying a static pose.
+        if (char.mixer) char.mixer.stopAllAction();
+        Object.values(char.actions || {}).forEach(action => action.stop?.());
+        char.poser.apply(poseName, { duration });
+        char.pose = poseName;
+        char.state = 'pose';
+        char.model.userData.currentPose = poseName;
+        return true;
+    }
+
+    resetPose(model) {
+        const char = this.characters.find(c => c.model === model);
+        if (!char?.poser) return false;
+        if (char.mixer) char.mixer.stopAllAction();
+        Object.values(char.actions || {}).forEach(action => action.stop?.());
+        char.poser.reset({ duration: 0.25 });
+        char.pose = 't_pose';
+        char.model.userData.currentPose = 't_pose';
+        return true;
+    }
+
+    listPoses(model) {
+        const char = this.characters.find(c => c.model === model);
+        return char?.poser?.list?.() || [];
     }
 
     // --- Blending Logic from character.html ---
