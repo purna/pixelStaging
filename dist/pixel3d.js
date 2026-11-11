@@ -35011,6 +35011,7 @@
       };
       const durationRow = rangeRow("Length", shot.duration, 0.5, 30, 0.5, (v) => `${v.toFixed(1)}s`, (v) => {
         shot.duration = v;
+        this.app.staging.shotManager.refreshUI();
       });
       const speedWrap = document.createElement("span");
       speedWrap.className = "sd-speed-control";
