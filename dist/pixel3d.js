@@ -34321,8 +34321,25 @@
     setupCameraNudge() {
       const panel = document.getElementById("camera-nudge");
       if (!panel) return;
-      panel.querySelectorAll("[data-cam-action]").forEach((button) => {
+      document.querySelectorAll("[data-cam-action]").forEach((button) => {
+        if (button.dataset.camWired) return;
+        button.dataset.camWired = "true";
         button.addEventListener("click", () => this.applyCameraNudge(button.dataset.camAction));
+        if (button.closest("#mobile-nav")) {
+          let timer = null;
+          const start = (event) => {
+            event.preventDefault();
+            this.applyCameraNudge(button.dataset.camAction);
+            clearInterval(timer);
+            timer = setInterval(() => this.applyCameraNudge(button.dataset.camAction), 90);
+          };
+          const stop = () => {
+            clearInterval(timer);
+            timer = null;
+          };
+          button.addEventListener("pointerdown", start);
+          ["pointerup", "pointerleave", "pointercancel"].forEach((type) => button.addEventListener(type, stop));
+        }
       });
       document.getElementById("camera-nudge-set-frame")?.addEventListener("click", () => {
         const sm = this.app.staging?.shotManager;
@@ -45780,7 +45797,7 @@ ${elements.join("\n")}
     updateAlignButton() {
       const button = document.getElementById("align-frame-btn");
       if (!button) return;
-      const visible = !!this.selectedShot && !this.playing && !this.previewActive && !this.framingControls;
+      const visible = this.app.controlMode === "camera" && !!this.selectedShot && !this.playing && !this.previewActive && !this.framingControls;
       button.classList.toggle("hidden", !visible);
     }
     alignFrameToView() {
@@ -48055,10 +48072,24 @@ ${xrefOffset}
     setControlMode(mode) {
       this.controlMode = mode === "scene" ? "scene" : "camera";
       if (this.orbit) {
-        this.orbit.enabled = this.controlMode === "camera";
+        this.orbit.enabled = true;
+        this.orbit.enablePan = true;
+        this.orbit.enableRotate = true;
+        this.orbit.screenSpacePanning = true;
         if (this.controlMode === "camera") {
-          this.orbit.enablePan = true;
-          this.orbit.screenSpacePanning = true;
+          this.orbit.mouseButtons = {
+            LEFT: MOUSE.ROTATE,
+            MIDDLE: MOUSE.DOLLY,
+            RIGHT: MOUSE.PAN
+          };
+          this.orbit.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
+        } else {
+          this.orbit.mouseButtons = {
+            LEFT: null,
+            MIDDLE: MOUSE.ROTATE,
+            RIGHT: MOUSE.PAN
+          };
+          this.orbit.touches = { ONE: null, TWO: TOUCH.DOLLY_PAN };
         }
       }
       if (this.transformControl) {
@@ -48436,7 +48467,7 @@ ${xrefOffset}
     }
     // --- POINTER EVENTS ---
     onPointerUpForDeselect(event) {
-      if (this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
+      if (event.button !== 0 || this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
         return;
       }
       const rect = this.renderer.domElement.getBoundingClientRect();
@@ -48456,6 +48487,7 @@ ${xrefOffset}
     }
     onPointerDown(event) {
       if (this.keyframeControls?.axis || this.poseControls?.axis) return;
+      if (event.button !== 0) return;
       if (this.poseEditState) {
         const bone = this.pickPoseBone(event);
         if (bone) this.selectPoseBone(bone.name);

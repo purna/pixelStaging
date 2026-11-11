@@ -315,7 +315,7 @@ export class ShotManager {
     updateAlignButton() {
         const button = document.getElementById('align-frame-btn');
         if (!button) return;
-        const visible = !!this.selectedShot && !this.playing && !this.previewActive && !this.framingControls;
+        const visible = this.app.controlMode === 'camera' && !!this.selectedShot && !this.playing && !this.previewActive && !this.framingControls;
         button.classList.toggle('hidden', !visible);
     }
 

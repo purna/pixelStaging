@@ -569,10 +569,27 @@ class StageApp {
         this.controlMode = mode === 'scene' ? 'scene' : 'camera';
 
         if (this.orbit) {
-            this.orbit.enabled = this.controlMode === 'camera';
+            this.orbit.enabled = true;
+            this.orbit.enablePan = true;
+            this.orbit.enableRotate = true;
+            this.orbit.screenSpacePanning = true;
+
             if (this.controlMode === 'camera') {
-                this.orbit.enablePan = true;
-                this.orbit.screenSpacePanning = true;
+                this.orbit.mouseButtons = {
+                    LEFT: THREE.MOUSE.ROTATE,
+                    MIDDLE: THREE.MOUSE.DOLLY,
+                    RIGHT: THREE.MOUSE.PAN
+                };
+                this.orbit.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+            } else {
+                // Blender/Unity style editing: left selects, middle orbits,
+                // right pan, two-finger touch orbits/pans/zooms.
+                this.orbit.mouseButtons = {
+                    LEFT: null,
+                    MIDDLE: THREE.MOUSE.ROTATE,
+                    RIGHT: THREE.MOUSE.PAN
+                };
+                this.orbit.touches = { ONE: null, TWO: THREE.TOUCH.DOLLY_PAN };
             }
         }
 
@@ -1063,7 +1080,7 @@ class StageApp {
     // --- POINTER EVENTS ---
 
     onPointerUpForDeselect(event) {
-        if (this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
+        if (event.button !== 0 || this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
             return;
         }
         
@@ -1090,6 +1107,8 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     onPointerDown(event) {
         // Let editor gizmos handle their own drag.
         if (this.keyframeControls?.axis || this.poseControls?.axis) return;
+
+        if (event.button !== 0) return;
 
         if (this.poseEditState) {
             const bone = this.pickPoseBone(event);

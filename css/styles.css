@@ -7085,3 +7085,54 @@ input[type="number"].color-slider-value-compact {
     border: 0;
     background: #14161c;
 }
+
+/* Mobile / touch scene navigation */
+.mobile-nav {
+    display: none;
+    position: absolute;
+    right: 12px;
+    bottom: 150px;
+    z-index: 45;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px;
+    background: rgba(24, 18, 11, 0.9);
+    border: 1px solid #3c2e1b;
+    border-radius: 10px;
+    color: #eadcc0;
+    font-size: 10px;
+    backdrop-filter: blur(8px);
+}
+
+.mobile-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mobile-nav-row span {
+    width: 38px;
+    color: #cbb68f;
+}
+
+.mobile-nav button {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    border: 1px solid #41351f;
+    background: rgba(255, 244, 218, 0.08);
+    color: #fff3d7;
+    font-size: 12px;
+    touch-action: none;
+}
+
+.mobile-nav button:active {
+    background: rgba(243, 182, 63, 0.3);
+    border-color: #f3b63f;
+}
+
+@media (max-width: 900px), (pointer: coarse) {
+    .mobile-nav {
+        display: flex;
+    }
+}

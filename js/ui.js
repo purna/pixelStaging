@@ -1648,8 +1648,23 @@ export class UI {
         const panel = document.getElementById('camera-nudge');
         if (!panel) return;
 
-        panel.querySelectorAll('[data-cam-action]').forEach(button => {
+        document.querySelectorAll('[data-cam-action]').forEach(button => {
+            if (button.dataset.camWired) return;
+            button.dataset.camWired = 'true';
             button.addEventListener('click', () => this.applyCameraNudge(button.dataset.camAction));
+
+            if (button.closest('#mobile-nav')) {
+                let timer = null;
+                const start = (event) => {
+                    event.preventDefault();
+                    this.applyCameraNudge(button.dataset.camAction);
+                    clearInterval(timer);
+                    timer = setInterval(() => this.applyCameraNudge(button.dataset.camAction), 90);
+                };
+                const stop = () => { clearInterval(timer); timer = null; };
+                button.addEventListener('pointerdown', start);
+                ['pointerup', 'pointerleave', 'pointercancel'].forEach(type => button.addEventListener(type, stop));
+            }
         });
 
         document.getElementById('camera-nudge-set-frame')?.addEventListener('click', () => {
