@@ -153,8 +153,18 @@ export class CharacterManager {
         }
     }
 
+    findCharacter(model) {
+        let current = model;
+        while (current) {
+            const match = this.characters.find(c => c.model === current);
+            if (match) return match;
+            current = current.parent;
+        }
+        return null;
+    }
+
     setPose(model, poseName, duration = 0.3) {
-        const char = this.characters.find(c => c.model === model);
+        const char = this.findCharacter(model);
         if (!char?.poser) return false;
 
         // Bone posing and AnimationMixer clips fight each other, so stop mixer
@@ -169,7 +179,7 @@ export class CharacterManager {
     }
 
     resetPose(model) {
-        const char = this.characters.find(c => c.model === model);
+        const char = this.findCharacter(model);
         if (!char?.poser) return false;
         if (char.mixer) char.mixer.stopAllAction();
         Object.values(char.actions || {}).forEach(action => action.stop?.());
@@ -180,7 +190,7 @@ export class CharacterManager {
     }
 
     listPoses(model) {
-        const char = this.characters.find(c => c.model === model);
+        const char = this.findCharacter(model);
         return char?.poser?.list?.() || [];
     }
 

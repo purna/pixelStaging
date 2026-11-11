@@ -23,7 +23,7 @@ export const architecturePresets = {
     'wall-straight': {
         label: 'Wall (straight)',
         defaultColor: 0xcfc6b8,
-        params: { length: 4, height: 2.7, thickness: 0.15 },
+        params: { length: 8, height: 5.4, thickness: 0.15 },
         create: (p, m) => wall(p, m)
     },
     'wall-corner': {
@@ -45,7 +45,7 @@ export const architecturePresets = {
     'wall-t': {
         label: 'Wall (T-junction)',
         defaultColor: 0xcfc6b8,
-        params: { length: 4, height: 2.7, thickness: 0.15 },
+        params: { length: 8, height: 5.4, thickness: 0.15 },
         create: (p, m) => {
             const g = new THREE.Group();
             g.add(wall(p, m));

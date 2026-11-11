@@ -106,6 +106,9 @@ export class CameraRigManager {
         group.userData.staging = { id, kind: 'camera', presetId: 'camera-rig', params: {} };
         group.userData.rig = { id, color };
 
+        // Camera rigs are data/aim helpers for shots, not visible set pieces.
+        // Keeping the body hidden prevents it filling the view when zooming.
+        group.visible = false;
         this.app.scene.add(group);
         this.app.objects.push(group);
 
@@ -255,7 +258,9 @@ export class CameraRigManager {
     /** Per-frame updates: frustum visibility (hide the rig being viewed). */
     update() {
         for (const rig of this.rigs) {
-            rig.frustum.setVisible(rig.visibleInViewport && this.viewingRigId !== rig.id);
+            // Rig visuals are editor-only helpers and are intentionally hidden.
+            rig.group.visible = false;
+            rig.frustum.setVisible(false);
         }
     }
 

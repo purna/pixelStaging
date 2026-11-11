@@ -189,21 +189,116 @@ function makePage(builder, sceneName, shot, frames, sceneNotes = '') {
     return builder.addPage(contentId, imageIds);
 }
 
-function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) {
+function hideExportHelpers(app) {
+    const hidden = [];
+    const shouldHide = (object) => {
+        if (!object) return false;
+        if (object === app.transformControl || object === app.keyframeControls) return true;
+        if (object.userData?.isKeyframeGizmo || object.userData?.rigRef) return true;
+        if (object.userData?.helper) return true;
+        if (object.type === 'GridHelper' || object.type === 'AxesHelper') return true;
+        if (object.type?.endsWith?.('Helper')) return true;
+        if (object.name === 'shot-path-preview') return true;
+        if (Array.isArray(app.staging?.shotManager?.pathMarkers) && app.staging.shotManager.pathMarkers.includes(object)) return true;
+        return false;
+    };
+
+    app.scene.traverse(object => {
+        if (shouldHide(object) && object.visible) {
+            hidden.push(object);
+            object.visible = false;
+        }
+    });
+    return () => hidden.forEach(object => { object.visible = true; });
+}
+
+function renderWithCamera(app, camera) {
     const renderer = app.renderer;
     const canvas = renderer.domElement;
     const width = canvas.width;
     const height = canvas.height;
-
-    // Save the current viewport so storyboard rendering never disturbs the editor.
     const oldViewport = renderer.getViewport(new THREE.Vector4());
     const oldScissorTest = renderer.getScissorTest();
+    const restoreHelpers = hideExportHelpers(app);
 
     renderer.setScissorTest(false);
     renderer.setViewport(0, 0, width, height);
+    camera.updateMatrixWorld(true);
+    renderer.render(app.scene, camera);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
 
+    renderer.setViewport(oldViewport);
+    renderer.setScissorTest(oldScissorTest);
+    restoreHelpers();
+
+    return { dataUrl, width, height, position: camera.position.toArray() };
+}
+
+function getSceneBounds(app) {
+    const box = new THREE.Box3();
+    let hasBounds = false;
+    for (const object of app.objects || []) {
+        if (object.userData?.rigRef) continue;
+        box.expandByObject(object);
+        hasBounds = true;
+    }
+    if (!hasBounds) box.set(new THREE.Vector3(-5, 0, -5), new THREE.Vector3(5, 3, 5));
+    return box;
+}
+
+function renderSceneViews(app) {
+    const box = getSceneBounds(app);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const canvas = app.renderer.domElement;
+    const aspect = canvas.width / canvas.height;
+    const extent = Math.max(size.x, size.y, size.z, 4) * 1.25;
+    const halfHeight = extent / 2;
+    const halfWidth = halfHeight * aspect;
+    const distance = Math.max(size.x, size.y, size.z, 4) * 2;
+
+    const makeCamera = (position, up) => {
+        const camera = new THREE.OrthographicCamera(-halfWidth, halfWidth, halfHeight, -halfHeight, 0.1, distance * 4);
+        camera.position.copy(position);
+        camera.up.copy(up);
+        camera.lookAt(center);
+        camera.updateProjectionMatrix();
+        return camera;
+    };
+
+    return [
+        { label: 'Topdown view', ...renderWithCamera(app, makeCamera(new THREE.Vector3(center.x, box.max.y + distance, center.z), new THREE.Vector3(0, 0, -1))) },
+        { label: 'Left side view', ...renderWithCamera(app, makeCamera(new THREE.Vector3(box.min.x - distance, center.y, center.z), new THREE.Vector3(0, 1, 0))) },
+        { label: 'Right side view', ...renderWithCamera(app, makeCamera(new THREE.Vector3(box.max.x + distance, center.y, center.z), new THREE.Vector3(0, 1, 0))) }
+    ];
+}
+
+function makeSceneViewsPage(builder, sceneName, views) {
+    const imageIds = views.map(view => builder.addImage(view.dataUrl, view.width, view.height));
+    const lines = [];
+    lines.push(`BT /F1 18 Tf 44 742 Td (${pdfText(sceneName)} - Scene views) Tj ET`);
+    lines.push(`BT /F1 10 Tf 44 716 Td (Topdown and side reference views) Tj ET`);
+
+    let imageCommand = 'q\n';
+    const positions = [
+        { x: 44, y: 532, w: 250, h: 140 },
+        { x: 318, y: 532, w: 250, h: 140 },
+        { x: 181, y: 340, w: 250, h: 140 }
+    ];
+    views.forEach((view, index) => {
+        const p = positions[index];
+        imageCommand += `q ${p.w} 0 0 ${p.h} ${p.x} ${p.y} cm /Im${index} Do Q\n`;
+        lines.push(`BT /F1 9 Tf ${p.x} ${p.y - 16} Td (${pdfText(view.label)}) Tj ET`);
+    });
+
+    const contentId = builder.addContent(imageCommand + '\n' + lines.join('\n'));
+    return builder.addPage(contentId, imageIds);
+}
+
+function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) {
+    const canvas = app.renderer.domElement;
     const camera = rig.camera.clone();
-    camera.aspect = width / height;
+    camera.aspect = canvas.width / canvas.height;
     camera.updateProjectionMatrix();
 
     if (explicitFrame) {
@@ -222,16 +317,8 @@ function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) 
         camera.position.copy(worldPosition);
         camera.quaternion.copy(worldQuaternion);
     }
-    camera.updateMatrixWorld(true);
 
-    renderer.render(app.scene, camera);
-
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
-
-    renderer.setViewport(oldViewport);
-    renderer.setScissorTest(oldScissorTest);
-
-    return { dataUrl, width, height, position: camera.position.toArray() };
+    return renderWithCamera(app, camera);
 }
 
 function collectShotsForScene(app) {
@@ -297,6 +384,7 @@ async function collectStoryboardData(app) {
         for (const sceneName of sceneNames) {
             if (scenes.currentSceneName !== sceneName) scenes.switchToScene(sceneName);
             const sceneNotes = scenes.getSceneNotes?.(sceneName) || '';
+            const sceneViews = renderSceneViews(app);
             const items = collectShotsForScene(app);
             for (const item of items) {
                 const frames = [];
@@ -316,7 +404,7 @@ async function collectStoryboardData(app) {
                     rendered.label = 'Scene camera overview';
                     frames.push(rendered);
                 }
-                data.push({ sceneName, sceneNotes, item, frames });
+                data.push({ sceneName, sceneNotes, sceneViews, item, frames });
             }
         }
     } finally {
@@ -347,7 +435,12 @@ export async function exportStoryboardPDF(app) {
     const builder = new PDFBuilder();
     const storyboard = await collectStoryboardData(app);
 
-    for (const { sceneName, sceneNotes, item, frames } of storyboard) {
+    const seenScenes = new Set();
+    for (const { sceneName, sceneNotes, sceneViews, item, frames } of storyboard) {
+        if (!seenScenes.has(sceneName) && sceneViews?.length) {
+            pages.push(makeSceneViewsPage(builder, sceneName, sceneViews));
+            seenScenes.add(sceneName);
+        }
         pages.push(makePage(builder, sceneName, item, frames, sceneNotes));
     }
 
@@ -389,7 +482,7 @@ export async function openStoryboardReport(app) {
         return;
     }
 
-    const sections = storyboard.map(({ sceneName, sceneNotes, item, frames }) => {
+    const sections = storyboard.map(({ sceneName, sceneNotes, sceneViews, item, frames }) => {
         const shot = item.shot;
         const start = frames[0]?.position?.map(v => v.toFixed(2)).join(', ') || '—';
         const end = frames[1]?.position?.map(v => v.toFixed(2)).join(', ') || '—';
@@ -410,6 +503,18 @@ export async function openStoryboardReport(app) {
                         </figure>
                     `).join('')}
                 </div>
+                ${Array.isArray(sceneViews) && sceneViews.length ? `
+                <div class="scene-views">
+                    <h3>Scene views</h3>
+                    <div class="frames three">
+                        ${sceneViews.map(view => `
+                            <figure>
+                                <img src="${view.dataUrl}" alt="${escapeHtml(view.label)}">
+                                <figcaption>${escapeHtml(view.label)}</figcaption>
+                            </figure>
+                        `).join('')}
+                    </div>
+                </div>` : ''}
                 <div class="meta-grid">
                     <div><span>Camera</span><b>${escapeHtml(item.cameraName)}</b></div>
                     <div><span>Lens</span><b>${escapeHtml(item.cameraLens || '—')}</b></div>
@@ -452,6 +557,9 @@ export async function openStoryboardReport(app) {
   h2 { margin: 4px 0 0; font-size: 22px; }
   .badge { color: #d7c19b; border: 1px solid #4a3a21; border-radius: 999px; padding: 6px 10px; font-size: 11px; }
   .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .frames.three { grid-template-columns: repeat(3, 1fr); }
+  .scene-views { margin-bottom: 14px; }
+  .scene-views h3 { margin: 0 0 8px; font-size: 12px; color: #d5aa5f; }
   figure { margin: 0; }
   figure img { width: 100%; display: block; border-radius: 7px; border: 1px solid #3c2e1b; }
   figcaption { color: #bda987; font-size: 11px; margin-top: 5px; }

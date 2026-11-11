@@ -142,8 +142,8 @@ export class SceneManager {
 
         return [
             staging('Floor', 'floor', [0, 0, 0], [0, 0, 0], { width: 12, depth: 12 }),
-            staging('Wall (straight)', 'wall-straight', [0, 0, -6], [0, 0, 0], { length: 12, height: 3 }),
-            staging('Wall (straight)', 'wall-straight', [-6, 0, 0], [0, Math.PI / 2, 0], { length: 12, height: 3 }),
+            staging('Wall (straight)', 'wall-straight', [-2, 0, -6], [0, 0, 0], { length: 8, height: 5.4 }),
+            staging('Wall (straight)', 'wall-straight', [-6, 0, -2], [0, Math.PI / 2, 0], { length: 8, height: 5.4 }),
             staging('Actor (standing)', 'figure-standing', [0, 0, 0])
         ];
     }

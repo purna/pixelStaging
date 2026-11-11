@@ -6799,3 +6799,33 @@ input[type="number"].color-slider-value-compact {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
 }
+
+/* Align current editor view to the selected keyframe */
+.align-frame-btn {
+    position: absolute;
+    left: 50%;
+    bottom: 248px;
+    transform: translateX(-50%);
+    z-index: 46;
+    border: 1px solid #f3b63f;
+    background: #f3b63f;
+    color: #1b1308;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.align-frame-btn:hover {
+    background: #ffd166;
+}
+
+.align-frame-btn.hidden {
+    display: none;
+}
+
+.camera-nudge.hidden {
+    display: none !important;
+}

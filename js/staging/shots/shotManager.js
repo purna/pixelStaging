@@ -198,6 +198,7 @@ export class ShotManager {
     }
 
     update(delta) {
+        this.updateAlignButton();
         if (this.framingControls) {
             this.framingControls.update(delta);
             if (this.framingRig) {
@@ -266,6 +267,35 @@ export class ShotManager {
         if (this.app.renderer?.domElement) {
             this.app.renderer.domElement.style.filter = '';
         }
+    }
+
+    updateAlignButton() {
+        const button = document.getElementById('align-frame-btn');
+        if (!button) return;
+        const visible = !!this.selectedShot && !this.playing && !this.previewActive && !this.framingControls;
+        button.classList.toggle('hidden', !visible);
+    }
+
+    alignFrameToView() {
+        const shot = this.selectedShot;
+        if (!shot) return;
+        const camera = this.app.camera;
+        camera.updateMatrixWorld(true);
+        const position = new V3();
+        const quaternion = new THREE.Quaternion();
+        camera.getWorldPosition(position);
+        camera.getWorldQuaternion(quaternion);
+        const targetFrame = this.editingFrame === 'end' ? 'endFrame' : 'startFrame';
+        shot[targetFrame] = {
+            position: position.toArray(),
+            quaternion: quaternion.toArray(),
+            target: this.app.orbit?.target?.toArray?.() || null,
+            fov: camera.fov ?? 55
+        };
+        this.previewActive = false;
+        this.clearPreviewBlur();
+        this.refreshUI();
+        this.app.ui?.showNotification?.(`${this.editingFrame === 'end' ? 'End' : 'Start'} frame aligned to view`, 'success');
     }
 
     clearTransitionOverlay() {
@@ -636,6 +666,7 @@ export class ShotManager {
         if (addBtn) addBtn.onclick = () => this.addShotForSelectedCamera();
         document.getElementById('timeline-export-pdf')?.addEventListener('click', () => this.app.exportStoryboardPDF?.());
         document.getElementById('timeline-report')?.addEventListener('click', () => this.app.openStoryboardReport?.());
+        document.getElementById('align-frame-btn')?.addEventListener('click', () => this.alignFrameToView());
     }
 
     buildTimelineUI() {
@@ -1295,6 +1326,7 @@ export class ShotManager {
         this.buildTimelineUI();
         this.ui.updateScrubber();
         this.updatePathPreview();
+        this.updateAlignButton();
         this.app.updateKeyframeGizmos?.();
     }
 

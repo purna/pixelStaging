@@ -41217,10 +41217,10 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
     load: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" fill="currentColor" fill-opacity="0.2"/><path d="M17 8l-5-5-5 5" stroke-width="1.5"/><path d="M12 3v12" stroke-width="1.5"/><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke-width="1.5"/></svg>`,
     save: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z" fill="currentColor" fill-opacity="0.25"/><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v13a2 2 0 01-2 2z" stroke-width="1.5"/><polyline points="17,21 17,13 7,13 7,21" stroke-width="1.5"/><polyline points="7,3 7,8 15,8" stroke-width="1.5"/></svg>`,
     export: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" fill="currentColor" fill-opacity="0.2"/><polyline points="7,10 12,15 17,10" stroke-width="1.5"/><line x1="12" y1="15" x2="12" y2="3" stroke-width="1.5"/><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke-width="1.5"/></svg>`,
-    hand: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 00-4 0M14 10V4a2 2 0 00-4 0v6M10 10.5V6a2 2 0 00-4 0v8" fill="currentColor" fill-opacity="0.15"/><path d="M6 14l2-3a8 8 0 018-8h2a2 2 0 012 2v6a4 4 0 01-4 4h-5l-3 3" fill="currentColor" fill-opacity="0.3"/><path d="M18 11V6a2 2 0 00-4 0M14 10V4a2 2 0 00-4 0v6M10 10.5V6a2 2 0 00-4 0v8M6 14l2-3a8 8 0 018-8h2a2 2 0 012 2v6a4 4 0 01-4 4h-5l-3 3h-2v-3" stroke-width="1.5"/></svg>`,
-    translate: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 21,12 12,22 3,12" fill="currentColor" fill-opacity="0.25"/><polygon points="12,2 21,12 12,22 3,12"/><path d="M12 2v20M3 12h18" stroke-width="1.5"/><polyline points="7,7 12,2 17,7" fill="currentColor" fill-opacity="0.4"/><polyline points="7,17 12,22 17,17" fill="currentColor" fill-opacity="0.4"/><polyline points="7,17 2,12 7,7" fill="currentColor" fill-opacity="0.4"/><polyline points="17,7 22,12 17,17" fill="currentColor" fill-opacity="0.4"/></svg>`,
-    rotate: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-6.219-8.56" fill="currentColor" fill-opacity="0.2"/><path d="M21 12a9 9 0 11-6.219-8.56" stroke-width="1.5"/><polyline points="21,3 21,9 15,9" fill="currentColor" fill-opacity="0.4"/><polyline points="21,3 21,9 15,9" stroke-width="1.5"/></svg>`,
-    scale: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" fill="currentColor" fill-opacity="0.3"/><rect x="3" y="3" width="10" height="10"/><rect x="11" y="11" width="10" height="10" fill="currentColor" fill-opacity="0.5"/><rect x="11" y="11" width="10" height="10"/><path d="M11 11l3 3M14 11h-3v3M21 17l-3-3" stroke-width="1.5"/></svg>`,
+    hand: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v5" fill="currentColor" fill-opacity="0.12"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 0 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" fill="currentColor" fill-opacity="0.08"/></svg>`,
+    translate: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.2" fill="currentColor" fill-opacity="0.35"/><path d="M12 2v20M2 12h20"/><path d="M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/></svg>`,
+    rotate: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1" fill="currentColor" fill-opacity="0.12"/><path d="M20.5 3.5v5h-5"/><circle cx="12" cy="12" r="2" fill="currentColor" fill-opacity="0.35"/></svg>`,
+    scale: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M9 21H5a2 2 0 0 1-2-2v-4M15 21h4a2 2 0 0 0 2-2v-4"/><path d="M7 7l3 3M17 17l-3-3M3 3l5 5M21 21l-5-5" opacity="0.65"/></svg>`,
     // 3D shape icons
     box: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" fill="currentColor" fill-opacity="0.2"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke-width="1.5"/><polyline points="3.27,6.96 12,12.01 20.73,6.96" stroke-width="1.5"/><line x1="12" y1="22.08" x2="12" y2="12" stroke-width="1.5"/></svg>`,
     sphere: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity="0.25"/><circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="4" ry="10"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(45 12 12)" stroke-opacity="0.5"/></svg>`,
@@ -42361,8 +42361,17 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
         if (char.poser?.blending) char.poser.update(delta);
       }
     }
+    findCharacter(model) {
+      let current = model;
+      while (current) {
+        const match = this.characters.find((c) => c.model === current);
+        if (match) return match;
+        current = current.parent;
+      }
+      return null;
+    }
     setPose(model, poseName, duration = 0.3) {
-      const char = this.characters.find((c) => c.model === model);
+      const char = this.findCharacter(model);
       if (!char?.poser) return false;
       if (char.mixer) char.mixer.stopAllAction();
       Object.values(char.actions || {}).forEach((action) => action.stop?.());
@@ -42373,7 +42382,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       return true;
     }
     resetPose(model) {
-      const char = this.characters.find((c) => c.model === model);
+      const char = this.findCharacter(model);
       if (!char?.poser) return false;
       if (char.mixer) char.mixer.stopAllAction();
       Object.values(char.actions || {}).forEach((action) => action.stop?.());
@@ -42383,7 +42392,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       return true;
     }
     listPoses(model) {
-      const char = this.characters.find((c) => c.model === model);
+      const char = this.findCharacter(model);
       return char?.poser?.list?.() || [];
     }
     // --- Blending Logic from character.html ---
@@ -44013,7 +44022,7 @@ ${elements.join("\n")}
     "wall-straight": {
       label: "Wall (straight)",
       defaultColor: 13616824,
-      params: { length: 4, height: 2.7, thickness: 0.15 },
+      params: { length: 8, height: 5.4, thickness: 0.15 },
       create: (p, m) => wall(p, m)
     },
     "wall-corner": {
@@ -44035,7 +44044,7 @@ ${elements.join("\n")}
     "wall-t": {
       label: "Wall (T-junction)",
       defaultColor: 13616824,
-      params: { length: 4, height: 2.7, thickness: 0.15 },
+      params: { length: 8, height: 5.4, thickness: 0.15 },
       create: (p, m) => {
         const g = new Group();
         g.add(wall(p, m));
@@ -44800,6 +44809,7 @@ ${elements.join("\n")}
       group.userData.type = "staging";
       group.userData.staging = { id, kind: "camera", presetId: "camera-rig", params: {} };
       group.userData.rig = { id, color };
+      group.visible = false;
       this.app.scene.add(group);
       this.app.objects.push(group);
       const rig = {
@@ -44940,7 +44950,8 @@ ${elements.join("\n")}
     /** Per-frame updates: frustum visibility (hide the rig being viewed). */
     update() {
       for (const rig of this.rigs) {
-        rig.frustum.setVisible(rig.visibleInViewport && this.viewingRigId !== rig.id);
+        rig.group.visible = false;
+        rig.frustum.setVisible(false);
       }
     }
     /** Build UI for camera rig controls - now handled by right panel Camera tab. */
@@ -45375,6 +45386,7 @@ ${elements.join("\n")}
       this.updatePathPreview();
     }
     update(delta) {
+      this.updateAlignButton();
       if (this.framingControls) {
         this.framingControls.update(delta);
         if (this.framingRig) {
@@ -45432,6 +45444,33 @@ ${elements.join("\n")}
       if (this.app.renderer?.domElement) {
         this.app.renderer.domElement.style.filter = "";
       }
+    }
+    updateAlignButton() {
+      const button = document.getElementById("align-frame-btn");
+      if (!button) return;
+      const visible = !!this.selectedShot && !this.playing && !this.previewActive && !this.framingControls;
+      button.classList.toggle("hidden", !visible);
+    }
+    alignFrameToView() {
+      const shot = this.selectedShot;
+      if (!shot) return;
+      const camera = this.app.camera;
+      camera.updateMatrixWorld(true);
+      const position = new V3();
+      const quaternion = new Quaternion();
+      camera.getWorldPosition(position);
+      camera.getWorldQuaternion(quaternion);
+      const targetFrame = this.editingFrame === "end" ? "endFrame" : "startFrame";
+      shot[targetFrame] = {
+        position: position.toArray(),
+        quaternion: quaternion.toArray(),
+        target: this.app.orbit?.target?.toArray?.() || null,
+        fov: camera.fov ?? 55
+      };
+      this.previewActive = false;
+      this.clearPreviewBlur();
+      this.refreshUI();
+      this.app.ui?.showNotification?.(`${this.editingFrame === "end" ? "End" : "Start"} frame aligned to view`, "success");
     }
     clearTransitionOverlay() {
       const overlay = this._transitionOverlay || document.getElementById("transition-overlay");
@@ -45733,6 +45772,7 @@ ${elements.join("\n")}
       if (addBtn) addBtn.onclick = () => this.addShotForSelectedCamera();
       document.getElementById("timeline-export-pdf")?.addEventListener("click", () => this.app.exportStoryboardPDF?.());
       document.getElementById("timeline-report")?.addEventListener("click", () => this.app.openStoryboardReport?.());
+      document.getElementById("align-frame-btn")?.addEventListener("click", () => this.alignFrameToView());
     }
     buildTimelineUI() {
       if (this.ui.pauseBtn) this.ui.pauseBtn.style.display = this.playing ? "inline-block" : "none";
@@ -46301,6 +46341,7 @@ ${elements.join("\n")}
       this.buildTimelineUI();
       this.ui.updateScrubber();
       this.updatePathPreview();
+      this.updateAlignButton();
       this.app.updateKeyframeGizmos?.();
     }
     toggleUI() {
@@ -46456,8 +46497,8 @@ ${elements.join("\n")}
       });
       return [
         staging("Floor", "floor", [0, 0, 0], [0, 0, 0], { width: 12, depth: 12 }),
-        staging("Wall (straight)", "wall-straight", [0, 0, -6], [0, 0, 0], { length: 12, height: 3 }),
-        staging("Wall (straight)", "wall-straight", [-6, 0, 0], [0, Math.PI / 2, 0], { length: 12, height: 3 }),
+        staging("Wall (straight)", "wall-straight", [-2, 0, -6], [0, 0, 0], { length: 8, height: 5.4 }),
+        staging("Wall (straight)", "wall-straight", [-6, 0, -2], [0, Math.PI / 2, 0], { length: 8, height: 5.4 }),
         staging("Actor (standing)", "figure-standing", [0, 0, 0])
       ];
     }
@@ -46858,17 +46899,106 @@ ${xrefOffset}
     const contentId = builder.addContent(imageCommand + "\n" + lines.join("\n"));
     return builder.addPage(contentId, imageIds);
   }
-  function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) {
+  function hideExportHelpers(app) {
+    const hidden = [];
+    const shouldHide = (object) => {
+      if (!object) return false;
+      if (object === app.transformControl || object === app.keyframeControls) return true;
+      if (object.userData?.isKeyframeGizmo || object.userData?.rigRef) return true;
+      if (object.userData?.helper) return true;
+      if (object.type === "GridHelper" || object.type === "AxesHelper") return true;
+      if (object.type?.endsWith?.("Helper")) return true;
+      if (object.name === "shot-path-preview") return true;
+      if (Array.isArray(app.staging?.shotManager?.pathMarkers) && app.staging.shotManager.pathMarkers.includes(object)) return true;
+      return false;
+    };
+    app.scene.traverse((object) => {
+      if (shouldHide(object) && object.visible) {
+        hidden.push(object);
+        object.visible = false;
+      }
+    });
+    return () => hidden.forEach((object) => {
+      object.visible = true;
+    });
+  }
+  function renderWithCamera(app, camera) {
     const renderer = app.renderer;
     const canvas = renderer.domElement;
     const width = canvas.width;
     const height = canvas.height;
     const oldViewport = renderer.getViewport(new Vector4());
     const oldScissorTest = renderer.getScissorTest();
+    const restoreHelpers = hideExportHelpers(app);
     renderer.setScissorTest(false);
     renderer.setViewport(0, 0, width, height);
+    camera.updateMatrixWorld(true);
+    renderer.render(app.scene, camera);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.86);
+    renderer.setViewport(oldViewport);
+    renderer.setScissorTest(oldScissorTest);
+    restoreHelpers();
+    return { dataUrl, width, height, position: camera.position.toArray() };
+  }
+  function getSceneBounds(app) {
+    const box = new Box3();
+    let hasBounds = false;
+    for (const object of app.objects || []) {
+      if (object.userData?.rigRef) continue;
+      box.expandByObject(object);
+      hasBounds = true;
+    }
+    if (!hasBounds) box.set(new Vector3(-5, 0, -5), new Vector3(5, 3, 5));
+    return box;
+  }
+  function renderSceneViews(app) {
+    const box = getSceneBounds(app);
+    const center = box.getCenter(new Vector3());
+    const size = box.getSize(new Vector3());
+    const canvas = app.renderer.domElement;
+    const aspect2 = canvas.width / canvas.height;
+    const extent = Math.max(size.x, size.y, size.z, 4) * 1.25;
+    const halfHeight = extent / 2;
+    const halfWidth = halfHeight * aspect2;
+    const distance = Math.max(size.x, size.y, size.z, 4) * 2;
+    const makeCamera = (position, up) => {
+      const camera = new OrthographicCamera(-halfWidth, halfWidth, halfHeight, -halfHeight, 0.1, distance * 4);
+      camera.position.copy(position);
+      camera.up.copy(up);
+      camera.lookAt(center);
+      camera.updateProjectionMatrix();
+      return camera;
+    };
+    return [
+      { label: "Topdown view", ...renderWithCamera(app, makeCamera(new Vector3(center.x, box.max.y + distance, center.z), new Vector3(0, 0, -1))) },
+      { label: "Left side view", ...renderWithCamera(app, makeCamera(new Vector3(box.min.x - distance, center.y, center.z), new Vector3(0, 1, 0))) },
+      { label: "Right side view", ...renderWithCamera(app, makeCamera(new Vector3(box.max.x + distance, center.y, center.z), new Vector3(0, 1, 0))) }
+    ];
+  }
+  function makeSceneViewsPage(builder, sceneName, views) {
+    const imageIds = views.map((view) => builder.addImage(view.dataUrl, view.width, view.height));
+    const lines = [];
+    lines.push(`BT /F1 18 Tf 44 742 Td (${pdfText(sceneName)} - Scene views) Tj ET`);
+    lines.push(`BT /F1 10 Tf 44 716 Td (Topdown and side reference views) Tj ET`);
+    let imageCommand = "q\n";
+    const positions = [
+      { x: 44, y: 532, w: 250, h: 140 },
+      { x: 318, y: 532, w: 250, h: 140 },
+      { x: 181, y: 340, w: 250, h: 140 }
+    ];
+    views.forEach((view, index) => {
+      const p = positions[index];
+      imageCommand += `q ${p.w} 0 0 ${p.h} ${p.x} ${p.y} cm /Im${index} Do Q
+`;
+      lines.push(`BT /F1 9 Tf ${p.x} ${p.y - 16} Td (${pdfText(view.label)}) Tj ET`);
+    });
+    const contentId = builder.addContent(imageCommand + "\n" + lines.join("\n"));
+    return builder.addPage(contentId, imageIds);
+  }
+  function renderFrame(app, rig, shot, shotManager, localT, explicitFrame = null) {
+    const canvas = app.renderer.domElement;
     const camera = rig.camera.clone();
-    camera.aspect = width / height;
+    camera.aspect = canvas.width / canvas.height;
     camera.updateProjectionMatrix();
     if (explicitFrame) {
       camera.position.fromArray(explicitFrame.position);
@@ -46886,12 +47016,7 @@ ${xrefOffset}
       camera.position.copy(worldPosition);
       camera.quaternion.copy(worldQuaternion);
     }
-    camera.updateMatrixWorld(true);
-    renderer.render(app.scene, camera);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.86);
-    renderer.setViewport(oldViewport);
-    renderer.setScissorTest(oldScissorTest);
-    return { dataUrl, width, height, position: camera.position.toArray() };
+    return renderWithCamera(app, camera);
   }
   function collectShotsForScene(app) {
     const cameras = app.staging?.cameras;
@@ -46950,6 +47075,7 @@ ${xrefOffset}
       for (const sceneName of sceneNames) {
         if (scenes.currentSceneName !== sceneName) scenes.switchToScene(sceneName);
         const sceneNotes = scenes.getSceneNotes?.(sceneName) || "";
+        const sceneViews = renderSceneViews(app);
         const items = collectShotsForScene(app);
         for (const item of items) {
           const frames = [];
@@ -46969,7 +47095,7 @@ ${xrefOffset}
             rendered.label = "Scene camera overview";
             frames.push(rendered);
           }
-          data.push({ sceneName, sceneNotes, item, frames });
+          data.push({ sceneName, sceneNotes, sceneViews, item, frames });
         }
       }
     } finally {
@@ -46999,7 +47125,12 @@ ${xrefOffset}
     const pages = [];
     const builder = new PDFBuilder();
     const storyboard = await collectStoryboardData(app);
-    for (const { sceneName, sceneNotes, item, frames } of storyboard) {
+    const seenScenes = /* @__PURE__ */ new Set();
+    for (const { sceneName, sceneNotes, sceneViews, item, frames } of storyboard) {
+      if (!seenScenes.has(sceneName) && sceneViews?.length) {
+        pages.push(makeSceneViewsPage(builder, sceneName, sceneViews));
+        seenScenes.add(sceneName);
+      }
       pages.push(makePage(builder, sceneName, item, frames, sceneNotes));
     }
     if (!pages.length) {
@@ -47029,7 +47160,7 @@ ${xrefOffset}
       app.ui?.showNotification?.("Allow pop-ups to open the storyboard report", "error");
       return;
     }
-    const sections = storyboard.map(({ sceneName, sceneNotes, item, frames }) => {
+    const sections = storyboard.map(({ sceneName, sceneNotes, sceneViews, item, frames }) => {
       const shot = item.shot;
       const start = frames[0]?.position?.map((v) => v.toFixed(2)).join(", ") || "\u2014";
       const end = frames[1]?.position?.map((v) => v.toFixed(2)).join(", ") || "\u2014";
@@ -47050,6 +47181,18 @@ ${xrefOffset}
                         </figure>
                     `).join("")}
                 </div>
+                ${Array.isArray(sceneViews) && sceneViews.length ? `
+                <div class="scene-views">
+                    <h3>Scene views</h3>
+                    <div class="frames three">
+                        ${sceneViews.map((view) => `
+                            <figure>
+                                <img src="${view.dataUrl}" alt="${escapeHtml(view.label)}">
+                                <figcaption>${escapeHtml(view.label)}</figcaption>
+                            </figure>
+                        `).join("")}
+                    </div>
+                </div>` : ""}
                 <div class="meta-grid">
                     <div><span>Camera</span><b>${escapeHtml(item.cameraName)}</b></div>
                     <div><span>Lens</span><b>${escapeHtml(item.cameraLens || "\u2014")}</b></div>
@@ -47091,6 +47234,9 @@ ${xrefOffset}
   h2 { margin: 4px 0 0; font-size: 22px; }
   .badge { color: #d7c19b; border: 1px solid #4a3a21; border-radius: 999px; padding: 6px 10px; font-size: 11px; }
   .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .frames.three { grid-template-columns: repeat(3, 1fr); }
+  .scene-views { margin-bottom: 14px; }
+  .scene-views h3 { margin: 0 0 8px; font-size: 12px; color: #d5aa5f; }
   figure { margin: 0; }
   figure img { width: 100%; display: block; border-radius: 7px; border: 1px solid #3c2e1b; }
   figcaption { color: #bda987; font-size: 11px; margin-top: 5px; }
@@ -47501,6 +47647,7 @@ ${xrefOffset}
       const label = document.querySelector(".transform-space-toggle .toggle-label");
       if (checkbox) checkbox.checked = this.controlMode === "camera";
       if (label) label.textContent = this.controlMode === "camera" ? "Camera" : "Scene";
+      document.getElementById("camera-nudge")?.classList.toggle("hidden", this.controlMode !== "camera");
       this.renderer?.domElement && (this.renderer.domElement.style.cursor = "default");
       this.ui?.showNotification?.(this.controlMode === "camera" ? "Camera controls: drag the view" : "Scene controls: move objects", "info");
     }
@@ -47918,9 +48065,17 @@ ${xrefOffset}
         if (target !== this.selectedObject) {
           this.selectObject(target);
         }
+      } else {
+        this.deselect();
       }
     }
     selectObject(obj) {
+      let characterRoot = obj;
+      while (characterRoot && characterRoot !== this.scene) {
+        if (characterRoot.userData?.type === "character") break;
+        characterRoot = characterRoot.parent;
+      }
+      if (characterRoot?.userData?.type === "character") obj = characterRoot;
       if (obj.userData.name && obj.parent.userData.name && obj.parent.userData.name.includes("Joint")) {
         this.selectedObject = obj.parent;
       } else {
@@ -48255,11 +48410,11 @@ ${xrefOffset}
     addDefaultTestObjects() {
       const floor = this.staging.place("architecture", "floor", { params: { width: 12, depth: 12 } });
       if (floor) floor.position.set(0, 0, 0);
-      const backWall = this.staging.place("architecture", "wall-straight", { params: { length: 12, height: 3 } });
-      if (backWall) backWall.position.set(0, 0, -6);
-      const sideWall = this.staging.place("architecture", "wall-straight", { params: { length: 12, height: 3 } });
+      const backWall = this.staging.place("architecture", "wall-straight", { params: { length: 8, height: 5.4 } });
+      if (backWall) backWall.position.set(-2, 0, -6);
+      const sideWall = this.staging.place("architecture", "wall-straight", { params: { length: 8, height: 5.4 } });
       if (sideWall) {
-        sideWall.position.set(-6, 0, 0);
+        sideWall.position.set(-6, 0, -2);
         sideWall.rotation.y = Math.PI / 2;
       }
       this.staging.place("figure", "figure-standing");

@@ -490,6 +490,9 @@ class StageApp {
         if (checkbox) checkbox.checked = this.controlMode === 'camera';
         if (label) label.textContent = this.controlMode === 'camera' ? 'Camera' : 'Scene';
 
+        // Camera nudge tools belong to camera control mode only.
+        document.getElementById('camera-nudge')?.classList.toggle('hidden', this.controlMode !== 'camera');
+
         this.renderer?.domElement && (this.renderer.domElement.style.cursor = 'default');
         this.ui?.showNotification?.(this.controlMode === 'camera' ? 'Camera controls: drag the view' : 'Scene controls: move objects', 'info');
     }
@@ -1041,10 +1044,24 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
             if (target !== this.selectedObject) {
                 this.selectObject(target);
             }
+        } else {
+            // Clicking empty space clears the selection immediately, so the
+            // next click can select a different object without fighting the
+            // previous transform gizmo.
+            this.deselect();
         }
     }
 
     selectObject(obj) {
+        // Always resolve a character mesh/bone up to the character root so the
+        // pose controls in the properties panel are available.
+        let characterRoot = obj;
+        while (characterRoot && characterRoot !== this.scene) {
+            if (characterRoot.userData?.type === 'character') break;
+            characterRoot = characterRoot.parent;
+        }
+        if (characterRoot?.userData?.type === 'character') obj = characterRoot;
+
         // Special Handling: Limb selection should select the Joint (parent)
         if (obj.userData.name && obj.parent.userData.name && obj.parent.userData.name.includes('Joint')) {
             this.selectedObject = obj.parent;
@@ -1468,12 +1485,12 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         const floor = this.staging.place('architecture', 'floor', { params: { width: 12, depth: 12 } });
         if (floor) floor.position.set(0, 0, 0);
 
-        const backWall = this.staging.place('architecture', 'wall-straight', { params: { length: 12, height: 3 } });
-        if (backWall) backWall.position.set(0, 0, -6);
+        const backWall = this.staging.place('architecture', 'wall-straight', { params: { length: 8, height: 5.4 } });
+        if (backWall) backWall.position.set(-2, 0, -6);
 
-        const sideWall = this.staging.place('architecture', 'wall-straight', { params: { length: 12, height: 3 } });
+        const sideWall = this.staging.place('architecture', 'wall-straight', { params: { length: 8, height: 5.4 } });
         if (sideWall) {
-            sideWall.position.set(-6, 0, 0);
+            sideWall.position.set(-6, 0, -2);
             sideWall.rotation.y = Math.PI / 2;
         }
 
