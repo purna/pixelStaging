@@ -39988,6 +39988,29 @@
       setTimeout(() => URL.revokeObjectURL(url), 1e3);
       this.app.ui?.showNotification("Scene exported as JS!", "success");
     }
+    /** Convert userData to plain JSON-safe data without Three.js/circular references. */
+    _sanitizeUserData(userData) {
+      const skip = /* @__PURE__ */ new Set(["rigRef", "helper", "manager", "mixer", "actions", "poser"]);
+      const walk = (value, depth = 0) => {
+        if (value == null) return value;
+        const type = typeof value;
+        if (type === "string" || type === "number" || type === "boolean") return value;
+        if (type === "function" || type === "symbol" || type === "bigint") return void 0;
+        if (depth > 2) return void 0;
+        if (Array.isArray(value)) {
+          return value.map((item) => walk(item, depth + 1)).filter((item) => item !== void 0);
+        }
+        if (value.isObject3D || value.isTexture || value.isMaterial) return void 0;
+        const output = {};
+        for (const [key, child] of Object.entries(value)) {
+          if (skip.has(key)) continue;
+          const safe = walk(child, depth + 1);
+          if (safe !== void 0) output[key] = safe;
+        }
+        return output;
+      };
+      return walk(userData) || {};
+    }
     /** Serialize the scene into a restorable snapshot (used for scene saving). */
     serializeCurrentScene() {
       const data = [];
@@ -40001,7 +40024,7 @@
             rotation: { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z },
             scale: { x: obj.scale.x, y: obj.scale.y, z: obj.scale.z },
             visible: obj.visible,
-            userData: { ...obj.userData }
+            userData: this._sanitizeUserData(obj.userData)
           };
           if (obj.userData.type === "shape" || obj.userData.type === "shape2d") {
             item.shapeType = obj.userData.shapeType;
@@ -40026,7 +40049,10 @@
               }
             });
           } else if (obj.userData.type === "staging" && obj.userData.staging) {
-            item.staging = { ...obj.userData.staging };
+            item.staging = this._sanitizeUserData(obj.userData.staging);
+          } else if (obj.userData.type === "character") {
+            item.characterType = obj.userData.characterType || "xbot";
+            item.pose = obj.userData.currentPose || null;
           }
           data.push(item);
         }
