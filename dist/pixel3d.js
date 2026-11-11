@@ -34482,6 +34482,105 @@
         });
       });
     }
+    openPoseEditor(model) {
+      const char = this.app.characterManager?.findCharacter?.(model);
+      if (!char?.poser) {
+        this.showNotification("Pose editor is unavailable for this character", "error");
+        return;
+      }
+      const modal = document.getElementById("pose-editor-modal");
+      const boneSelect = document.getElementById("pose-bone-select");
+      const nameInput = document.getElementById("pose-custom-name");
+      if (!modal || !boneSelect) return;
+      this.poseEditor = {
+        model: char.model,
+        poser: char.poser,
+        boneName: null,
+        values: /* @__PURE__ */ new Map()
+      };
+      const bones = [...char.poser.bones.keys()].sort();
+      boneSelect.innerHTML = bones.map((name) => `<option value="${name}">${name}</option>`).join("");
+      nameInput.value = "";
+      modal.classList.add("open");
+      modal.style.display = "flex";
+      const selectBone = (name) => {
+        this.poseEditor.boneName = name;
+        const bone = char.poser.bones.get(name);
+        const rest = char.poser.rest.get(name);
+        const delta = bone.quaternion.clone().multiply(rest.clone().invert());
+        const euler = new Euler().setFromQuaternion(delta, "ZYX");
+        const values = {
+          x: Math.round(MathUtils.radToDeg(euler.x)),
+          y: Math.round(MathUtils.radToDeg(euler.y)),
+          z: Math.round(MathUtils.radToDeg(euler.z))
+        };
+        this.poseEditor.values.set(name, values);
+        document.getElementById("pose-bone-x").value = values.x;
+        document.getElementById("pose-bone-y").value = values.y;
+        document.getElementById("pose-bone-z").value = values.z;
+        document.getElementById("pose-bone-x-val").textContent = `${values.x}\xB0`;
+        document.getElementById("pose-bone-y-val").textContent = `${values.y}\xB0`;
+        document.getElementById("pose-bone-z-val").textContent = `${values.z}\xB0`;
+      };
+      boneSelect.onchange = () => selectBone(boneSelect.value);
+      const applyBone = () => {
+        if (!this.poseEditor?.boneName) return;
+        const values = {
+          x: parseFloat(document.getElementById("pose-bone-x").value),
+          y: parseFloat(document.getElementById("pose-bone-y").value),
+          z: parseFloat(document.getElementById("pose-bone-z").value)
+        };
+        this.poseEditor.values.set(this.poseEditor.boneName, values);
+        document.getElementById("pose-bone-x-val").textContent = `${Math.round(values.x)}\xB0`;
+        document.getElementById("pose-bone-y-val").textContent = `${Math.round(values.y)}\xB0`;
+        document.getElementById("pose-bone-z-val").textContent = `${Math.round(values.z)}\xB0`;
+        this.poseEditor.poser.setBone(this.poseEditor.boneName, values.x, values.y, values.z);
+      };
+      ["pose-bone-x", "pose-bone-y", "pose-bone-z"].forEach((id) => {
+        document.getElementById(id).oninput = applyBone;
+      });
+      document.getElementById("pose-editor-reset-bone").onclick = () => {
+        if (!this.poseEditor?.boneName) return;
+        const values = { x: 0, y: 0, z: 0 };
+        this.poseEditor.values.set(this.poseEditor.boneName, values);
+        document.getElementById("pose-bone-x").value = 0;
+        document.getElementById("pose-bone-y").value = 0;
+        document.getElementById("pose-bone-z").value = 0;
+        document.getElementById("pose-bone-x-val").textContent = "0\xB0";
+        document.getElementById("pose-bone-y-val").textContent = "0\xB0";
+        document.getElementById("pose-bone-z-val").textContent = "0\xB0";
+        this.poseEditor.poser.setBone(this.poseEditor.boneName, 0, 0, 0);
+      };
+      document.getElementById("pose-editor-save").onclick = () => {
+        const name = nameInput.value.trim();
+        if (!name) {
+          this.showNotification("Give the pose a name first", "error");
+          return;
+        }
+        const key = this.app.characterManager.saveCustomPose(this.poseEditor.model, name);
+        if (!key) {
+          this.showNotification("Could not save pose", "error");
+          return;
+        }
+        this.showNotification(`Pose \u201C${name}\u201D saved`, "success");
+        this.closePoseEditor();
+        this.renderPropertiesPanel(this.app.selectedObject);
+      };
+      document.getElementById("pose-editor-close").onclick = () => this.closePoseEditor();
+      document.getElementById("pose-editor-cancel").onclick = () => this.closePoseEditor();
+      modal.onclick = (event) => {
+        if (event.target === modal) this.closePoseEditor();
+      };
+      selectBone(bones[0]);
+    }
+    closePoseEditor() {
+      const modal = document.getElementById("pose-editor-modal");
+      if (modal) {
+        modal.classList.remove("open");
+        modal.style.display = "none";
+      }
+      this.poseEditor = null;
+    }
     setupCameraTab() {
       const cameras = this.app.staging?.cameras;
       if (!cameras) return;
@@ -37341,11 +37440,8 @@
       this.renderHierarchyPanel();
       const infoBox = document.getElementById("selection-info");
       if (infoBox) {
-        if (selectedObject) {
-          infoBox.classList.remove("hidden");
-        } else {
-          infoBox.classList.add("hidden");
-        }
+        const showInfo = !!selectedObject && this.app.controlMode === "scene";
+        infoBox.classList.toggle("hidden", !showInfo);
       }
       document.getElementById("floating-camera-controls")?.classList.add("hidden");
       this.renderPropertiesPanel(selectedObject);
@@ -37500,7 +37596,7 @@
           const select = document.createElement("select");
           select.className = "character-pose-select";
           select.innerHTML = poses.map((pose) => {
-            const label = pose.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+            const label = pose.startsWith("custom:") ? `\u2605 ${pose.slice(7)}` : pose.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
             return `<option value="${pose}"${characterModel.userData.currentPose === pose ? " selected" : ""}>${label}</option>`;
           }).join("");
           select.onchange = () => {
@@ -37515,8 +37611,17 @@
             this.app.characterManager.resetPose(characterModel);
             select.value = "t_pose";
           };
-          row.append(select, reset);
+          row.appendChild(select);
           poseGroup.appendChild(row);
+          const poseActions = document.createElement("div");
+          poseActions.className = "character-pose-actions";
+          const editPose = document.createElement("button");
+          editPose.type = "button";
+          editPose.className = "character-pose-edit";
+          editPose.textContent = "Edit pose\u2026";
+          editPose.onclick = () => this.openPoseEditor(characterModel);
+          poseActions.append(editPose, reset);
+          poseGroup.appendChild(poseActions);
           this.propsContent.appendChild(poseGroup);
         }
       }
@@ -42261,12 +42366,23 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       this.loader = new GLTFLoader();
       this.poseLibrary = null;
       this._poseLibraryPromise = null;
+      this.customPoses = this.loadCustomPoses();
       this.models = {
         "xbot": "./Art/Xbot.glb",
         "ybot": "./Art/Ybot.glb",
         "xbot_child": "./Art/Xbot_child.glb",
         "ybot_child": "./Art/Ybot_child.glb"
       };
+    }
+    loadCustomPoses() {
+      try {
+        return JSON.parse(localStorage.getItem("pixel3d-custom-poses") || "{}");
+      } catch (error) {
+        return {};
+      }
+    }
+    persistCustomPoses() {
+      localStorage.setItem("pixel3d-custom-poses", JSON.stringify(this.customPoses));
     }
     async loadPoseLibrary() {
       if (this.poseLibrary) return this.poseLibrary;
@@ -42390,11 +42506,33 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       if (!char?.poser) return false;
       if (char.mixer) char.mixer.stopAllAction();
       Object.values(char.actions || {}).forEach((action) => action.stop?.());
-      char.poser.apply(poseName, { duration });
+      if (poseName.startsWith("custom:")) {
+        const name = poseName.slice(7);
+        const characterType = char.model.userData.characterType;
+        const custom = this.customPoses[characterType]?.[name];
+        if (!custom) return false;
+        char.poser.applyPose(custom, { duration });
+      } else {
+        char.poser.apply(poseName, { duration });
+      }
       char.pose = poseName;
       char.state = "pose";
       char.model.userData.currentPose = poseName;
       return true;
+    }
+    saveCustomPose(model, name) {
+      const char = this.findCharacter(model);
+      if (!char?.poser) return null;
+      const clean = String(name || "").trim();
+      if (!clean) return null;
+      const characterType = char.model.userData.characterType || "character";
+      if (!this.customPoses[characterType]) this.customPoses[characterType] = {};
+      this.customPoses[characterType][clean] = char.poser.getPose();
+      this.persistCustomPoses();
+      const key = `custom:${clean}`;
+      char.pose = key;
+      char.model.userData.currentPose = key;
+      return key;
     }
     resetPose(model) {
       const char = this.findCharacter(model);
@@ -42408,7 +42546,10 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
     }
     listPoses(model) {
       const char = this.findCharacter(model);
-      return char?.poser?.list?.() || [];
+      if (!char?.poser) return [];
+      const characterType = char.model.userData.characterType || "character";
+      const customs = Object.keys(this.customPoses[characterType] || {}).map((name) => `custom:${name}`);
+      return [...char.poser.list(), ...customs];
     }
     // --- Blending Logic from character.html ---
     setAnimation(model, targetState) {
@@ -47706,6 +47847,7 @@ ${xrefOffset}
       if (checkbox) checkbox.checked = this.controlMode === "camera";
       if (label) label.textContent = this.controlMode === "camera" ? "Camera" : "Scene";
       document.getElementById("camera-nudge")?.classList.toggle("hidden", this.controlMode !== "camera");
+      document.getElementById("selection-info")?.classList.toggle("hidden", !(this.selectedObject && this.controlMode === "scene"));
       this.renderer?.domElement && (this.renderer.domElement.style.cursor = "default");
       this.ui?.showNotification?.(this.controlMode === "camera" ? "Camera controls: drag the view" : "Scene controls: move objects", "info");
     }

@@ -1254,6 +1254,50 @@ Block actors, props and architecture">
 
         <!-- AUDIO ASSET MODAL -->
 
+
+        <!-- POSE EDITOR MODAL -->
+        <div id="pose-editor-modal" class="pose-editor-modal">
+            <div class="pose-editor-window">
+                <div class="pose-editor-header">
+                    <div>
+                        <div class="pose-editor-eyebrow">Character</div>
+                        <h3>Pose Editor</h3>
+                    </div>
+                    <button id="pose-editor-close" class="pose-editor-close" title="Close">×</button>
+                </div>
+                <div class="pose-editor-body">
+                    <label class="pose-editor-field">
+                        <span>Bone</span>
+                        <select id="pose-bone-select"></select>
+                    </label>
+                    <div class="pose-editor-axis">
+                        <label>X</label>
+                        <input type="range" id="pose-bone-x" min="-180" max="180" step="1" value="0">
+                        <b id="pose-bone-x-val">0°</b>
+                    </div>
+                    <div class="pose-editor-axis">
+                        <label>Y</label>
+                        <input type="range" id="pose-bone-y" min="-180" max="180" step="1" value="0">
+                        <b id="pose-bone-y-val">0°</b>
+                    </div>
+                    <div class="pose-editor-axis">
+                        <label>Z</label>
+                        <input type="range" id="pose-bone-z" min="-180" max="180" step="1" value="0">
+                        <b id="pose-bone-z-val">0°</b>
+                    </div>
+                    <button id="pose-editor-reset-bone" class="pose-editor-secondary">Reset bone</button>
+                    <div class="pose-editor-save-row">
+                        <input type="text" id="pose-custom-name" placeholder="New pose name…">
+                        <button id="pose-editor-save" class="pose-editor-save">Save pose</button>
+                    </div>
+                    <p class="pose-editor-help">Move the character bone sliders. Saved poses are stored in this browser and appear in the Pose dropdown.</p>
+                </div>
+                <div class="pose-editor-footer">
+                    <button id="pose-editor-cancel" class="pose-editor-secondary">Close</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Self-contained app bundle: works over http:// and when index.html is opened directly. -->
         <script src="dist/pixel3d.js?v=20261006-1"></script>
 

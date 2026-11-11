@@ -6829,3 +6829,156 @@ input[type="number"].color-slider-value-compact {
 .camera-nudge.hidden {
     display: none !important;
 }
+
+/* Custom pose buttons and editor modal */
+.character-pose-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 7px;
+}
+
+.character-pose-edit,
+.character-pose-reset {
+    flex: 1;
+}
+
+.character-pose-edit {
+    border: 1px solid #4b4b63;
+    background: #2a2a42;
+    color: #e8e8f0;
+    border-radius: 5px;
+    padding: 7px 10px;
+    cursor: pointer;
+    font-size: 0.72rem;
+}
+
+.character-pose-edit:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.pose-editor-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 8, 16, 0.62);
+    z-index: 5000;
+}
+
+.pose-editor-modal.open { display: flex; }
+
+.pose-editor-window {
+    width: min(460px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    background: #141426;
+    border: 1px solid #454560;
+    border-radius: 12px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+    color: #eef2ff;
+}
+
+.pose-editor-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pose-editor-header h3 { margin: 2px 0 0; font-size: 1.1rem; }
+
+.pose-editor-eyebrow {
+    color: #8fa3b8;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.pose-editor-close {
+    background: none;
+    border: 0;
+    color: #b9c4d6;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.pose-editor-body {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+}
+
+.pose-editor-field {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    align-items: center;
+    gap: 8px;
+    color: #b9c4d6;
+    font-size: 12px;
+}
+
+.pose-editor-field select,
+.pose-editor-save-row input {
+    background: #1e1e34;
+    border: 1px solid #454560;
+    border-radius: 6px;
+    color: #f8fbff;
+    padding: 8px;
+    font-size: 12px;
+}
+
+.pose-editor-axis {
+    display: grid;
+    grid-template-columns: 20px 1fr 44px;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #b9c4d6;
+}
+
+.pose-editor-axis input { accent-color: #00ff41; }
+
+.pose-editor-axis b {
+    text-align: right;
+    color: #f8fbff;
+    font-variant-numeric: tabular-nums;
+}
+
+.pose-editor-secondary,
+.pose-editor-save {
+    border: 1px solid #454560;
+    background: #2a2a42;
+    color: #e8e8f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.pose-editor-save {
+    background: #00ff41;
+    border-color: #00ff41;
+    color: #07110a;
+    font-weight: 700;
+}
+
+.pose-editor-save-row { display: flex; gap: 8px; }
+.pose-editor-save-row input { flex: 1; min-width: 0; }
+
+.pose-editor-help {
+    margin: 0;
+    color: #8fa3b8;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.pose-editor-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}

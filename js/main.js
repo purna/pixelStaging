@@ -499,6 +499,7 @@ class StageApp {
 
         // Camera nudge tools belong to camera control mode only.
         document.getElementById('camera-nudge')?.classList.toggle('hidden', this.controlMode !== 'camera');
+        document.getElementById('selection-info')?.classList.toggle('hidden', !(this.selectedObject && this.controlMode === 'scene'));
 
         this.renderer?.domElement && (this.renderer.domElement.style.cursor = 'default');
         this.ui?.showNotification?.(this.controlMode === 'camera' ? 'Camera controls: drag the view' : 'Scene controls: move objects', 'info');

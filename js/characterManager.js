@@ -9,6 +9,7 @@ export class CharacterManager {
         this.loader = new GLTFLoader();
         this.poseLibrary = null;
         this._poseLibraryPromise = null;
+        this.customPoses = this.loadCustomPoses();
         
         // Models from Three.js examples (Mixamo Xbot/Ybot)
         this.models = {
@@ -17,6 +18,18 @@ export class CharacterManager {
             'xbot_child': './Art/Xbot_child.glb',
             'ybot_child': './Art/Ybot_child.glb'
         };
+    }
+
+    loadCustomPoses() {
+        try {
+            return JSON.parse(localStorage.getItem('pixel3d-custom-poses') || '{}');
+        } catch (error) {
+            return {};
+        }
+    }
+
+    persistCustomPoses() {
+        localStorage.setItem('pixel3d-custom-poses', JSON.stringify(this.customPoses));
     }
 
     async loadPoseLibrary() {
@@ -171,11 +184,36 @@ export class CharacterManager {
         // actions before applying a static pose.
         if (char.mixer) char.mixer.stopAllAction();
         Object.values(char.actions || {}).forEach(action => action.stop?.());
-        char.poser.apply(poseName, { duration });
+
+        if (poseName.startsWith('custom:')) {
+            const name = poseName.slice(7);
+            const characterType = char.model.userData.characterType;
+            const custom = this.customPoses[characterType]?.[name];
+            if (!custom) return false;
+            char.poser.applyPose(custom, { duration });
+        } else {
+            char.poser.apply(poseName, { duration });
+        }
+
         char.pose = poseName;
         char.state = 'pose';
         char.model.userData.currentPose = poseName;
         return true;
+    }
+
+    saveCustomPose(model, name) {
+        const char = this.findCharacter(model);
+        if (!char?.poser) return null;
+        const clean = String(name || '').trim();
+        if (!clean) return null;
+        const characterType = char.model.userData.characterType || 'character';
+        if (!this.customPoses[characterType]) this.customPoses[characterType] = {};
+        this.customPoses[characterType][clean] = char.poser.getPose();
+        this.persistCustomPoses();
+        const key = `custom:${clean}`;
+        char.pose = key;
+        char.model.userData.currentPose = key;
+        return key;
     }
 
     resetPose(model) {
@@ -191,7 +229,10 @@ export class CharacterManager {
 
     listPoses(model) {
         const char = this.findCharacter(model);
-        return char?.poser?.list?.() || [];
+        if (!char?.poser) return [];
+        const characterType = char.model.userData.characterType || 'character';
+        const customs = Object.keys(this.customPoses[characterType] || {}).map(name => `custom:${name}`);
+        return [...char.poser.list(), ...customs];
     }
 
     // --- Blending Logic from character.html ---
