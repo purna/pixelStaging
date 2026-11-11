@@ -194,6 +194,9 @@ export class LayerManager {
             if (obj.userData.gender === 'female') iconClass = 'fa-female';
             else iconClass = 'fa-male';
         }
+        else if (obj.userData.type === 'character') {
+            iconClass = 'fa-person';
+        }
         else if (obj.userData.type === 'light') {
             switch(obj.userData.lightType) {
                 case 'point': iconClass = 'fa-lightbulb'; break;
@@ -254,6 +257,7 @@ export class LayerManager {
         // Determine Name
         let name = obj.userData.name || obj.userData.shapeType || obj.userData.lightType || 'Object';
         if (obj.userData.type === 'figure') name = obj.userData.gender + ' Figure';
+        else if (obj.userData.type === 'character') name = obj.userData.characterType === 'ybot' ? 'Male Character' : 'Female Character';
         else if (obj.userData.type === 'staging') {
             const staging = obj.userData.staging;
             if (staging) {

@@ -30,8 +30,38 @@ export const figurePresets = {
     'figure-child': {
         label: 'Child',
         defaultColor: 0x4ecdc4,
-        params: { pose: 'standing', scale: 'child' },
+        params: { pose: 'standing', scale: 'child', variant: 'child' },
         create: (params, material) => buildFigure(params.pose || 'standing', true, material)
+    },
+    'figure-boy': {
+        label: 'Boy',
+        defaultColor: 0x4e9bff,
+        params: { pose: 'standing', scale: 'child', variant: 'boy' },
+        create: (params, material) => buildFigure('standing', true, material)
+    },
+    'figure-girl': {
+        label: 'Girl',
+        defaultColor: 0xff8fcf,
+        params: { pose: 'standing', scale: 'child', variant: 'girl' },
+        create: (params, material) => buildFigure('standing', true, material)
+    },
+    'figure-child-seated': {
+        label: 'Child (seated)',
+        defaultColor: 0x4ecdc4,
+        params: { pose: 'seated', scale: 'child', variant: 'child' },
+        create: (params, material) => buildFigure('seated', true, material)
+    },
+    'figure-boy-seated': {
+        label: 'Boy (seated)',
+        defaultColor: 0x4e9bff,
+        params: { pose: 'seated', scale: 'child', variant: 'boy' },
+        create: (params, material) => buildFigure('seated', true, material)
+    },
+    'figure-girl-seated': {
+        label: 'Girl (seated)',
+        defaultColor: 0xff8fcf,
+        params: { pose: 'seated', scale: 'child', variant: 'girl' },
+        create: (params, material) => buildFigure('seated', true, material)
     }
 };
 

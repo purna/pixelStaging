@@ -40832,6 +40832,8 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       if (obj.userData.type === "figure") {
         if (obj.userData.gender === "female") iconClass = "fa-female";
         else iconClass = "fa-male";
+      } else if (obj.userData.type === "character") {
+        iconClass = "fa-person";
       } else if (obj.userData.type === "light") {
         switch (obj.userData.lightType) {
           case "point":
@@ -40920,6 +40922,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       }
       let name = obj.userData.name || obj.userData.shapeType || obj.userData.lightType || "Object";
       if (obj.userData.type === "figure") name = obj.userData.gender + " Figure";
+      else if (obj.userData.type === "character") name = obj.userData.characterType === "ybot" ? "Male Character" : "Female Character";
       else if (obj.userData.type === "staging") {
         const staging = obj.userData.staging;
         if (staging) {
@@ -43641,8 +43644,38 @@ ${elements.join("\n")}
     "figure-child": {
       label: "Child",
       defaultColor: 5164484,
-      params: { pose: "standing", scale: "child" },
+      params: { pose: "standing", scale: "child", variant: "child" },
       create: (params, material) => buildFigure(params.pose || "standing", true, material)
+    },
+    "figure-boy": {
+      label: "Boy",
+      defaultColor: 5151743,
+      params: { pose: "standing", scale: "child", variant: "boy" },
+      create: (params, material) => buildFigure("standing", true, material)
+    },
+    "figure-girl": {
+      label: "Girl",
+      defaultColor: 16748495,
+      params: { pose: "standing", scale: "child", variant: "girl" },
+      create: (params, material) => buildFigure("standing", true, material)
+    },
+    "figure-child-seated": {
+      label: "Child (seated)",
+      defaultColor: 5164484,
+      params: { pose: "seated", scale: "child", variant: "child" },
+      create: (params, material) => buildFigure("seated", true, material)
+    },
+    "figure-boy-seated": {
+      label: "Boy (seated)",
+      defaultColor: 5151743,
+      params: { pose: "seated", scale: "child", variant: "boy" },
+      create: (params, material) => buildFigure("seated", true, material)
+    },
+    "figure-girl-seated": {
+      label: "Girl (seated)",
+      defaultColor: 16748495,
+      params: { pose: "seated", scale: "child", variant: "girl" },
+      create: (params, material) => buildFigure("seated", true, material)
     }
   };
   var ADULT = { head: 0.22, torsoH: 0.62, torsoW: 0.34, legH: 0.86, armH: 0.55, hipY: 0.9 };
@@ -47429,7 +47462,7 @@ ${xrefOffset}
     }
     addToScene(obj) {
       this.scene.add(obj);
-      if (["shape", "shape2d", "light", "staging"].includes(obj.userData.type)) {
+      if (["shape", "shape2d", "light", "staging", "character"].includes(obj.userData.type)) {
         this.objects.push(obj);
       } else if (obj.userData.type === "figure") {
         this.objects.push(obj);
@@ -47562,7 +47595,7 @@ ${xrefOffset}
       }
       const allSceneObjects = [];
       this.scene.traverse((obj) => {
-        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging")) {
+        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging" || obj.userData.type === "character")) {
           allSceneObjects.push(obj);
         }
       });
@@ -47618,7 +47651,7 @@ ${xrefOffset}
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const allSceneObjects = [];
       this.scene.traverse((obj) => {
-        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging")) {
+        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging" || obj.userData.type === "character")) {
           allSceneObjects.push(obj);
         }
       });
@@ -47652,7 +47685,7 @@ ${xrefOffset}
       }
       const allSceneObjects = [];
       this.scene.traverse((obj) => {
-        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging")) {
+        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging" || obj.userData.type === "character")) {
           allSceneObjects.push(obj);
         }
       });
@@ -47660,7 +47693,7 @@ ${xrefOffset}
       if (intersects2.length > 0) {
         let target = intersects2[0].object;
         while (target.parent && target.parent !== this.scene) {
-          if (target.userData && (target.userData.type === "shape" || target.userData.type === "shape2d" || target.userData.type === "light" || target.userData.type === "figure" || target.userData.type === "staging")) {
+          if (target.userData && (target.userData.type === "shape" || target.userData.type === "shape2d" || target.userData.type === "light" || target.userData.type === "figure" || target.userData.type === "staging" || target.userData.type === "character")) {
             break;
           }
           target = target.parent;

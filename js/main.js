@@ -722,7 +722,7 @@ class StageApp {
     addToScene(obj) {
         this.scene.add(obj);
         // Add to interactable objects list if it's a root selectable item
-        if (['shape', 'shape2d', 'light', 'staging'].includes(obj.userData.type)) {
+        if (['shape', 'shape2d', 'light', 'staging', 'character'].includes(obj.userData.type)) {
             this.objects.push(obj);
         } else if (obj.userData.type === 'figure') {
             this.objects.push(obj); // Store the group as the main object
@@ -893,7 +893,7 @@ class StageApp {
         // Track hover for scene objects
         const allSceneObjects = [];
         this.scene.traverse((obj) => {
-            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging')) {
+            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging' || obj.userData.type === 'character')) {
                 allSceneObjects.push(obj);
             }
         });
@@ -965,7 +965,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
         const allSceneObjects = [];
         this.scene.traverse((obj) => {
-            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging')) {
+            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging' || obj.userData.type === 'character')) {
                 allSceneObjects.push(obj);
             }
         });
@@ -1019,7 +1019,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 // Not over gizmo, check if we clicked on an object
         const allSceneObjects = [];
         this.scene.traverse((obj) => {
-            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging')) {
+            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging' || obj.userData.type === 'character')) {
                 allSceneObjects.push(obj);
             }
         });
@@ -1031,7 +1031,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
             // Walk up hierarchy to find root selectable object
             while (target.parent && target.parent !== this.scene) {
-                if (target.userData && (target.userData.type === 'shape' || target.userData.type === 'shape2d' || target.userData.type === 'light' || target.userData.type === 'figure' || target.userData.type === 'staging')) {
+                if (target.userData && (target.userData.type === 'shape' || target.userData.type === 'shape2d' || target.userData.type === 'light' || target.userData.type === 'figure' || target.userData.type === 'staging' || target.userData.type === 'character')) {
                     break;
                 }
                 target = target.parent;
