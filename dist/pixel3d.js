@@ -37569,14 +37569,15 @@
     toggleSubmenu(btn) {
       const submenu = btn.querySelector(".tool-submenu");
       if (!submenu) return;
-      const isOpen = submenu.style.display === "grid";
+      const isOpen = !!submenu.style.display && submenu.style.display !== "none";
       this.closeAllSubmenus();
       if (!isOpen) {
         const btnRect = btn.getBoundingClientRect();
         const topOffset = btnRect.top + btnRect.height / 2 - 24;
-        submenu.style.display = "grid";
+        submenu.style.display = submenu.classList.contains("staging-submenu") ? "flex" : "grid";
         submenu.style.top = `${topOffset}px`;
         submenu.style.setProperty("--submenu-top", `${topOffset}px`);
+        btn.classList.add("active");
         this.activeSubmenu = submenu;
       }
     }
@@ -37600,6 +37601,7 @@
       document.querySelectorAll(".tool-submenu").forEach((menu) => {
         menu.style.display = "none";
       });
+      document.querySelectorAll(".menu-parent").forEach((btn) => btn.classList.remove("active"));
       this.activeSubmenu = null;
     }
     togglePropertiesPanel() {
@@ -48352,11 +48354,6 @@ ${xrefOffset}
       app.ui?.showNotification?.("No shots to report", "error");
       return;
     }
-    const reportWindow = window.open("", "_blank");
-    if (!reportWindow) {
-      app.ui?.showNotification?.("Allow pop-ups to open the storyboard report", "error");
-      return;
-    }
     const sections = storyboard.map(({ sceneName, sceneNotes, sceneViews, item, frames }) => {
       const shot = item.shot;
       const start = frames[0]?.position?.map((v) => v.toFixed(2)).join(", ") || "\u2014";
@@ -48411,7 +48408,7 @@ ${xrefOffset}
             </section>
         `;
     }).join("");
-    reportWindow.document.write(`<!doctype html>
+    const html = `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -48444,12 +48441,33 @@ ${xrefOffset}
   .notes h3 { margin: 0 0 5px; font-size: 12px; color: #00ff41; }
   .notes p { margin: 0; color: #e0e7ff; line-height: 1.45; white-space: pre-wrap; }
   @media print {
-    body { background: white; color: #111; }
-    .wrap { max-width: none; padding: 12mm; }
+    @page { margin: 9mm; }
+    html, body { background: white; color: #111; }
+    body { font-size: 9pt; }
+    .wrap { max-width: none; margin: 0; padding: 0; }
+    .top { display: none; }
+    h1 { margin-bottom: 1mm; font-size: 17pt; }
+    .sub { font-size: 8.5pt; }
     .print { display: none; }
-    .shot { background: white; border-color: #ccc; }
-    .shot header { border-color: #ddd; }
-    .meta-grid div { background: #f7f7f7; border-color: #ddd; }
+    .shot { break-inside: auto; page-break-inside: auto; background: white; border-color: #bbb; border-radius: 6px; padding: 3.5mm; margin-bottom: 3.5mm; }
+    .shot header { break-inside: avoid; page-break-inside: avoid; padding-bottom: 2mm; margin-bottom: 2.5mm; border-color: #ddd; }
+    .eyebrow { font-size: 7pt; }
+    h2 { margin-top: 1mm; font-size: 13pt; }
+    .badge { padding: 1mm 2mm; font-size: 7.5pt; }
+    .frames { gap: 2.5mm; margin-bottom: 2.5mm; break-inside: avoid; page-break-inside: avoid; }
+    .frames figure img { max-height: 48mm !important; object-fit: contain; border-radius: 4px; border-color: #bbb; }
+    .frames.three figure img { max-height: 28mm !important; }
+    .scene-views { margin-bottom: 2.5mm; break-inside: avoid; page-break-inside: avoid; }
+    .scene-views h3 { margin-bottom: 1.5mm; font-size: 8pt; }
+    figcaption { margin-top: 1mm; font-size: 7pt; }
+    .meta-grid { gap: 1.5mm; margin-bottom: 2.5mm; break-inside: avoid; page-break-inside: avoid; }
+    .meta-grid div { padding: 1.2mm; background: #f7f7f7; border-color: #ddd; }
+    .meta-grid span { margin-bottom: 0.5mm; font-size: 6.5pt; }
+    .meta-grid b { font-size: 8pt; }
+    .notes { break-inside: avoid; page-break-inside: avoid; }
+    .notes h3 { margin-bottom: 1mm; font-size: 8pt; }
+    .notes p { font-size: 8pt; line-height: 1.3; }
+    .notes h3 + p + h3 { margin-top: 1.5mm; }
     .notes h3, .eyebrow { color: #8a5a00; }
     .sub, .badge, figcaption, .meta-grid span { color: #555; }
   }
@@ -48467,8 +48485,15 @@ ${xrefOffset}
   ${sections}
 </div>
 </body>
-</html>`);
-    reportWindow.document.close();
+</html>`;
+    const blobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const reportWindow = window.open(blobUrl, "_blank");
+    if (!reportWindow) {
+      URL.revokeObjectURL(blobUrl);
+      app.ui?.showNotification?.("Allow pop-ups to open the storyboard report", "error");
+      return;
+    }
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 6e4);
   }
 
   // js/main.js

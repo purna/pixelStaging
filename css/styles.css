@@ -2441,7 +2441,6 @@ input[type="color"] {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 8px;
-    display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
     z-index: 1000;
@@ -7892,7 +7891,7 @@ body.overlays-hidden #floating-camera-controls {
 
 /* Grouped staging submenu */
 .staging-submenu {
-    display: flex !important;
+    display: none;
     flex-direction: column;
     gap: 10px;
     width: 232px;

@@ -5020,7 +5020,7 @@ export class UI {
         const submenu = btn.querySelector('.tool-submenu');
         if (!submenu) return;
 
-        const isOpen = submenu.style.display === 'grid';
+        const isOpen = !!submenu.style.display && submenu.style.display !== 'none';
         this.closeAllSubmenus();
 
         if (!isOpen) {
@@ -5028,10 +5028,12 @@ export class UI {
             const btnRect = btn.getBoundingClientRect();
             const topOffset = btnRect.top + btnRect.height / 2 - 24; // Center align roughly
 
-            submenu.style.display = 'grid';
+            // The staging menu is a grouped column; the others are icon grids.
+            submenu.style.display = submenu.classList.contains('staging-submenu') ? 'flex' : 'grid';
             submenu.style.top = `${topOffset}px`;
             submenu.style.setProperty('--submenu-top', `${topOffset}px`); // For CSS custom prop if needed
 
+            btn.classList.add('active');
             this.activeSubmenu = submenu;
         }
     }
@@ -5064,6 +5066,7 @@ export class UI {
         document.querySelectorAll('.tool-submenu').forEach(menu => {
             menu.style.display = 'none';
         });
+        document.querySelectorAll('.menu-parent').forEach(btn => btn.classList.remove('active'));
         this.activeSubmenu = null;
     }
 
