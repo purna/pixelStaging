@@ -1177,6 +1177,7 @@ export class UI {
         if (this.app.setFog) {
             this.app.setFog(settings.fogEnabled, fogColor, settings.fogNear, settings.fogFar);
         }
+        this.updateSceneFogPanel(settings);
 
         // Apply ambient light
         if (this.app.setAmbientLight) {
@@ -5022,6 +5023,29 @@ export class UI {
          }
      }
 
+    updateSceneFogPanel(settings = null) {
+        const panel = document.getElementById('fog-panel-section');
+        const enabled = settings
+            ? settings.fogEnabled === true
+            : (document.getElementById('setting-fog-enabled')?.checked ?? false);
+        if (panel) panel.style.display = enabled ? '' : 'none';
+        if (!enabled) return;
+
+        const source = settings || {
+            fogColor: document.getElementById('setting-fog-color')?.value || '#2a2a4e',
+            fogNear: parseFloat(document.getElementById('setting-fog-near')?.value || '30'),
+            fogFar: parseFloat(document.getElementById('setting-fog-far')?.value || '100')
+        };
+        const toggle = document.getElementById('fog-enabled');
+        const color = document.getElementById('fog-color');
+        const near = document.getElementById('fog-near');
+        const far = document.getElementById('fog-far');
+        if (toggle) toggle.checked = true;
+        if (color && source.fogColor) color.value = source.fogColor;
+        if (near && source.fogNear != null) near.value = source.fogNear;
+        if (far && source.fogFar != null) far.value = source.fogFar;
+    }
+
     loadSettings() {
         const saved = localStorage.getItem('pixel3d-settings');
         if (saved) {
@@ -7564,6 +7588,19 @@ export class UI {
                 }
             });
         }
+
+        // Fog visibility in the Scene panel follows the settings toggle.
+        document.getElementById('setting-fog-enabled')?.addEventListener('change', (e) => {
+            this.updateSceneFogPanel({
+                fogEnabled: e.target.checked,
+                fogColor: document.getElementById('setting-fog-color')?.value || '#2a2a4e',
+                fogNear: parseFloat(document.getElementById('setting-fog-near')?.value || '30'),
+                fogFar: parseFloat(document.getElementById('setting-fog-far')?.value || '100')
+            });
+        });
+        ['setting-fog-color', 'setting-fog-near', 'setting-fog-far'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', () => this.updateSceneFogPanel());
+        });
 
         // Fog slider value displays
         const fogNearSlider = document.getElementById('setting-fog-near');
