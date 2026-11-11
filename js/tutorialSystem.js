@@ -158,6 +158,19 @@ class TutorialSystem {
             return;
         }
 
+        // Bring the relevant tab/section into view before positioning the tour.
+        if (step.controlMode && this.app.setControlMode) {
+            this.app.setControlMode(step.controlMode);
+        }
+        if (step.openTab) {
+            document.querySelector(`.right-tab[data-right-tab="${step.openTab}"]`)?.click();
+        }
+        if (step.openSection) {
+            const header = document.querySelector(`.collapsible-header[data-target="${step.openSection}"]`);
+            const content = document.getElementById(step.openSection);
+            if (header && content?.classList.contains('hidden')) header.click();
+        }
+
         this.currentTutorialStep = step;
 
         // Position tutorial based on step configuration

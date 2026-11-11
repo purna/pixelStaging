@@ -43300,12 +43300,8 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               elementId: "canvas-container",
               position: "center",
               arrowPosition: "none",
-              // No arrow for center position
-              arrowPositionOverride: "center",
-              // Arrow position along the side (center, top-third, middle-third, bottom-third)
-              marginOverride: "0",
-              heading: "Welcome to Pixel 3D!",
-              content: "This quick tutorial will guide you through the main features of the 3D Staging Studio.",
+              heading: "Welcome to Pixel Staging",
+              content: "This quick tour covers the staging workspace, cameras, shots, palettes and export tools.",
               showNext: true,
               showSkip: true
             },
@@ -43314,25 +43310,22 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               elementId: "tools-container",
               position: "left",
               arrowPosition: "right",
-              // Arrow is on the right side of the tutorial panel, points right (towards target panel)
               arrowPositionOverride: "middle-third",
-              // Arrow positioned in the middle third of the left side
               marginOverride: "20px",
-              // Additional margin for better spacing
-              heading: "Tools Panel",
-              content: "This panel contains all the tools for creating and manipulating 3D objects. You can add shapes, characters, lights, and more.",
+              heading: "Tool Library",
+              content: "The left toolbar is grouped into Select, AI, Shapes, Staging, Characters, Lights and Overlays. Staging now groups actors, children, furniture, architecture and primitives.",
               showNext: true,
               showSkip: true
             },
             {
-              id: "layers",
+              id: "hierarchy",
               elementId: "hierarchy-list",
               position: "right",
               arrowPosition: "left",
               arrowPositionOverride: "top-third",
               marginOverride: "60px",
               heading: "Hierarchy",
-              content: "Here you can see all the objects in your scene. Select objects to edit their properties or organize them into groups.",
+              content: "The Hierarchy lists everything in the scene. Click an item to select it and automatically frame it in the viewport.",
               showNext: true,
               showSkip: true
             },
@@ -43341,38 +43334,105 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               elementId: "props-content",
               position: "right",
               arrowPosition: "left",
-              // Arrow is on the left side of the tutorial panel, points left (away from tutorial panel)
               arrowPositionOverride: "middle-third",
               marginOverride: "60px",
-              // Additional margin for better spacing
-              heading: "Properties Panel",
-              content: "When you select an object, its properties appear here. You can adjust position, rotation, scale, color, and other attributes.",
+              heading: "Properties",
+              content: "Properties shows transform controls, materials, procedural settings for doors/windows/stairs, camera details and character poses.",
               showNext: true,
               showSkip: true
             },
             {
-              id: "transform",
-              elementId: "mode-translate",
-              position: "bottom",
-              arrowPosition: "top",
-              // Arrow is on the top side of the tutorial panel, points up (towards target panel)
-              marginOverride: "30px",
-              // Margin for transform controls positioning
-              heading: "Transform Controls",
-              content: "Use these tools to manipulate objects: Translate (G) to move, Rotate (R) to spin, Scale (S) to resize, and Hand (H) to navigate the scene.",
+              id: "scene",
+              elementId: "scene-section",
+              openTab: "scene-settings",
+              position: "left",
+              arrowPosition: "right",
+              marginOverride: "20px",
+              heading: "Scene Panel",
+              content: "The Scene panel manages saved scenes, scene notes, lighting, sky colour, ambient shadows and the scene camera.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "camera",
+              elementId: "camera-panel-section",
+              openTab: "scene-settings",
+              openSection: "camera-panel-section",
+              position: "left",
+              arrowPosition: "right",
+              marginOverride: "20px",
+              heading: "Camera Panel",
+              content: "Cameras now live inside the Scene panel. Name cameras, choose lens, sensor and aspect ratio, and add new cameras for different shots.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "navigation",
+              elementId: "mobile-nav",
+              position: "top",
+              arrowPosition: "bottom",
+              marginOverride: "20px",
+              heading: "Scene Navigation",
+              content: "Use Camera/Scene mode to switch controls. Drag empty space to orbit, right-drag to pan, and use the floating pad for zoom, orbit and Home. F, S, B and T give front, side, back and top views.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "shots",
+              elementId: "shot-designer-content",
+              openTab: "shot-designer",
+              controlMode: "camera",
+              position: "left",
+              arrowPosition: "right",
+              marginOverride: "20px",
+              heading: "Shot Designer",
+              content: "Add shots, choose a camera move, adjust duration, speed, easing and framing. Use Start/End frames, animation curves and transitions between cuts.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "timeline",
+              elementId: "shot-timeline",
+              controlMode: "camera",
+              position: "top",
+              arrowPosition: "bottom",
+              marginOverride: "20px",
+              heading: "Shot Timeline",
+              content: "The timeline shows shots, keyframes and transitions. Use Play shot, Play all, Pause, Loop and Show path. Start/End frames jump the camera to the keyframe view.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "palettes",
+              elementId: "asset-colors",
+              openTab: "assets",
+              position: "left",
+              arrowPosition: "right",
+              marginOverride: "20px",
+              heading: "Colour Palettes",
+              content: "One palette is active at a time. Switching palettes remaps scene colours like-for-like. You can add colours, reorder swatches, rename palettes and delete custom palettes. The Default palette is protected.",
               showNext: true,
               showSkip: true
             },
             {
               id: "export",
               elementId: "btn-export",
-              position: "top",
-              arrowPosition: "bottom",
-              // Arrow is on the bottom side of the tutorial panel, points down (towards target panel)
+              position: "bottom",
+              arrowPosition: "top",
               marginOverride: "25px",
-              // Margin for export button positioning
-              heading: "Export Your Scene",
-              content: "When you're happy with your creation, use the Export button to save your scene as a JSON file or export as PNG image.",
+              heading: "Export",
+              content: "Export opens a modal for a full project file, printable storyboard report, storyboard PDF, or the current 3D scene as GLB.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "settings",
+              elementId: "tool-settings",
+              position: "right",
+              arrowPosition: "left",
+              marginOverride: "20px",
+              heading: "Settings & Shortcuts",
+              content: "Settings and Keyboard Shortcuts now live at the bottom of the left toolbar. Open the shortcuts modal for the full key reference.",
               showNext: true,
               showSkip: true
             }
@@ -43600,6 +43660,17 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       if (!step) {
         this.hideTutorial();
         return;
+      }
+      if (step.controlMode && this.app.setControlMode) {
+        this.app.setControlMode(step.controlMode);
+      }
+      if (step.openTab) {
+        document.querySelector(`.right-tab[data-right-tab="${step.openTab}"]`)?.click();
+      }
+      if (step.openSection) {
+        const header = document.querySelector(`.collapsible-header[data-target="${step.openSection}"]`);
+        const content = document.getElementById(step.openSection);
+        if (header && content?.classList.contains("hidden")) header.click();
       }
       this.currentTutorialStep = step;
       this.positionTutorial(step);
