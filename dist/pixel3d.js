@@ -33707,6 +33707,7 @@
           obj.visible = shouldShow;
         }
       });
+      document.body.classList.toggle("overlays-hidden", !shouldShow);
       document.getElementById("axis-gizmo")?.classList.toggle("overlay-hidden", !shouldShow);
       const overlayBtn = document.getElementById("tool-toggle-overlays");
       if (overlayBtn) {
@@ -35338,12 +35339,14 @@
       ].map(([v, label]) => `<option value="${v}"${transition.type === v ? " selected" : ""}>${label}</option>`).join("");
       transitionType.onchange = () => {
         shot.transition = transitionType.value === "none" ? null : { ...transition, type: transitionType.value };
+        this.app.staging.shotManager.refreshUI();
         this.renderShotDesignerList();
       };
       transitionField.appendChild(row("Type", transitionType));
       if (transition.type !== "none") {
         transitionField.appendChild(rangeRow("Length", transition.length || 1, 0.25, 4, 0.25, (v) => `${v}s`, (v) => {
           shot.transition.length = v;
+          this.app.staging.shotManager.refreshUI();
         }));
         const color = document.createElement("input");
         color.type = "color";
@@ -47095,12 +47098,17 @@ ${elements.join("\n")}
         });
         container.appendChild(block);
         if (shot.transition?.type && shot.transition.type !== "none" && i < this.shots.length - 1) {
+          const nextShot = this.shots[i + 1];
+          const requested = Math.max(0.05, shot.transition.length || 1);
+          const maxLength = Math.min(shot.duration, nextShot?.duration ?? shot.duration) * 0.9;
+          const transitionLength = Math.min(requested, maxLength);
+          const transitionStart = elapsed + shot.duration;
           const transition = document.createElement("div");
-          transition.className = "shot-timeline-transition-marker";
-          transition.style.left = `${(elapsed + shot.duration) / total * 100}%`;
-          transition.style.top = `${i % 2 === 0 ? "70px" : "116px"}`;
-          transition.title = `Transition: ${shot.transition.type} \xB7 ${(shot.transition.length || 1).toFixed(2)}s`;
-          transition.textContent = "\u21C4";
+          transition.className = `shot-timeline-transition-block${i === this.selectedShotIndex ? " selected" : ""}`;
+          transition.style.left = `${transitionStart / total * 100}%`;
+          transition.style.width = `${transitionLength / total * 100}%`;
+          transition.title = `Transition: ${shot.transition.type} \xB7 ${transitionLength.toFixed(2)}s`;
+          transition.innerHTML = "<span>\u21C4</span>";
           transition.onmousedown = (event) => event.stopPropagation();
           transition.onclick = (event) => {
             event.stopPropagation();

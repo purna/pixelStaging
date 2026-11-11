@@ -1326,12 +1326,18 @@ export class ShotManager {
             container.appendChild(block);
 
             if (shot.transition?.type && shot.transition.type !== 'none' && i < this.shots.length - 1) {
+                const nextShot = this.shots[i + 1];
+                const requested = Math.max(0.05, shot.transition.length || 1);
+                const maxLength = Math.min(shot.duration, nextShot?.duration ?? shot.duration) * 0.9;
+                const transitionLength = Math.min(requested, maxLength);
+                const transitionStart = elapsed + shot.duration;
+
                 const transition = document.createElement('div');
-                transition.className = 'shot-timeline-transition-marker';
-                transition.style.left = `${((elapsed + shot.duration) / total) * 100}%`;
-                transition.style.top = `${i % 2 === 0 ? '70px' : '116px'}`;
-                transition.title = `Transition: ${shot.transition.type} · ${(shot.transition.length || 1).toFixed(2)}s`;
-                transition.textContent = '⇄';
+                transition.className = `shot-timeline-transition-block${i === this.selectedShotIndex ? ' selected' : ''}`;
+                transition.style.left = `${(transitionStart / total) * 100}%`;
+                transition.style.width = `${(transitionLength / total) * 100}%`;
+                transition.title = `Transition: ${shot.transition.type} · ${transitionLength.toFixed(2)}s`;
+                transition.innerHTML = '<span>⇄</span>';
                 transition.onmousedown = (event) => event.stopPropagation();
                 transition.onclick = (event) => {
                     event.stopPropagation();

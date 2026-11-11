@@ -948,7 +948,8 @@ export class UI {
             }
         });
 
-        // The orientation gizmo is an overlay too.
+        // Hide every canvas UI overlay, not just 3D helpers.
+        document.body.classList.toggle('overlays-hidden', !shouldShow);
         document.getElementById('axis-gizmo')?.classList.toggle('overlay-hidden', !shouldShow);
 
         // Update button active state
@@ -2775,11 +2776,15 @@ export class UI {
         ].map(([v, label]) => `<option value="${v}"${transition.type === v ? ' selected' : ''}>${label}</option>`).join('');
         transitionType.onchange = () => {
             shot.transition = transitionType.value === 'none' ? null : { ...transition, type: transitionType.value };
+            this.app.staging.shotManager.refreshUI();
             this.renderShotDesignerList();
         };
         transitionField.appendChild(row('Type', transitionType));
         if (transition.type !== 'none') {
-            transitionField.appendChild(rangeRow('Length', transition.length || 1, 0.25, 4, 0.25, v => `${v}s`, v => { shot.transition.length = v; }));
+            transitionField.appendChild(rangeRow('Length', transition.length || 1, 0.25, 4, 0.25, v => `${v}s`, v => {
+                shot.transition.length = v;
+                this.app.staging.shotManager.refreshUI();
+            }));
             const color = document.createElement('input');
             color.type = 'color';
             color.value = transition.color || '#000000';

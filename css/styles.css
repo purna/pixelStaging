@@ -7802,3 +7802,49 @@ input[type="number"].color-slider-value-compact {
     right: 14px !important;
     margin: 0 !important;
 }
+
+/* Timeline transition blocks — matching the Shot Designer reference */
+.shot-timeline-transition-block {
+    position: absolute;
+    top: 20px;
+    bottom: 8px;
+    z-index: 6;
+    border: 1px dashed var(--accent-primary);
+    border-radius: 4px;
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(0, 255, 65, 0.28) 0 7px,
+        rgba(0, 255, 65, 0.08) 7px 14px
+    );
+    color: var(--text-primary);
+    pointer-events: auto;
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.shot-timeline-transition-block span {
+    font-size: 13px;
+    opacity: 0.9;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.shot-timeline-transition-block.selected {
+    border-style: solid;
+    border-color: #fff;
+    box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+/* Toggle Overlays hides all canvas UI overlays */
+body.overlays-hidden #axis-gizmo,
+body.overlays-hidden #scene-view-buttons,
+body.overlays-hidden #mobile-nav,
+body.overlays-hidden #align-frame-btn,
+body.overlays-hidden #selection-info,
+body.overlays-hidden #deselect-info,
+body.overlays-hidden #camera-guides,
+body.overlays-hidden #floating-camera-controls {
+    display: none !important;
+}
