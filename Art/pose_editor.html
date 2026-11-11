@@ -22,6 +22,21 @@
   #view{position:relative;min-width:0}#view canvas{display:block;width:100%;height:100%}
   #bone{font-size:15px;font-weight:600;margin-bottom:4px}
   #msg{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#3a2330;border:1px solid #7a3a52;padding:8px 14px;border-radius:6px;max-width:80vw;display:none}
+  .fb{width:46px;height:46px;padding:0;margin:0;border-radius:50%;font-size:18px;line-height:1;background:rgba(32,36,48,.78);border:1px solid rgba(255,255,255,.18);color:#fff;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;backdrop-filter:blur(4px)}
+  .fb:active,.fb.held{background:#2f6fed}
+  #pad,#zoom,#views{position:absolute;z-index:3}
+  #pad{right:14px;bottom:14px;display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:4px}
+  #pad [data-h=u]{grid-area:1/2}#pad [data-h=l]{grid-area:2/1}#pad [data-h=r]{grid-area:2/3}#pad [data-h=d]{grid-area:3/2}#pad [data-v=home]{grid-area:2/2}
+  #zoom{left:14px;bottom:14px;display:flex;flex-direction:column;gap:8px}
+  #views{right:14px;top:14px;display:flex;gap:8px}
+  @media (max-width:800px){
+    html,body{height:auto;overflow:auto}
+    #app{display:block;height:auto}
+    #view{position:sticky;top:0;z-index:5;height:55vh;border-bottom:1px solid #2a2e3a}
+    aside{border:0!important;overflow:visible}
+    .fb{width:52px;height:52px}
+    #pad{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px)}
+  }
   .hint{color:#7d869a;font-size:12px;line-height:1.4}
 </style>
 <script type="importmap">
@@ -44,9 +59,17 @@
     <h3>View</h3>
     <label class="chk"><input type="checkbox" id="showJoints" checked> Show joint handles</label>
     <label class="chk"><input type="checkbox" id="showFingers"> Include fingers</label>
-    <p class="hint">Click a joint handle (or the body) to select it. Drag the rings to rotate. Right-drag pans, wheel zooms.</p>
+    <p class="hint">Tap a joint handle (or the body) to select it. Drag the rings to rotate. Use the on-screen pad to turn and zoom the view (hold to keep moving).</p>
   </aside>
-  <main id="view"></main>
+  <main id="view">
+    <div id="views"><button class="fb" data-v="0" title="Front">F</button><button class="fb" data-v="90" title="Side">S</button><button class="fb" data-v="180" title="Back">B</button></div>
+    <div id="zoom"><button class="fb" data-h="in" title="Zoom in">+</button><button class="fb" data-h="out" title="Zoom out">&minus;</button></div>
+    <div id="pad">
+      <button class="fb" data-h="u" title="Rotate up">&#9650;</button><button class="fb" data-h="l" title="Rotate left">&#9664;</button>
+      <button class="fb" data-v="home" title="Reset view">&#8962;</button>
+      <button class="fb" data-h="r" title="Rotate right">&#9654;</button><button class="fb" data-h="d" title="Rotate down">&#9660;</button>
+    </div>
+  </main>
   <aside id="right">
     <h3>Selected bone</h3>
     <div id="bone">none</div>
@@ -61,6 +84,7 @@
     <h3>Pose</h3>
     <button id="resetAll">Reset to T-pose</button>
     <button id="savePreset">Save as preset…</button>
+    <button id="useInScene">Use on selected scene character</button>
     <button id="exportPose">Download pose .json</button>
     <button id="importPose">Load pose .json…</button>
   </aside>
@@ -108,7 +132,7 @@ addEventListener('resize', resize); resize();
 
 // ---------- state ----------
 let poser = null, modelRoot = null, meshes = [], handles = new Map(), selected = null, height = 1;
-let library = null;
+let library = null, homePos = new THREE.Vector3(), homeTarget = new THREE.Vector3();
 const handleGeo = new THREE.SphereGeometry(1, 12, 8);
 const HIDE_ALWAYS = /_End$|Eye|HeadTop/;
 const FINGER = /Hand(Thumb|Index|Middle|Ring|Pinky)\d/;
@@ -141,6 +165,7 @@ async function loadModel(url, isBlob) {
   camera.near = height / 100; camera.far = height * 50; camera.updateProjectionMatrix();
   camera.position.set(c.x, c.y + height * 0.1, c.z + height * 2.2);
   orbit.target.copy(c); orbit.update();
+  homePos.copy(camera.position); homeTarget.copy(c);
   if (grid) scene.remove(grid);
   grid = new THREE.GridHelper(height * 3, 20, 0x4a5163, 0x2f3442); grid.position.y = box.min.y; scene.add(grid);
   tc.size = 0.8;
@@ -249,6 +274,13 @@ $('savePreset').onclick = () => {
   const name = prompt('Preset name (no spaces):'); if (!name || !poser) return;
   poser.addLibrary({ poses: { [name.trim().replace(/\s+/g, '_')]: currentPose() } }); buildPresets();
 };
+$('useInScene').onclick = () => {
+  if (!poser || !window.parent || window.parent === window) return;
+  const name = prompt('Pose name for the scene character:', 'Custom pose');
+  if (!name) return;
+  const pose = currentPose();
+  window.parent.postMessage({ type: 'pixelstaging-pose', name: name.trim(), pose }, window.location.origin);
+};
 $('exportPose').onclick = () => {
   if (!poser) return;
   const a = document.createElement('a');
@@ -262,6 +294,36 @@ $('filePose').onchange = async (e) => {
   poser.applyPose({ rotations: p.rotations, hipsScale: 1 + (p.hipsDrop ?? 0) }, { duration: 0.2 });
 };
 
+// ---------- floating camera controls ----------
+const held = new Set(), off = new THREE.Vector3(), sph = new THREE.Spherical();
+const clamp = THREE.MathUtils.clamp;
+function placeCamera() { camera.position.copy(orbit.target).add(off.setFromSpherical(sph)); camera.lookAt(orbit.target); }
+function nudgeCamera(dt) {
+  if (!held.size) return;
+  sph.setFromVector3(off.copy(camera.position).sub(orbit.target));
+  if (held.has('l')) sph.theta += 1.6 * dt;
+  if (held.has('r')) sph.theta -= 1.6 * dt;
+  if (held.has('u')) sph.phi += 1.2 * dt;
+  if (held.has('d')) sph.phi -= 1.2 * dt;
+  if (held.has('in')) sph.radius *= Math.pow(0.4, dt);
+  if (held.has('out')) sph.radius /= Math.pow(0.4, dt);
+  sph.phi = clamp(sph.phi, 0.05, Math.PI - 0.05); sph.radius = clamp(sph.radius, height * 0.3, height * 12);
+  placeCamera();
+}
+document.querySelectorAll('.fb[data-h]').forEach((b) => {
+  const k = b.dataset.h;
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); b.setPointerCapture(e.pointerId); held.add(k); b.classList.add('held'); });
+  const up = () => { held.delete(k); b.classList.remove('held'); };
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((ev) => b.addEventListener(ev, up));
+  b.addEventListener('contextmenu', (e) => e.preventDefault());
+});
+document.querySelectorAll('.fb[data-v]').forEach((b) => b.addEventListener('click', () => {
+  if (b.dataset.v === 'home') { orbit.target.copy(homeTarget); camera.position.copy(homePos); orbit.update(); return; }
+  sph.setFromVector3(off.copy(camera.position).sub(orbit.target));
+  sph.theta = THREE.MathUtils.degToRad(+b.dataset.v); sph.phi = Math.PI / 2 - 0.1; placeCamera();
+}));
+addEventListener('blur', () => held.clear());
+
 // ---------- loop ----------
 const clock = new THREE.Clock(), wp = new THREE.Vector3();
 renderer.setAnimationLoop(() => {
@@ -270,9 +332,11 @@ renderer.setAnimationLoop(() => {
     const blending = poser.blending; poser.update(dt); if (blending) syncUI();
     handles.forEach((h, k) => { if (h.visible) h.position.copy(poser.bones.get(k).getWorldPosition(wp)); });
   }
-  orbit.update(); renderer.render(scene, camera);
+  nudgeCamera(dt); orbit.update(); renderer.render(scene, camera);
 });
 
+const requestedModel = new URLSearchParams(location.search).get('model');
+if (requestedModel) $('model').value = requestedModel;
 loadModel($('model').value);
 </script>
 </body>

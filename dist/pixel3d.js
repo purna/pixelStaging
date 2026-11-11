@@ -32986,6 +32986,7 @@
         ["panel tabs", () => this.setupPanelTabs()],
         ["floating camera controls", () => this.setupFloatingCameraControls()],
         ["camera nudge", () => this.setupCameraNudge()],
+        ["pose editor bridge", () => this.setupPoseEditorBridge()],
         ["scene list", () => this.setupSceneList()],
         ["color editor", () => this.setupColorEditor()],
         ["hierarchy", () => this.renderHierarchyPanel()],
@@ -33012,14 +33013,10 @@
           return;
         }
         if (btn.id === "tool-animate") {
-          if (this.app.staging && this.app.staging.shotManager) {
-            this.app.staging.shotManager.toggleUI();
-            return;
-          }
-          if (this.app.staging && this.app.staging.shots) {
-            this.app.staging.shots.toggleUI();
-            return;
-          }
+          this.app.setControlMode?.("camera");
+          document.querySelector('[data-right-tab="shot-designer"]')?.click();
+          this.app.staging?.shotManager?.refreshUI?.();
+          return;
         }
         if (btn.classList.contains("menu-parent")) {
           this.toggleSubmenu(btn);
@@ -34488,139 +34485,49 @@
         this.showNotification("Pose editor is unavailable for this character", "error");
         return;
       }
-      const modal = document.getElementById("pose-editor-modal");
-      const boneSelect = document.getElementById("pose-bone-select");
-      const nameInput = document.getElementById("pose-custom-name");
-      if (!modal || !boneSelect) return;
-      this.poseEditor = {
-        model: char.model,
-        poser: char.poser,
-        boneName: null,
-        values: /* @__PURE__ */ new Map()
-      };
-      const bones = [...char.poser.bones.keys()].sort();
-      boneSelect.innerHTML = bones.map((name) => `<option value="${name}">${name}</option>`).join("");
-      nameInput.value = "";
+      const modal = document.getElementById("pose-editor-frame-modal");
+      const frame = document.getElementById("pose-editor-frame");
+      if (!modal || !frame) return;
+      this.poseEditorTarget = char.model;
+      const modelFile = (this.app.characterManager.models[char.model.userData.characterType] || "./Art/Xbot.glb").split("/").pop();
+      frame.src = `Art/pose_editor.html?model=${encodeURIComponent(modelFile)}&embedded=1`;
       modal.classList.add("open");
       modal.style.display = "flex";
-      this.app.beginPoseEditing?.(char.model);
-      this.app.setPoseControlMode?.("rotate");
-      document.getElementById("pose-mode-rotate").classList.add("active");
-      document.getElementById("pose-mode-translate").classList.remove("active");
-      document.getElementById("pose-mode-rotate").onclick = () => {
-        this.app.setPoseControlMode?.("rotate");
-        document.getElementById("pose-mode-rotate").classList.add("active");
-        document.getElementById("pose-mode-translate").classList.remove("active");
-      };
-      document.getElementById("pose-mode-translate").onclick = () => {
-        this.app.setPoseControlMode?.("translate");
-        document.getElementById("pose-mode-translate").classList.add("active");
-        document.getElementById("pose-mode-rotate").classList.remove("active");
-      };
-      const selectBone = (name) => {
-        this.poseEditor.boneName = name;
-        const bone = char.poser.bones.get(name);
-        const rest = char.poser.rest.get(name);
-        const delta = bone.quaternion.clone().multiply(rest.clone().invert());
-        const euler = new Euler().setFromQuaternion(delta, "ZYX");
-        const values = {
-          x: Math.round(MathUtils.radToDeg(euler.x)),
-          y: Math.round(MathUtils.radToDeg(euler.y)),
-          z: Math.round(MathUtils.radToDeg(euler.z))
-        };
-        this.poseEditor.values.set(name, values);
-        document.getElementById("pose-bone-x").value = values.x;
-        document.getElementById("pose-bone-y").value = values.y;
-        document.getElementById("pose-bone-z").value = values.z;
-        document.getElementById("pose-bone-x-val").textContent = `${values.x}\xB0`;
-        document.getElementById("pose-bone-y-val").textContent = `${values.y}\xB0`;
-        document.getElementById("pose-bone-z-val").textContent = `${values.z}\xB0`;
-        this.app.selectPoseBone?.(name);
-      };
-      boneSelect.onchange = () => selectBone(boneSelect.value);
-      const applyBone = () => {
-        if (!this.poseEditor?.boneName) return;
-        const values = {
-          x: parseFloat(document.getElementById("pose-bone-x").value),
-          y: parseFloat(document.getElementById("pose-bone-y").value),
-          z: parseFloat(document.getElementById("pose-bone-z").value)
-        };
-        this.poseEditor.values.set(this.poseEditor.boneName, values);
-        document.getElementById("pose-bone-x-val").textContent = `${Math.round(values.x)}\xB0`;
-        document.getElementById("pose-bone-y-val").textContent = `${Math.round(values.y)}\xB0`;
-        document.getElementById("pose-bone-z-val").textContent = `${Math.round(values.z)}\xB0`;
-        this.poseEditor.poser.setBone(this.poseEditor.boneName, values.x, values.y, values.z);
-      };
-      ["pose-bone-x", "pose-bone-y", "pose-bone-z"].forEach((id) => {
-        document.getElementById(id).oninput = applyBone;
-      });
-      document.getElementById("pose-editor-reset-bone").onclick = () => {
-        if (!this.poseEditor?.boneName) return;
-        const values = { x: 0, y: 0, z: 0 };
-        this.poseEditor.values.set(this.poseEditor.boneName, values);
-        document.getElementById("pose-bone-x").value = 0;
-        document.getElementById("pose-bone-y").value = 0;
-        document.getElementById("pose-bone-z").value = 0;
-        document.getElementById("pose-bone-x-val").textContent = "0\xB0";
-        document.getElementById("pose-bone-y-val").textContent = "0\xB0";
-        document.getElementById("pose-bone-z-val").textContent = "0\xB0";
-        this.poseEditor.poser.resetBone(this.poseEditor.boneName);
-      };
-      document.getElementById("pose-editor-save").onclick = () => {
-        const name = nameInput.value.trim();
-        if (!name) {
-          this.showNotification("Give the pose a name first", "error");
-          return;
-        }
-        const key = this.app.characterManager.saveCustomPose(this.poseEditor.model, name);
-        if (!key) {
-          this.showNotification("Could not save pose", "error");
-          return;
-        }
-        this.showNotification(`Pose \u201C${name}\u201D saved`, "success");
-        this.closePoseEditor();
-        this.renderPropertiesPanel(this.app.selectedObject);
-      };
-      document.getElementById("pose-editor-close").onclick = () => this.closePoseEditor();
-      document.getElementById("pose-editor-cancel").onclick = () => this.closePoseEditor();
-      modal.onclick = (event) => {
-        if (event.target === modal) this.closePoseEditor();
-      };
-      selectBone(bones[0]);
     }
     closePoseEditor() {
-      const modal = document.getElementById("pose-editor-modal");
+      const modal = document.getElementById("pose-editor-frame-modal");
+      const frame = document.getElementById("pose-editor-frame");
       if (modal) {
         modal.classList.remove("open");
         modal.style.display = "none";
       }
-      this.poseEditor = null;
-      this.app.endPoseEditing?.();
+      if (frame) frame.src = "about:blank";
+      this.poseEditorTarget = null;
     }
-    syncPoseEditorFromBone(bone) {
-      if (!this.poseEditor || !bone || !this.poseEditor.poser) return;
-      const shortName = String(bone.name).replace(/^mixamorig:?/, "");
-      const boneSelect = document.getElementById("pose-bone-select");
-      if (boneSelect && [...boneSelect.options].some((option) => option.value === shortName)) {
-        boneSelect.value = shortName;
-      }
-      this.poseEditor.boneName = shortName;
-      const rest = this.poseEditor.poser.rest.get(shortName);
-      if (!rest) return;
-      const delta = bone.quaternion.clone().multiply(rest.clone().invert());
-      const euler = new Euler().setFromQuaternion(delta, "ZYX");
-      const values = {
-        x: Math.round(MathUtils.radToDeg(euler.x)),
-        y: Math.round(MathUtils.radToDeg(euler.y)),
-        z: Math.round(MathUtils.radToDeg(euler.z))
-      };
-      this.poseEditor.values.set(shortName, values);
-      document.getElementById("pose-bone-x").value = values.x;
-      document.getElementById("pose-bone-y").value = values.y;
-      document.getElementById("pose-bone-z").value = values.z;
-      document.getElementById("pose-bone-x-val").textContent = `${values.x}\xB0`;
-      document.getElementById("pose-bone-y-val").textContent = `${values.y}\xB0`;
-      document.getElementById("pose-bone-z-val").textContent = `${values.z}\xB0`;
+    setupPoseEditorBridge() {
+      window.addEventListener("message", (event) => {
+        if (event.origin !== window.location.origin) return;
+        const data = event.data;
+        if (!data || data.type !== "pixelstaging-pose") return;
+        if (!this.poseEditorTarget) return;
+        const key = this.app.characterManager.applyPoseFromEditor(
+          this.poseEditorTarget,
+          data.name,
+          data.pose
+        );
+        if (!key) {
+          this.showNotification("Could not apply pose to the selected character", "error");
+          return;
+        }
+        this.showNotification(`Pose \u201C${data.name || key}\u201D applied and saved`, "success");
+        this.closePoseEditor();
+        this.renderPropertiesPanel(this.app.selectedObject);
+      });
+      document.getElementById("pose-editor-frame-close")?.addEventListener("click", () => this.closePoseEditor());
+      const modal = document.getElementById("pose-editor-frame-modal");
+      modal?.addEventListener("click", (event) => {
+        if (event.target === modal) this.closePoseEditor();
+      });
     }
     setupCameraTab() {
       const cameras = this.app.staging?.cameras;
@@ -42584,6 +42491,28 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       char.state = "pose";
       char.model.userData.currentPose = poseName;
       return true;
+    }
+    applyPoseFromEditor(model, name, poseData) {
+      const char = this.findCharacter(model);
+      if (!char?.poser || !poseData?.rotations) return false;
+      const clean = String(name || "").trim() || `Pose ${Date.now()}`;
+      const characterType = char.model.userData.characterType || "character";
+      const pose = {
+        rotations: poseData.rotations,
+        positions: poseData.positions || void 0,
+        hipsScale: 1 + (poseData.hipsDrop ?? 0)
+      };
+      if (!this.customPoses[characterType]) this.customPoses[characterType] = {};
+      this.customPoses[characterType][clean] = pose;
+      this.persistCustomPoses();
+      if (char.mixer) char.mixer.stopAllAction();
+      Object.values(char.actions || {}).forEach((action) => action.stop?.());
+      char.poser.applyPose(pose, { duration: 0.25 });
+      const key = `custom:${clean}`;
+      char.pose = key;
+      char.state = "pose";
+      char.model.userData.currentPose = key;
+      return key;
     }
     saveCustomPose(model, name) {
       const char = this.findCharacter(model);

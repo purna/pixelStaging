@@ -201,6 +201,30 @@ export class CharacterManager {
         return true;
     }
 
+    applyPoseFromEditor(model, name, poseData) {
+        const char = this.findCharacter(model);
+        if (!char?.poser || !poseData?.rotations) return false;
+        const clean = String(name || '').trim() || `Pose ${Date.now()}`;
+        const characterType = char.model.userData.characterType || 'character';
+        const pose = {
+            rotations: poseData.rotations,
+            positions: poseData.positions || undefined,
+            hipsScale: 1 + (poseData.hipsDrop ?? 0)
+        };
+        if (!this.customPoses[characterType]) this.customPoses[characterType] = {};
+        this.customPoses[characterType][clean] = pose;
+        this.persistCustomPoses();
+
+        if (char.mixer) char.mixer.stopAllAction();
+        Object.values(char.actions || {}).forEach(action => action.stop?.());
+        char.poser.applyPose(pose, { duration: 0.25 });
+        const key = `custom:${clean}`;
+        char.pose = key;
+        char.state = 'pose';
+        char.model.userData.currentPose = key;
+        return key;
+    }
+
     saveCustomPose(model, name) {
         const char = this.findCharacter(model);
         if (!char?.poser) return null;
