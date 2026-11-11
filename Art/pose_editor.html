@@ -6,16 +6,16 @@
 <title>Rig Pose Editor</title>
 <style>
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:#14161c;color:#dde1ea;font:13px system-ui,sans-serif}
+  html,body{margin:0;height:100%;background:#0f0f1b;color:#e0e7ff;font:13px system-ui,sans-serif}
   #app{display:grid;grid-template-columns:210px 1fr 270px;height:100%}
-  aside{padding:12px;overflow:auto;background:#1b1e26}
-  #left{border-right:1px solid #2a2e3a}#right{border-left:1px solid #2a2e3a}
+  aside{padding:12px;overflow:auto;background:#1a1a2e}
+  #left{border-right:1px solid #2d3748}#right{border-left:1px solid #2d3748}
   h3{margin:14px 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a93a6}
   h3:first-child{margin-top:0}
-  select,button{width:100%;padding:6px 8px;margin:2px 0;background:#262b36;color:inherit;border:1px solid #363c4b;border-radius:5px;font:inherit}
-  button{cursor:pointer}button:hover{background:#323949}
+  select,button{width:100%;padding:6px 8px;margin:2px 0;background:#1e293b;color:inherit;border:1px solid #2d3748;border-radius:5px;font:inherit}
+  button{cursor:pointer}button:hover{background:#16213e;border-color:#00ff41;color:#00ff41}
   #presets{display:grid;grid-template-columns:1fr 1fr;gap:4px}#presets button{margin:0}
-  #presets button.on{background:#2f6fed;border-color:#2f6fed}
+  #presets button.on{background:#00ff41;border-color:#00ff41;color:#07110a}
   .row{display:grid;grid-template-columns:18px 1fr 42px;gap:6px;align-items:center;margin:6px 0}
   .row input{width:100%}.row span:last-child{text-align:right;color:#9aa3b8;font-variant-numeric:tabular-nums}
   label.chk{display:block;margin:4px 0}
@@ -113,7 +113,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(devicePixelRatio);
 view.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x20232c);
+scene.background = new THREE.Color(0x2a2a4e);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 1.6));
 const sun = new THREE.DirectionalLight(0xffffff, 2); sun.position.set(2, 4, 3); scene.add(sun);
 const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 1000);

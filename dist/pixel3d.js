@@ -33051,10 +33051,31 @@
           this.showNotification("Scene saved to browser!", "success");
         }
       });
-      document.getElementById("btn-export").addEventListener("click", async () => {
-        if (this.app.fileManager) {
-          await this.app.fileManager.saveScene();
-        }
+      document.getElementById("btn-export").addEventListener("click", () => {
+        document.getElementById("export-modal")?.classList.add("open");
+      });
+      const closeExport = () => document.getElementById("export-modal")?.classList.remove("open");
+      document.getElementById("export-modal-close")?.addEventListener("click", closeExport);
+      document.getElementById("export-modal-cancel")?.addEventListener("click", closeExport);
+      document.getElementById("export-modal")?.addEventListener("click", (event) => {
+        if (event.target.id === "export-modal") closeExport();
+      });
+      document.getElementById("export-project-json")?.addEventListener("click", () => {
+        this.app.fileManager.saveSceneJSON();
+        closeExport();
+        this.showNotification("Project exported", "success");
+      });
+      document.getElementById("export-storyboard-html")?.addEventListener("click", async () => {
+        closeExport();
+        await this.app.openStoryboardReport?.();
+      });
+      document.getElementById("export-storyboard-pdf")?.addEventListener("click", async () => {
+        closeExport();
+        await this.app.exportStoryboardPDF?.();
+      });
+      document.getElementById("export-scene-glb")?.addEventListener("click", async () => {
+        closeExport();
+        await this.app.fileManager.saveSceneGLB();
       });
       document.getElementById("btn-load").addEventListener("click", () => {
         document.getElementById("file-input").click();
@@ -47687,30 +47708,30 @@ ${xrefOffset}
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #17120c; color: #f4e8d2; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body { margin: 0; background: #0f0f1b; color: #e0e7ff; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   .wrap { max-width: 1100px; margin: 0 auto; padding: 32px; }
   .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 28px; }
   h1 { margin: 0 0 6px; font-size: 30px; }
-  .sub { color: #bda987; }
-  .print { background: #f3b63f; color: #1b1308; border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
-  .shot { break-inside: avoid; background: #120e09; border: 1px solid #3c2e1b; border-radius: 12px; padding: 18px; margin-bottom: 22px; }
-  .shot header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; border-bottom: 1px solid #3c2e1b; padding-bottom: 12px; margin-bottom: 14px; }
-  .eyebrow { color: #d5aa5f; text-transform: uppercase; letter-spacing: .08em; font-size: 10px; }
+  .sub { color: #94a3b8; }
+  .print { background: #00ff41; color: #07110a; border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
+  .shot { break-inside: avoid; background: #1a1a2e; border: 1px solid #2d3748; border-radius: 12px; padding: 18px; margin-bottom: 22px; }
+  .shot header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; border-bottom: 1px solid #2d3748; padding-bottom: 12px; margin-bottom: 14px; }
+  .eyebrow { color: #00ff41; text-transform: uppercase; letter-spacing: .08em; font-size: 10px; }
   h2 { margin: 4px 0 0; font-size: 22px; }
-  .badge { color: #d7c19b; border: 1px solid #4a3a21; border-radius: 999px; padding: 6px 10px; font-size: 11px; }
+  .badge { color: #94a3b8; border: 1px solid #2d3748; border-radius: 999px; padding: 6px 10px; font-size: 11px; }
   .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
   .frames.three { grid-template-columns: repeat(3, 1fr); }
   .scene-views { margin-bottom: 14px; }
-  .scene-views h3 { margin: 0 0 8px; font-size: 12px; color: #d5aa5f; }
+  .scene-views h3 { margin: 0 0 8px; font-size: 12px; color: #00ff41; }
   figure { margin: 0; }
-  figure img { width: 100%; display: block; border-radius: 7px; border: 1px solid #3c2e1b; }
-  figcaption { color: #bda987; font-size: 11px; margin-top: 5px; }
+  figure img { width: 100%; display: block; border-radius: 7px; border: 1px solid #2d3748; }
+  figcaption { color: #94a3b8; font-size: 11px; margin-top: 5px; }
   .meta-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
-  .meta-grid div { background: #1b140d; border: 1px solid #302516; border-radius: 7px; padding: 8px; }
-  .meta-grid span { display: block; color: #a9926c; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+  .meta-grid div { background: #16213e; border: 1px solid #2d3748; border-radius: 7px; padding: 8px; }
+  .meta-grid span { display: block; color: #94a3b8; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
   .meta-grid b { font-size: 12px; }
-  .notes h3 { margin: 0 0 5px; font-size: 12px; color: #d5aa5f; }
-  .notes p { margin: 0; color: #e3d3b6; line-height: 1.45; white-space: pre-wrap; }
+  .notes h3 { margin: 0 0 5px; font-size: 12px; color: #00ff41; }
+  .notes p { margin: 0; color: #e0e7ff; line-height: 1.45; white-space: pre-wrap; }
   @media print {
     body { background: white; color: #111; }
     .wrap { max-width: none; padding: 12mm; }
@@ -47848,6 +47869,7 @@ ${xrefOffset}
         this.setupTransformControls();
       }, APP_DEFAULTS2.init.transformControlsDelay);
       const ambientLight = new AmbientLight(16777215, 0.6);
+      this.sceneAmbientLight = ambientLight;
       this.scene.add(ambientLight);
       const directionalLight = new DirectionalLight(16777215, 1.2);
       directionalLight.position.set(10, 10, 5);
@@ -48182,6 +48204,19 @@ ${xrefOffset}
         fov: fov2
       };
     }
+    suppressOrbitForClick() {
+      if (this.controlMode !== "scene" || !this.orbit) return;
+      this._orbitLeftSuppressed = true;
+      this.orbit.mouseButtons.LEFT = null;
+      window.addEventListener("pointerup", () => this.restoreOrbitAfterClick(), { once: true });
+    }
+    restoreOrbitAfterClick() {
+      if (!this._orbitLeftSuppressed) return;
+      this._orbitLeftSuppressed = false;
+      if (this.orbit) {
+        this.orbit.mouseButtons.LEFT = this.controlMode === "scene" ? MOUSE.ROTATE : MOUSE.ROTATE;
+      }
+    }
     /**
      * Switch the viewport controls between the camera and scene objects.
      * Camera mode: drag to look around / navigate the view.
@@ -48203,11 +48238,11 @@ ${xrefOffset}
           this.orbit.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
         } else {
           this.orbit.mouseButtons = {
-            LEFT: null,
+            LEFT: MOUSE.ROTATE,
             MIDDLE: MOUSE.ROTATE,
             RIGHT: MOUSE.PAN
           };
-          this.orbit.touches = { ONE: null, TWO: TOUCH.DOLLY_PAN };
+          this.orbit.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
         }
       }
       if (this.transformControl) {
@@ -48604,11 +48639,17 @@ ${xrefOffset}
       }
     }
     onPointerDown(event) {
-      if (this.keyframeControls?.axis || this.poseControls?.axis) return;
+      if (this.keyframeControls?.axis || this.poseControls?.axis) {
+        this.suppressOrbitForClick();
+        return;
+      }
       if (event.button !== 0) return;
       if (this.poseEditState) {
         const bone = this.pickPoseBone(event);
-        if (bone) this.selectPoseBone(bone.name);
+        if (bone) {
+          this.suppressOrbitForClick();
+          this.selectPoseBone(bone.name);
+        }
         return;
       }
       if (this.controlMode === "camera") this.renderer.domElement.style.cursor = "grabbing";
@@ -48629,6 +48670,7 @@ ${xrefOffset}
           isOverGizmo = helperIntersects.length > 0;
         }
         if (isOverGizmo) {
+          this.suppressOrbitForClick();
           return;
         }
       }
@@ -48640,6 +48682,7 @@ ${xrefOffset}
       });
       const intersects2 = this.raycaster.intersectObjects(allSceneObjects, true);
       if (intersects2.length > 0) {
+        this.suppressOrbitForClick();
         let target = intersects2[0].object;
         while (target.parent && target.parent !== this.scene) {
           if (target.userData && (target.userData.type === "shape" || target.userData.type === "shape2d" || target.userData.type === "light" || target.userData.type === "figure" || target.userData.type === "staging" || target.userData.type === "character")) {
@@ -48954,15 +48997,20 @@ ${xrefOffset}
       }
     }
     setAmbientLight(enabled, colorHex) {
-      if (!this.scene) return;
-      this.scene.traverse((obj) => {
-        if (obj.type === "AmbientLight") {
-          obj.visible = enabled;
-          if (colorHex) {
-            obj.color = new Color(colorHex);
-          }
-        }
-      });
+      const light = this.sceneAmbientLight;
+      if (!light) return;
+      light.visible = enabled !== false;
+      if (colorHex) light.color.set(colorHex);
+    }
+    setAmbientIntensity(value) {
+      if (!this.sceneAmbientLight) return;
+      this.sceneAmbientLight.intensity = Math.max(0, value);
+      this.sceneAmbientLight.visible = true;
+      const checkbox = document.getElementById("scene-ambient-light");
+      if (checkbox) checkbox.checked = true;
+    }
+    setAmbientColor(colorHex) {
+      if (this.sceneAmbientLight && colorHex) this.sceneAmbientLight.color.set(colorHex);
     }
     setFog(enabled, colorHex, near, far) {
       if (!this.scene) return;

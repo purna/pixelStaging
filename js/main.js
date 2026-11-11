@@ -151,6 +151,7 @@ class StageApp {
 
         // Lighting (Base ambient)
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.sceneAmbientLight = ambientLight;
         this.scene.add(ambientLight);
 
         // Main directional light (like sunlight)
@@ -567,6 +568,21 @@ class StageApp {
         };
     }
 
+    suppressOrbitForClick() {
+        if (this.controlMode !== 'scene' || !this.orbit) return;
+        this._orbitLeftSuppressed = true;
+        this.orbit.mouseButtons.LEFT = null;
+        window.addEventListener('pointerup', () => this.restoreOrbitAfterClick(), { once: true });
+    }
+
+    restoreOrbitAfterClick() {
+        if (!this._orbitLeftSuppressed) return;
+        this._orbitLeftSuppressed = false;
+        if (this.orbit) {
+            this.orbit.mouseButtons.LEFT = this.controlMode === 'scene' ? THREE.MOUSE.ROTATE : THREE.MOUSE.ROTATE;
+        }
+    }
+
     /**
      * Switch the viewport controls between the camera and scene objects.
      * Camera mode: drag to look around / navigate the view.
@@ -589,14 +605,14 @@ class StageApp {
                 };
                 this.orbit.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
             } else {
-                // Blender/Unity style editing: left selects, middle orbits,
-                // right pan, two-finger touch orbits/pans/zooms.
+                // Blender/Unity style editing: left-drag empty space orbits,
+                // clicking an object selects it, middle orbits, right pans.
                 this.orbit.mouseButtons = {
-                    LEFT: null,
+                    LEFT: THREE.MOUSE.ROTATE,
                     MIDDLE: THREE.MOUSE.ROTATE,
                     RIGHT: THREE.MOUSE.PAN
                 };
-                this.orbit.touches = { ONE: null, TWO: THREE.TOUCH.DOLLY_PAN };
+                this.orbit.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
             }
         }
 
@@ -1113,13 +1129,19 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
     onPointerDown(event) {
         // Let editor gizmos handle their own drag.
-        if (this.keyframeControls?.axis || this.poseControls?.axis) return;
+        if (this.keyframeControls?.axis || this.poseControls?.axis) {
+            this.suppressOrbitForClick();
+            return;
+        }
 
         if (event.button !== 0) return;
 
         if (this.poseEditState) {
             const bone = this.pickPoseBone(event);
-            if (bone) this.selectPoseBone(bone.name);
+            if (bone) {
+                this.suppressOrbitForClick();
+                this.selectPoseBone(bone.name);
+            }
             return;
         }
 
@@ -1153,7 +1175,8 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
             }
             
             if (isOverGizmo) {
-                // Let TransformControls handle gizmo interaction
+                // Let TransformControls handle gizmo interaction without orbiting.
+                this.suppressOrbitForClick();
                 return;
             }
         }
@@ -1169,6 +1192,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersects = this.raycaster.intersectObjects(allSceneObjects, true);
 
         if (intersects.length > 0) {
+            this.suppressOrbitForClick();
             let target = intersects[0].object;
 
             // Walk up hierarchy to find root selectable object
@@ -1572,16 +1596,23 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     }
 
     setAmbientLight(enabled, colorHex) {
-        if (!this.scene) return;
-        // Find and update ambient light
-        this.scene.traverse(obj => {
-            if (obj.type === 'AmbientLight') {
-                obj.visible = enabled;
-                if (colorHex) {
-                    obj.color = new THREE.Color(colorHex);
-                }
-            }
-        });
+        const light = this.sceneAmbientLight;
+        if (!light) return;
+        light.visible = enabled !== false;
+        if (colorHex) light.color.set(colorHex);
+    }
+
+    setAmbientIntensity(value) {
+        if (!this.sceneAmbientLight) return;
+        this.sceneAmbientLight.intensity = Math.max(0, value);
+        // Keep the light technically active so raising the slider restores it.
+        this.sceneAmbientLight.visible = true;
+        const checkbox = document.getElementById('scene-ambient-light');
+        if (checkbox) checkbox.checked = true;
+    }
+
+    setAmbientColor(colorHex) {
+        if (this.sceneAmbientLight && colorHex) this.sceneAmbientLight.color.set(colorHex);
     }
 
     setFog(enabled, colorHex, near, far) {

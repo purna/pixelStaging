@@ -1283,6 +1283,38 @@ Block actors, props and architecture">
 
 
 
+
+        <!-- EXPORT MODAL -->
+        <div class="modal-overlay" id="export-modal">
+            <div class="modal export-modal">
+                <header>
+                    <div class="modal-title"><i class="fas fa-download"></i> Export</div>
+                    <button class="modal-close-btn" id="export-modal-close" title="Close">×</button>
+                </header>
+                <div class="export-options">
+                    <button class="export-option" id="export-project-json">
+                        <i class="fas fa-file-code"></i>
+                        <span><b>Project file</b><small>All scenes, cameras, shots, characters and custom poses as JSON.</small></span>
+                    </button>
+                    <button class="export-option" id="export-storyboard-html">
+                        <i class="fas fa-file-lines"></i>
+                        <span><b>Storyboard report (HTML)</b><small>Printable storyboard with screenshots, camera details, XYZ and notes.</small></span>
+                    </button>
+                    <button class="export-option" id="export-storyboard-pdf">
+                        <i class="fas fa-file-pdf"></i>
+                        <span><b>Storyboard PDF</b><small>Direct PDF export of the same storyboard report.</small></span>
+                    </button>
+                    <button class="export-option" id="export-scene-glb">
+                        <i class="fas fa-cubes"></i>
+                        <span><b>3D scene (GLB)</b><small>Export the current scene as a 3D model file.</small></span>
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" id="export-modal-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
         <!-- FULL POSE EDITOR MODAL -->
         <div id="pose-editor-frame-modal" class="pose-editor-frame-modal">
             <div class="pose-editor-frame-window">

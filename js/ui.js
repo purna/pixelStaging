@@ -154,10 +154,32 @@ export class UI {
                 this.showNotification('Scene saved to browser!', 'success');
             }
         });
-        document.getElementById('btn-export').addEventListener('click', async () => {
-            if (this.app.fileManager) {
-                await this.app.fileManager.saveScene();
-            }
+        document.getElementById('btn-export').addEventListener('click', () => {
+            document.getElementById('export-modal')?.classList.add('open');
+        });
+
+        const closeExport = () => document.getElementById('export-modal')?.classList.remove('open');
+        document.getElementById('export-modal-close')?.addEventListener('click', closeExport);
+        document.getElementById('export-modal-cancel')?.addEventListener('click', closeExport);
+        document.getElementById('export-modal')?.addEventListener('click', (event) => {
+            if (event.target.id === 'export-modal') closeExport();
+        });
+        document.getElementById('export-project-json')?.addEventListener('click', () => {
+            this.app.fileManager.saveSceneJSON();
+            closeExport();
+            this.showNotification('Project exported', 'success');
+        });
+        document.getElementById('export-storyboard-html')?.addEventListener('click', async () => {
+            closeExport();
+            await this.app.openStoryboardReport?.();
+        });
+        document.getElementById('export-storyboard-pdf')?.addEventListener('click', async () => {
+            closeExport();
+            await this.app.exportStoryboardPDF?.();
+        });
+        document.getElementById('export-scene-glb')?.addEventListener('click', async () => {
+            closeExport();
+            await this.app.fileManager.saveSceneGLB();
         });
         document.getElementById('btn-load').addEventListener('click', () => {
             document.getElementById('file-input').click();

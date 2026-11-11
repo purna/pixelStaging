@@ -7157,3 +7157,276 @@ input[type="number"].color-slider-value-compact {
 #axis-gizmo-canvas {
     display: block;
 }
+
+/* =============================================
+   UNIFIED THEME PASS
+   Keep timeline, shot designer, camera, pose and
+   floating controls on the same navy/green system.
+   ============================================= */
+
+/* Timeline */
+#shot-timeline {
+    background: rgba(15, 15, 27, 0.97) !important;
+    border-top: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+#shot-timeline .btn {
+    background: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+#shot-timeline .btn:hover {
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+#shot-timeline .timeline-play-btn {
+    background: var(--accent-primary) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--bg-darkest) !important;
+}
+#shot-timeline #shot-time-label { color: var(--text-primary) !important; }
+#shot-timeline .timeline-check { color: var(--text-secondary) !important; }
+#shot-timeline .timeline-check input { accent-color: var(--accent-primary); }
+#shot-timeline .shot-timeline-track {
+    background: var(--bg-darkest) !important;
+    border-top-color: var(--border-color) !important;
+}
+#shot-timeline .shot-timeline-ruler { color: var(--text-secondary) !important; }
+#shot-timeline .shot-timeline-block {
+    background: rgba(0, 255, 65, 0.12) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--text-primary) !important;
+}
+#shot-timeline .shot-timeline-block:nth-of-type(even) {
+    background: rgba(0, 217, 255, 0.1) !important;
+}
+#shot-timeline .shot-timeline-kf,
+#shot-timeline .shot-timeline-kf[data-frame-type="end"] {
+    border-color: var(--accent-primary) !important;
+    background: var(--bg-darkest) !important;
+    box-shadow: none !important;
+}
+#shot-timeline .shot-timeline-kf[data-frame-type="end"] {
+    border-color: var(--accent-secondary) !important;
+}
+#shot-timeline .shot-timeline-kf.custom { background: var(--accent-primary) !important; }
+#shot-timeline .shot-timeline-kf[data-frame-type="end"].custom { background: var(--accent-secondary) !important; }
+#shot-timeline .shot-timeline-kf.active {
+    border-color: #fff !important;
+    box-shadow: 0 0 0 2px var(--accent-primary), 0 0 8px var(--accent-primary) !important;
+}
+#shot-timeline .shot-time-indicator {
+    background: var(--accent-secondary) !important;
+    box-shadow: 0 0 6px rgba(255, 0, 110, 0.7) !important;
+}
+.shot-timeline-transition-marker {
+    background: var(--bg-light) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+.shot-timeline-transition-marker:hover {
+    background: var(--accent-primary) !important;
+    color: var(--bg-darkest) !important;
+}
+
+/* Floating camera / mobile navigation */
+.camera-nudge,
+.mobile-nav {
+    background: rgba(15, 15, 27, 0.94) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+.camera-nudge button,
+.mobile-nav button {
+    background: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+.camera-nudge button:hover,
+.mobile-nav button:hover,
+.camera-nudge button:active,
+.mobile-nav button:active {
+    background: rgba(0, 255, 65, 0.16) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+.camera-nudge-group span,
+.mobile-nav-row span {
+    color: var(--text-secondary) !important;
+}
+.align-frame-btn {
+    background: var(--accent-primary) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--bg-darkest) !important;
+}
+.align-frame-btn:hover { background: #7dff9a !important; }
+
+/* Shot Designer accordion */
+.sd-shot-item {
+    background: var(--bg-dark) !important;
+    border-color: var(--border-color) !important;
+}
+.sd-shot-item.open,
+.sd-shot-item.selected {
+    background: var(--bg-medium) !important;
+    border-color: var(--accent-primary) !important;
+}
+.sd-shot-header { color: var(--text-primary) !important; }
+.sd-shot-number {
+    background: var(--accent-primary) !important;
+    color: var(--bg-darkest) !important;
+}
+.sd-shot-heading b { color: var(--text-primary) !important; }
+.sd-shot-heading small { color: var(--text-secondary) !important; }
+.sd-shot-actions button {
+    background: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+}
+.sd-shot-actions button:hover {
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+.sd-shot-body {
+    background: var(--bg-dark) !important;
+    border-top-color: var(--border-color) !important;
+}
+.sd-field { color: var(--text-secondary) !important; }
+.sd-field select,
+.sd-field input[type="text"],
+.sd-field textarea,
+.shot-designer-select,
+.sd-notes {
+    background: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+.sd-value { color: var(--text-primary) !important; }
+.sd-field input[type="range"],
+.sd-range-wrap input[type="range"],
+.sd-curve-grid input[type="range"] { accent-color: var(--accent-primary); }
+.sd-speed-control button,
+.sd-custom-row button,
+.sd-secondary-btn,
+.sd-action,
+.sd-shot-footer button,
+.sd-curve-toggle,
+.sd-curve-presets button {
+    background: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+.sd-speed-control button:hover,
+.sd-custom-row button:hover,
+.sd-secondary-btn:hover,
+.sd-action:hover,
+.sd-shot-footer button:hover,
+.sd-curve-toggle:hover,
+.sd-curve-presets button:hover {
+    border-color: var(--accent-primary) !important;
+    color: var(--accent-primary) !important;
+}
+.sd-fieldset {
+    background: var(--bg-dark) !important;
+    border-color: var(--border-color) !important;
+}
+.sd-fieldset legend { color: var(--text-secondary) !important; }
+.sd-segmented { border-color: var(--border-color) !important; }
+.sd-segmented button {
+    background: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+.sd-segmented button.active {
+    background: var(--accent-primary) !important;
+    color: var(--bg-darkest) !important;
+}
+.sd-custom-row b { color: var(--accent-primary) !important; }
+.sd-action-primary { background: rgba(0, 255, 65, 0.18) !important; }
+.sd-action-danger,
+.sd-shot-footer .danger { color: var(--accent-secondary) !important; }
+.sd-curve-svg { background: var(--bg-darkest) !important; }
+.sd-help { color: var(--text-secondary) !important; }
+
+/* Camera accordion */
+.camera-rig-accordion {
+    background: var(--bg-dark) !important;
+    border-color: var(--border-color) !important;
+}
+.camera-rig-accordion.open,
+.camera-rig-accordion.selected {
+    border-color: var(--accent-primary) !important;
+}
+.camera-rig-accordion-body { background: var(--bg-dark) !important; }
+.camera-rig-field { color: var(--text-secondary) !important; }
+.camera-rig-field select,
+.camera-name-input {
+    background: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+.camera-rig-field select:focus,
+.camera-name-input:focus { border-color: var(--accent-primary) !important; }
+.camera-delete-btn {
+    border-color: rgba(255, 0, 110, 0.4) !important;
+    color: var(--accent-secondary) !important;
+    background: rgba(255, 0, 110, 0.08) !important;
+}
+
+/* Pose and existing panels use the same surfaces */
+.pose-editor-window,
+.pose-editor-frame-window {
+    background: var(--bg-dark) !important;
+    border-color: var(--border-color) !important;
+}
+.pose-editor-frame-header,
+.pose-editor-header { background: var(--bg-medium) !important; }
+.pose-editor-mode,
+.pose-editor-field select,
+.pose-editor-save-row input,
+.character-pose-select,
+.character-pose-edit,
+.character-pose-reset {
+    background: var(--bg-light) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+.pose-editor-mode button.active,
+.pose-editor-save {
+    background: var(--accent-primary) !important;
+    border-color: var(--accent-primary) !important;
+    color: var(--bg-darkest) !important;
+}
+.pose-editor-axis input { accent-color: var(--accent-primary); }
+.character-pose-edit:hover,
+.character-pose-reset:hover { border-color: var(--accent-primary) !important; color: var(--accent-primary) !important; }
+
+/* final surface cleanup */
+#tab-shot-designer .panel-content,
+#tab-camera .panel-content {
+    background: var(--bg-darkest) !important;
+}
+.sd-shot-item {
+    box-shadow: none !important;
+}
+
+/* Export modal */
+.export-modal { width: 520px; }
+.export-options { display: flex; flex-direction: column; gap: 8px; padding: 14px; overflow-y: auto; }
+.export-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    text-align: left;
+    padding: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-light);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.export-option:hover { border-color: var(--accent-primary); background: rgba(0,255,65,0.06); }
+.export-option > i { width: 28px; margin-top: 2px; color: var(--accent-primary); font-size: 18px; text-align: center; }
+.export-option span { display: flex; flex-direction: column; gap: 3px; }
+.export-option b { font-size: 0.85rem; }
+.export-option small { color: var(--text-secondary); font-size: 0.68rem; line-height: 1.35; }

@@ -545,30 +545,30 @@ export async function openStoryboardReport(app) {
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #17120c; color: #f4e8d2; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body { margin: 0; background: #0f0f1b; color: #e0e7ff; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   .wrap { max-width: 1100px; margin: 0 auto; padding: 32px; }
   .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 28px; }
   h1 { margin: 0 0 6px; font-size: 30px; }
-  .sub { color: #bda987; }
-  .print { background: #f3b63f; color: #1b1308; border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
-  .shot { break-inside: avoid; background: #120e09; border: 1px solid #3c2e1b; border-radius: 12px; padding: 18px; margin-bottom: 22px; }
-  .shot header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; border-bottom: 1px solid #3c2e1b; padding-bottom: 12px; margin-bottom: 14px; }
-  .eyebrow { color: #d5aa5f; text-transform: uppercase; letter-spacing: .08em; font-size: 10px; }
+  .sub { color: #94a3b8; }
+  .print { background: #00ff41; color: #07110a; border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
+  .shot { break-inside: avoid; background: #1a1a2e; border: 1px solid #2d3748; border-radius: 12px; padding: 18px; margin-bottom: 22px; }
+  .shot header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; border-bottom: 1px solid #2d3748; padding-bottom: 12px; margin-bottom: 14px; }
+  .eyebrow { color: #00ff41; text-transform: uppercase; letter-spacing: .08em; font-size: 10px; }
   h2 { margin: 4px 0 0; font-size: 22px; }
-  .badge { color: #d7c19b; border: 1px solid #4a3a21; border-radius: 999px; padding: 6px 10px; font-size: 11px; }
+  .badge { color: #94a3b8; border: 1px solid #2d3748; border-radius: 999px; padding: 6px 10px; font-size: 11px; }
   .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
   .frames.three { grid-template-columns: repeat(3, 1fr); }
   .scene-views { margin-bottom: 14px; }
-  .scene-views h3 { margin: 0 0 8px; font-size: 12px; color: #d5aa5f; }
+  .scene-views h3 { margin: 0 0 8px; font-size: 12px; color: #00ff41; }
   figure { margin: 0; }
-  figure img { width: 100%; display: block; border-radius: 7px; border: 1px solid #3c2e1b; }
-  figcaption { color: #bda987; font-size: 11px; margin-top: 5px; }
+  figure img { width: 100%; display: block; border-radius: 7px; border: 1px solid #2d3748; }
+  figcaption { color: #94a3b8; font-size: 11px; margin-top: 5px; }
   .meta-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 14px; }
-  .meta-grid div { background: #1b140d; border: 1px solid #302516; border-radius: 7px; padding: 8px; }
-  .meta-grid span { display: block; color: #a9926c; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+  .meta-grid div { background: #16213e; border: 1px solid #2d3748; border-radius: 7px; padding: 8px; }
+  .meta-grid span { display: block; color: #94a3b8; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
   .meta-grid b { font-size: 12px; }
-  .notes h3 { margin: 0 0 5px; font-size: 12px; color: #d5aa5f; }
-  .notes p { margin: 0; color: #e3d3b6; line-height: 1.45; white-space: pre-wrap; }
+  .notes h3 { margin: 0 0 5px; font-size: 12px; color: #00ff41; }
+  .notes p { margin: 0; color: #e0e7ff; line-height: 1.45; white-space: pre-wrap; }
   @media print {
     body { background: white; color: #111; }
     .wrap { max-width: none; padding: 12mm; }
