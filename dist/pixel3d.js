@@ -48038,6 +48038,7 @@ ${xrefOffset}
       if (active) {
         const distance = this.camera.position.distanceTo(active.group.position);
         if (distance < 0.35) {
+          for (const { group } of this.keyframeGizmos.values()) group.visible = false;
           this.keyframeControls.detach();
           this.keyframeControls.visible = false;
           this.keyframeControls.enabled = false;
