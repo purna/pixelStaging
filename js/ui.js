@@ -4924,6 +4924,94 @@ export class UI {
         setVal('scl-z', scale.z);
     }
 
+    addStagingProceduralControls(obj) {
+        const staging = obj.userData.staging;
+        if (!staging) return;
+        const presetId = staging.presetId;
+        const schemas = {
+            'wall-doorway': [
+                ['count', 'Doors', 1, 1, 12, 1],
+                ['doorWidth', 'Door width', 0.4, 0.4, 3, 0.05],
+                ['doorHeight', 'Door height', 0.5, 1.6, 4, 0.05],
+                ['spacing', 'Spacing', 0.08, 0.1, 3, 0.05]
+            ],
+            'wall-window': [
+                ['count', 'Windows', 1, 1, 12, 1],
+                ['winWidth', 'Window width', 0.4, 0.4, 3, 0.05],
+                ['winHeight', 'Window height', 0.3, 0.3, 3.5, 0.05],
+                ['winSill', 'Sill height', 0, 0, 3, 0.05],
+                ['spacing', 'Spacing', 0.08, 0.1, 3, 0.05]
+            ],
+            stairs: [
+                ['steps', 'Steps', 1, 1, 30, 1],
+                ['stepHeight', 'Step height', 0.06, 0.05, 0.6, 0.01],
+                ['stepDepth', 'Step depth', 0.12, 0.1, 1.2, 0.01],
+                ['width', 'Width', 0.4, 0.4, 8, 0.05]
+            ]
+        };
+        const schema = schemas[presetId];
+        if (!schema) return;
+
+        const group = document.createElement('div');
+        group.className = 'property-group';
+        group.innerHTML = '<div class="property-label">Procedural Settings</div>';
+
+        for (const [key, label, def, min, max, step] of schema) {
+            const row = document.createElement('div');
+            row.className = 'input-row';
+            const name = document.createElement('span');
+            name.style.width = '92px';
+            name.style.flex = '0 0 92px';
+            name.style.fontSize = '0.68rem';
+            name.style.color = 'var(--text-secondary)';
+            name.textContent = label;
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = String(min);
+            input.max = String(max);
+            input.step = String(step);
+            input.value = String(staging.params?.[key] ?? def);
+            input.style.flex = '1';
+            input.addEventListener('change', () => {
+                const value = Math.max(min, Math.min(max, parseFloat(input.value) || def));
+                input.value = String(value);
+                staging.params[key] = value;
+                this.rebuildStagingObject(obj);
+            });
+            row.append(name, input);
+            group.appendChild(row);
+        }
+
+        this.propsContent.appendChild(group);
+    }
+
+    rebuildStagingObject(obj) {
+        const staging = obj.userData?.staging;
+        if (!staging) return;
+        const factory = this.app.staging?.factory;
+        if (!factory) return;
+        const replacement = factory.create(
+            staging.kind,
+            staging.presetId,
+            { ...staging.params },
+            staging.colorOverride || null
+        );
+        if (!replacement) return;
+
+        replacement.position.copy(obj.position);
+        replacement.rotation.copy(obj.rotation);
+        replacement.scale.copy(obj.scale);
+        replacement.userData.staging.id = staging.id;
+        replacement.userData.name = obj.userData.name;
+
+        this.app.scene.remove(obj);
+        const index = this.app.objects.indexOf(obj);
+        if (index > -1) this.app.objects[index] = replacement;
+        else this.app.objects.push(replacement);
+        this.app.scene.add(replacement);
+        this.app.selectObject(replacement);
+    }
+
     renderPropertiesPanel(selectedObject) {
         this.propsContent.innerHTML = '';
 
@@ -5016,6 +5104,9 @@ export class UI {
             row.appendChild(createInput('Z', `${prefix}-z`, vec.z, (v) => { vec.z = v; onChangeObj(); }));
             return row;
         };
+
+        // PROCEDURAL ARCHITECTURE CONTROLS
+        if (isStaging) this.addStagingProceduralControls(obj);
 
         // FIGURE CONTROLS
         if (isFigure) {
@@ -5348,36 +5439,48 @@ export class UI {
                 resGroup.appendChild(resSelect);
                 this.propsContent.appendChild(resGroup);
 
-                // Size
+                // Shadow size / softness
                 const sizeGroup = document.createElement('div');
                 sizeGroup.className = 'property-group';
-                sizeGroup.innerHTML = `<div class="property-label">Size</div>`;
+                sizeGroup.innerHTML = `<div class="property-label">Shadow Size</div>`;
                 const sizeRow = document.createElement('div');
                 sizeRow.className = 'input-row';
                 sizeRow.style.gap = '8px';
 
+                const currentRadius = Math.min(20, Math.max(0.5, lightObj.shadow?.radius || 2));
+                if (lightObj.shadow) lightObj.shadow.radius = currentRadius;
+
                 const sizeInput = document.createElement('input');
                 sizeInput.type = 'number';
-                sizeInput.min = '100';
-                sizeInput.max = '10000';
-                sizeInput.value = lightObj.shadow?.radius || 1;
+                sizeInput.min = '0.5';
+                sizeInput.max = '20';
+                sizeInput.step = '0.1';
+                sizeInput.value = currentRadius;
                 sizeInput.style.width = '70px';
                 sizeInput.style.flex = 'none';
                 sizeInput.addEventListener('input', (e) => {
-                    if (lightObj.shadow) lightObj.shadow.radius = parseFloat(e.target.value);
-                    sizeSlider.value = e.target.value;
+                    const value = Math.min(20, Math.max(0.5, parseFloat(e.target.value) || 2));
+                    if (lightObj.shadow) {
+                        lightObj.shadow.radius = value;
+                        lightObj.shadow.needsUpdate = true;
+                    }
+                    sizeSlider.value = value;
                     this.syncLightAsset(obj);
                 });
 
                 const sizeSlider = document.createElement('input');
                 sizeSlider.type = 'range';
-                sizeSlider.min = '100';
-                sizeSlider.max = '10000';
-                sizeSlider.value = lightObj.shadow?.radius || 1;
+                sizeSlider.min = '0.5';
+                sizeSlider.max = '20';
+                sizeSlider.step = '0.1';
+                sizeSlider.value = currentRadius;
                 sizeSlider.style.flex = '1';
                 sizeSlider.addEventListener('input', (e) => {
                     sizeInput.value = e.target.value;
-                    if (lightObj.shadow) lightObj.shadow.radius = parseFloat(e.target.value);
+                    if (lightObj.shadow) {
+                        lightObj.shadow.radius = parseFloat(e.target.value);
+                        lightObj.shadow.needsUpdate = true;
+                    }
                     this.syncLightAsset(obj);
                 });
 
@@ -5386,38 +5489,48 @@ export class UI {
                 sizeGroup.appendChild(sizeRow);
                 this.propsContent.appendChild(sizeGroup);
 
-                // Blur / Shadow Radius
+                // Shadow blur samples (VSM)
                 const blurGroup = document.createElement('div');
                 blurGroup.className = 'property-group';
-                blurGroup.innerHTML = `<div class="property-label">Blur / Shadow Radius</div>`;
+                blurGroup.innerHTML = `<div class="property-label">Shadow Blur Samples</div>`;
                 const blurRow = document.createElement('div');
                 blurRow.className = 'input-row';
                 blurRow.style.gap = '8px';
 
+                const currentSamples = Math.min(16, Math.max(1, lightObj.shadow?.blurSamples || 8));
+                if (lightObj.shadow) lightObj.shadow.blurSamples = currentSamples;
+
                 const blurInput = document.createElement('input');
                 blurInput.type = 'number';
-                blurInput.min = '0';
-                blurInput.max = '10';
-                blurInput.step = '0.1';
-                blurInput.value = lightObj.shadow?.blurSamples || 0;
+                blurInput.min = '1';
+                blurInput.max = '16';
+                blurInput.step = '1';
+                blurInput.value = currentSamples;
                 blurInput.style.width = '70px';
                 blurInput.style.flex = 'none';
                 blurInput.addEventListener('input', (e) => {
-                    if (lightObj.shadow) lightObj.shadow.blurSamples = parseFloat(e.target.value);
-                    blurSlider.value = e.target.value;
+                    const value = Math.min(16, Math.max(1, Math.round(parseFloat(e.target.value) || 8)));
+                    if (lightObj.shadow) {
+                        lightObj.shadow.blurSamples = value;
+                        lightObj.shadow.needsUpdate = true;
+                    }
+                    blurSlider.value = value;
                     this.syncLightAsset(obj);
                 });
 
                 const blurSlider = document.createElement('input');
                 blurSlider.type = 'range';
-                blurSlider.min = '0';
-                blurSlider.max = '10';
-                blurSlider.step = '0.1';
-                blurSlider.value = lightObj.shadow?.blurSamples || 0;
+                blurSlider.min = '1';
+                blurSlider.max = '16';
+                blurSlider.step = '1';
+                blurSlider.value = currentSamples;
                 blurSlider.style.flex = '1';
                 blurSlider.addEventListener('input', (e) => {
                     blurInput.value = e.target.value;
-                    if (lightObj.shadow) lightObj.shadow.blurSamples = parseFloat(e.target.value);
+                    if (lightObj.shadow) {
+                        lightObj.shadow.blurSamples = parseInt(e.target.value, 10);
+                        lightObj.shadow.needsUpdate = true;
+                    }
                     this.syncLightAsset(obj);
                 });
 

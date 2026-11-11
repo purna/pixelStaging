@@ -57,16 +57,26 @@ export const architecturePresets = {
         }
     },
     'wall-doorway': {
-        label: 'Wall (door opening)',
+        label: 'Wall (door openings)',
         defaultColor: 0xcfc6b8,
-        params: { length: 4, height: 2.7, thickness: 0.15, doorWidth: 1.0, doorHeight: 2.1 },
-        create: (p, m) => wallWithOpening(p, m, p.doorWidth ?? 1.0, p.doorHeight ?? 2.1, 0)
+        params: { length: 6, height: 2.7, thickness: 0.15, count: 1, doorWidth: 1.0, doorHeight: 2.1, spacing: 0.7 },
+        create: (p, m) => wallWithOpenings(p, m,
+            Array.from({ length: Math.max(1, Math.round(p.count ?? 1)) }, () => ({
+                width: p.doorWidth ?? 1.0,
+                height: p.doorHeight ?? 2.1,
+                sill: 0
+            })), p.spacing ?? 0.7)
     },
     'wall-window': {
-        label: 'Wall (window opening)',
+        label: 'Wall (window openings)',
         defaultColor: 0xcfc6b8,
-        params: { length: 4, height: 2.7, thickness: 0.15, winWidth: 1.4, winHeight: 1.2, winSill: 0.9 },
-        create: (p, m) => wallWithOpening(p, m, p.winWidth ?? 1.4, p.winHeight ?? 1.2, p.winSill ?? 0.9)
+        params: { length: 6, height: 2.7, thickness: 0.15, count: 1, winWidth: 1.4, winHeight: 1.2, winSill: 0.9, spacing: 0.7 },
+        create: (p, m) => wallWithOpenings(p, m,
+            Array.from({ length: Math.max(1, Math.round(p.count ?? 1)) }, () => ({
+                width: p.winWidth ?? 1.4,
+                height: p.winHeight ?? 1.2,
+                sill: p.winSill ?? 0.9
+            })), p.spacing ?? 0.7)
     },
     'wall-backer': {
         label: 'Cutaway backer wall',
@@ -150,10 +160,10 @@ export const architecturePresets = {
         defaultColor: 0xb0b7bd,
         params: { steps: 6, stepHeight: 0.18, stepDepth: 0.3, width: 1.2 },
         create: (p, m) => {
-            const steps = p.steps ?? 6;
-            const sh = p.stepHeight ?? 0.18;
-            const sd = p.stepDepth ?? 0.3;
-            const w = p.width ?? 1.2;
+            const steps = Math.max(1, Math.round(p.steps ?? 6));
+            const sh = Math.max(0.02, p.stepHeight ?? 0.18);
+            const sd = Math.max(0.05, p.stepDepth ?? 0.3);
+            const w = Math.max(0.2, p.width ?? 1.2);
             const group = new THREE.Group();
             for (let i = 0; i < steps; i++) {
                 const step = new THREE.Mesh(new THREE.BoxGeometry(w, sh * (i + 1), sd), m);
@@ -175,24 +185,54 @@ function wall(p, m) {
     return mesh;
 }
 
-/** Wall with a rectangular opening cut as panels (left, right, above). */
-function wallWithOpening(p, m, openingW, openingH, sill) {
-    const l = p.length ?? 4, h = p.height ?? 2.7, t = p.thickness ?? 0.15;
+/** Wall with one or more rectangular openings, built as solid panels around each hole. */
+function wallWithOpenings(p, m, openings, gap = 0.7) {
+    const l = p.length ?? 6;
+    const h = p.height ?? 2.7;
+    const t = p.thickness ?? 0.15;
     const g = new THREE.Group();
-    const ow = Math.min(openingW, l * 0.8);
-    const sideLen = (l - ow) / 2;
-    const left = new THREE.Mesh(new THREE.BoxGeometry(sideLen, h, t), m);
-    left.position.set(-(ow / 2 + sideLen / 2), h / 2, 0);
-    const right = new THREE.Mesh(new THREE.BoxGeometry(sideLen, h, t), m);
-    right.position.set(ow / 2 + sideLen / 2, h / 2, 0);
-    const aboveH = h - sill - openingH;
-    let above = null;
-    if (aboveH > 0.01) {
-        above = new THREE.Mesh(new THREE.BoxGeometry(ow, aboveH, t), m);
-        above.position.set(0, sill + openingH + aboveH / 2, 0);
-    }
-    [left, right, above].forEach(x => {
-        if (x) { x.castShadow = true; x.receiveShadow = true; g.add(x); }
+
+    const addBox = (width, height, centerX, centerY) => {
+        if (width <= 0.01 || height <= 0.01) return;
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, t), m);
+        mesh.position.set(centerX, centerY, 0);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        g.add(mesh);
+    };
+
+    const count = Math.max(1, openings.length);
+    const desiredWidth = openings.reduce((sum, o) => sum + Math.max(0.1, o.width), 0);
+    const usableGap = Math.max(0.08, gap);
+    const gapTotal = usableGap * (count + 1);
+    const scale = Math.min(1, Math.max(0.2, (l - gapTotal) / Math.max(0.1, desiredWidth)));
+    const widths = openings.map(o => Math.max(0.1, o.width) * scale);
+    const totalOpening = widths.reduce((sum, w) => sum + w, 0);
+    const remaining = Math.max(0, l - totalOpening);
+    const actualGap = Math.min(usableGap, remaining / (count + 1));
+    const startX = -l / 2 + actualGap;
+
+    const cuts = [];
+    let cursor = startX;
+    openings.forEach((opening, index) => {
+        const width = widths[index];
+        const left = cursor;
+        const right = cursor + width;
+        const sill = Math.max(0, opening.sill ?? 0);
+        const height = Math.min(h - sill - 0.05, Math.max(0.1, opening.height ?? 1.2));
+        cuts.push({ left, right, width, sill, height });
+        cursor = right + actualGap;
     });
+
+    let wallCursor = -l / 2;
+    cuts.forEach(cut => {
+        addBox(cut.left - wallCursor, h, wallCursor + (cut.left - wallCursor) / 2, h / 2);
+        if (cut.sill > 0.01) addBox(cut.width, cut.sill, cut.left + cut.width / 2, cut.sill / 2);
+        const topHeight = h - cut.sill - cut.height;
+        if (topHeight > 0.01) addBox(cut.width, topHeight, cut.left + cut.width / 2, cut.sill + cut.height + topHeight / 2);
+        wallCursor = cut.right;
+    });
+    addBox(l / 2 - wallCursor, h, wallCursor + (l / 2 - wallCursor) / 2, h / 2);
+
     return g;
 }

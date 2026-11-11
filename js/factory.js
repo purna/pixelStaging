@@ -429,6 +429,10 @@ createFigure(gender) {
         }
 
         light.castShadow = true;
+        if (light.shadow) {
+            light.shadow.radius = 2;
+            light.shadow.blurSamples = 8;
+        }
         light.userData = { type: 'light', lightType: type, id: ObjectFactory.generateId() };
 
         const container = new THREE.Group();

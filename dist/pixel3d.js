@@ -37413,6 +37413,87 @@
       setVal("scl-y", scale.y);
       setVal("scl-z", scale.z);
     }
+    addStagingProceduralControls(obj) {
+      const staging = obj.userData.staging;
+      if (!staging) return;
+      const presetId = staging.presetId;
+      const schemas = {
+        "wall-doorway": [
+          ["count", "Doors", 1, 1, 12, 1],
+          ["doorWidth", "Door width", 0.4, 0.4, 3, 0.05],
+          ["doorHeight", "Door height", 0.5, 1.6, 4, 0.05],
+          ["spacing", "Spacing", 0.08, 0.1, 3, 0.05]
+        ],
+        "wall-window": [
+          ["count", "Windows", 1, 1, 12, 1],
+          ["winWidth", "Window width", 0.4, 0.4, 3, 0.05],
+          ["winHeight", "Window height", 0.3, 0.3, 3.5, 0.05],
+          ["winSill", "Sill height", 0, 0, 3, 0.05],
+          ["spacing", "Spacing", 0.08, 0.1, 3, 0.05]
+        ],
+        stairs: [
+          ["steps", "Steps", 1, 1, 30, 1],
+          ["stepHeight", "Step height", 0.06, 0.05, 0.6, 0.01],
+          ["stepDepth", "Step depth", 0.12, 0.1, 1.2, 0.01],
+          ["width", "Width", 0.4, 0.4, 8, 0.05]
+        ]
+      };
+      const schema = schemas[presetId];
+      if (!schema) return;
+      const group = document.createElement("div");
+      group.className = "property-group";
+      group.innerHTML = '<div class="property-label">Procedural Settings</div>';
+      for (const [key, label, def, min, max, step] of schema) {
+        const row = document.createElement("div");
+        row.className = "input-row";
+        const name = document.createElement("span");
+        name.style.width = "92px";
+        name.style.flex = "0 0 92px";
+        name.style.fontSize = "0.68rem";
+        name.style.color = "var(--text-secondary)";
+        name.textContent = label;
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = String(min);
+        input.max = String(max);
+        input.step = String(step);
+        input.value = String(staging.params?.[key] ?? def);
+        input.style.flex = "1";
+        input.addEventListener("change", () => {
+          const value = Math.max(min, Math.min(max, parseFloat(input.value) || def));
+          input.value = String(value);
+          staging.params[key] = value;
+          this.rebuildStagingObject(obj);
+        });
+        row.append(name, input);
+        group.appendChild(row);
+      }
+      this.propsContent.appendChild(group);
+    }
+    rebuildStagingObject(obj) {
+      const staging = obj.userData?.staging;
+      if (!staging) return;
+      const factory = this.app.staging?.factory;
+      if (!factory) return;
+      const replacement = factory.create(
+        staging.kind,
+        staging.presetId,
+        { ...staging.params },
+        staging.colorOverride || null
+      );
+      if (!replacement) return;
+      replacement.position.copy(obj.position);
+      replacement.rotation.copy(obj.rotation);
+      replacement.scale.copy(obj.scale);
+      replacement.userData.staging.id = staging.id;
+      replacement.userData.name = obj.userData.name;
+      this.app.scene.remove(obj);
+      const index = this.app.objects.indexOf(obj);
+      if (index > -1) this.app.objects[index] = replacement;
+      else this.app.objects.push(replacement);
+      this.app.scene.add(replacement);
+      this.app.selectObject(replacement);
+    }
     renderPropertiesPanel(selectedObject) {
       this.propsContent.innerHTML = "";
       if (!selectedObject) {
@@ -37505,6 +37586,7 @@
         }));
         return row;
       };
+      if (isStaging) this.addStagingProceduralControls(obj);
       if (isFigure) {
         const figureGroup = document.createElement("div");
         figureGroup.className = "property-group";
@@ -37783,31 +37865,42 @@
           this.propsContent.appendChild(resGroup);
           const sizeGroup = document.createElement("div");
           sizeGroup.className = "property-group";
-          sizeGroup.innerHTML = `<div class="property-label">Size</div>`;
+          sizeGroup.innerHTML = `<div class="property-label">Shadow Size</div>`;
           const sizeRow = document.createElement("div");
           sizeRow.className = "input-row";
           sizeRow.style.gap = "8px";
+          const currentRadius = Math.min(20, Math.max(0.5, lightObj.shadow?.radius || 2));
+          if (lightObj.shadow) lightObj.shadow.radius = currentRadius;
           const sizeInput = document.createElement("input");
           sizeInput.type = "number";
-          sizeInput.min = "100";
-          sizeInput.max = "10000";
-          sizeInput.value = lightObj.shadow?.radius || 1;
+          sizeInput.min = "0.5";
+          sizeInput.max = "20";
+          sizeInput.step = "0.1";
+          sizeInput.value = currentRadius;
           sizeInput.style.width = "70px";
           sizeInput.style.flex = "none";
           sizeInput.addEventListener("input", (e) => {
-            if (lightObj.shadow) lightObj.shadow.radius = parseFloat(e.target.value);
-            sizeSlider.value = e.target.value;
+            const value = Math.min(20, Math.max(0.5, parseFloat(e.target.value) || 2));
+            if (lightObj.shadow) {
+              lightObj.shadow.radius = value;
+              lightObj.shadow.needsUpdate = true;
+            }
+            sizeSlider.value = value;
             this.syncLightAsset(obj);
           });
           const sizeSlider = document.createElement("input");
           sizeSlider.type = "range";
-          sizeSlider.min = "100";
-          sizeSlider.max = "10000";
-          sizeSlider.value = lightObj.shadow?.radius || 1;
+          sizeSlider.min = "0.5";
+          sizeSlider.max = "20";
+          sizeSlider.step = "0.1";
+          sizeSlider.value = currentRadius;
           sizeSlider.style.flex = "1";
           sizeSlider.addEventListener("input", (e) => {
             sizeInput.value = e.target.value;
-            if (lightObj.shadow) lightObj.shadow.radius = parseFloat(e.target.value);
+            if (lightObj.shadow) {
+              lightObj.shadow.radius = parseFloat(e.target.value);
+              lightObj.shadow.needsUpdate = true;
+            }
             this.syncLightAsset(obj);
           });
           sizeRow.appendChild(sizeInput);
@@ -37816,33 +37909,42 @@
           this.propsContent.appendChild(sizeGroup);
           const blurGroup = document.createElement("div");
           blurGroup.className = "property-group";
-          blurGroup.innerHTML = `<div class="property-label">Blur / Shadow Radius</div>`;
+          blurGroup.innerHTML = `<div class="property-label">Shadow Blur Samples</div>`;
           const blurRow = document.createElement("div");
           blurRow.className = "input-row";
           blurRow.style.gap = "8px";
+          const currentSamples = Math.min(16, Math.max(1, lightObj.shadow?.blurSamples || 8));
+          if (lightObj.shadow) lightObj.shadow.blurSamples = currentSamples;
           const blurInput = document.createElement("input");
           blurInput.type = "number";
-          blurInput.min = "0";
-          blurInput.max = "10";
-          blurInput.step = "0.1";
-          blurInput.value = lightObj.shadow?.blurSamples || 0;
+          blurInput.min = "1";
+          blurInput.max = "16";
+          blurInput.step = "1";
+          blurInput.value = currentSamples;
           blurInput.style.width = "70px";
           blurInput.style.flex = "none";
           blurInput.addEventListener("input", (e) => {
-            if (lightObj.shadow) lightObj.shadow.blurSamples = parseFloat(e.target.value);
-            blurSlider.value = e.target.value;
+            const value = Math.min(16, Math.max(1, Math.round(parseFloat(e.target.value) || 8)));
+            if (lightObj.shadow) {
+              lightObj.shadow.blurSamples = value;
+              lightObj.shadow.needsUpdate = true;
+            }
+            blurSlider.value = value;
             this.syncLightAsset(obj);
           });
           const blurSlider = document.createElement("input");
           blurSlider.type = "range";
-          blurSlider.min = "0";
-          blurSlider.max = "10";
-          blurSlider.step = "0.1";
-          blurSlider.value = lightObj.shadow?.blurSamples || 0;
+          blurSlider.min = "1";
+          blurSlider.max = "16";
+          blurSlider.step = "1";
+          blurSlider.value = currentSamples;
           blurSlider.style.flex = "1";
           blurSlider.addEventListener("input", (e) => {
             blurInput.value = e.target.value;
-            if (lightObj.shadow) lightObj.shadow.blurSamples = parseFloat(e.target.value);
+            if (lightObj.shadow) {
+              lightObj.shadow.blurSamples = parseInt(e.target.value, 10);
+              lightObj.shadow.needsUpdate = true;
+            }
             this.syncLightAsset(obj);
           });
           blurRow.appendChild(blurInput);
@@ -40578,6 +40680,10 @@
         helper = new HemisphereLightHelper(light, 1);
       }
       light.castShadow = true;
+      if (light.shadow) {
+        light.shadow.radius = 2;
+        light.shadow.blurSamples = 8;
+      }
       light.userData = { type: "light", lightType: type, id: _ObjectFactory.generateId() };
       const container = new Group();
       container.add(light);
@@ -44206,16 +44312,34 @@ ${elements.join("\n")}
       }
     },
     "wall-doorway": {
-      label: "Wall (door opening)",
+      label: "Wall (door openings)",
       defaultColor: 13616824,
-      params: { length: 4, height: 2.7, thickness: 0.15, doorWidth: 1, doorHeight: 2.1 },
-      create: (p, m) => wallWithOpening(p, m, p.doorWidth ?? 1, p.doorHeight ?? 2.1, 0)
+      params: { length: 6, height: 2.7, thickness: 0.15, count: 1, doorWidth: 1, doorHeight: 2.1, spacing: 0.7 },
+      create: (p, m) => wallWithOpenings(
+        p,
+        m,
+        Array.from({ length: Math.max(1, Math.round(p.count ?? 1)) }, () => ({
+          width: p.doorWidth ?? 1,
+          height: p.doorHeight ?? 2.1,
+          sill: 0
+        })),
+        p.spacing ?? 0.7
+      )
     },
     "wall-window": {
-      label: "Wall (window opening)",
+      label: "Wall (window openings)",
       defaultColor: 13616824,
-      params: { length: 4, height: 2.7, thickness: 0.15, winWidth: 1.4, winHeight: 1.2, winSill: 0.9 },
-      create: (p, m) => wallWithOpening(p, m, p.winWidth ?? 1.4, p.winHeight ?? 1.2, p.winSill ?? 0.9)
+      params: { length: 6, height: 2.7, thickness: 0.15, count: 1, winWidth: 1.4, winHeight: 1.2, winSill: 0.9, spacing: 0.7 },
+      create: (p, m) => wallWithOpenings(
+        p,
+        m,
+        Array.from({ length: Math.max(1, Math.round(p.count ?? 1)) }, () => ({
+          width: p.winWidth ?? 1.4,
+          height: p.winHeight ?? 1.2,
+          sill: p.winSill ?? 0.9
+        })),
+        p.spacing ?? 0.7
+      )
     },
     "wall-backer": {
       label: "Cutaway backer wall",
@@ -44300,10 +44424,10 @@ ${elements.join("\n")}
       defaultColor: 11581373,
       params: { steps: 6, stepHeight: 0.18, stepDepth: 0.3, width: 1.2 },
       create: (p, m) => {
-        const steps = p.steps ?? 6;
-        const sh = p.stepHeight ?? 0.18;
-        const sd = p.stepDepth ?? 0.3;
-        const w = p.width ?? 1.2;
+        const steps = Math.max(1, Math.round(p.steps ?? 6));
+        const sh = Math.max(0.02, p.stepHeight ?? 0.18);
+        const sd = Math.max(0.05, p.stepDepth ?? 0.3);
+        const w = Math.max(0.2, p.width ?? 1.2);
         const group = new Group();
         for (let i = 0; i < steps; i++) {
           const step = new Mesh(new BoxGeometry(w, sh * (i + 1), sd), m);
@@ -44323,28 +44447,49 @@ ${elements.join("\n")}
     mesh.position.y = h / 2;
     return mesh;
   }
-  function wallWithOpening(p, m, openingW, openingH, sill) {
-    const l = p.length ?? 4, h = p.height ?? 2.7, t = p.thickness ?? 0.15;
+  function wallWithOpenings(p, m, openings, gap = 0.7) {
+    const l = p.length ?? 6;
+    const h = p.height ?? 2.7;
+    const t = p.thickness ?? 0.15;
     const g = new Group();
-    const ow = Math.min(openingW, l * 0.8);
-    const sideLen = (l - ow) / 2;
-    const left = new Mesh(new BoxGeometry(sideLen, h, t), m);
-    left.position.set(-(ow / 2 + sideLen / 2), h / 2, 0);
-    const right = new Mesh(new BoxGeometry(sideLen, h, t), m);
-    right.position.set(ow / 2 + sideLen / 2, h / 2, 0);
-    const aboveH = h - sill - openingH;
-    let above = null;
-    if (aboveH > 0.01) {
-      above = new Mesh(new BoxGeometry(ow, aboveH, t), m);
-      above.position.set(0, sill + openingH + aboveH / 2, 0);
-    }
-    [left, right, above].forEach((x) => {
-      if (x) {
-        x.castShadow = true;
-        x.receiveShadow = true;
-        g.add(x);
-      }
+    const addBox = (width, height, centerX, centerY) => {
+      if (width <= 0.01 || height <= 0.01) return;
+      const mesh = new Mesh(new BoxGeometry(width, height, t), m);
+      mesh.position.set(centerX, centerY, 0);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      g.add(mesh);
+    };
+    const count = Math.max(1, openings.length);
+    const desiredWidth = openings.reduce((sum, o) => sum + Math.max(0.1, o.width), 0);
+    const usableGap = Math.max(0.08, gap);
+    const gapTotal = usableGap * (count + 1);
+    const scale = Math.min(1, Math.max(0.2, (l - gapTotal) / Math.max(0.1, desiredWidth)));
+    const widths = openings.map((o) => Math.max(0.1, o.width) * scale);
+    const totalOpening = widths.reduce((sum, w) => sum + w, 0);
+    const remaining = Math.max(0, l - totalOpening);
+    const actualGap = Math.min(usableGap, remaining / (count + 1));
+    const startX = -l / 2 + actualGap;
+    const cuts = [];
+    let cursor = startX;
+    openings.forEach((opening, index) => {
+      const width = widths[index];
+      const left = cursor;
+      const right = cursor + width;
+      const sill = Math.max(0, opening.sill ?? 0);
+      const height = Math.min(h - sill - 0.05, Math.max(0.1, opening.height ?? 1.2));
+      cuts.push({ left, right, width, sill, height });
+      cursor = right + actualGap;
     });
+    let wallCursor = -l / 2;
+    cuts.forEach((cut) => {
+      addBox(cut.left - wallCursor, h, wallCursor + (cut.left - wallCursor) / 2, h / 2);
+      if (cut.sill > 0.01) addBox(cut.width, cut.sill, cut.left + cut.width / 2, cut.sill / 2);
+      const topHeight = h - cut.sill - cut.height;
+      if (topHeight > 0.01) addBox(cut.width, topHeight, cut.left + cut.width / 2, cut.sill + cut.height + topHeight / 2);
+      wallCursor = cut.right;
+    });
+    addBox(l / 2 - wallCursor, h, wallCursor + (l / 2 - wallCursor) / 2, h / 2);
     return g;
   }
 
@@ -47550,7 +47695,7 @@ ${xrefOffset}
       this.renderer.setSize(container.offsetWidth, container.offsetHeight);
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = PCFSoftShadowMap;
+      this.renderer.shadowMap.type = VSMShadowMap;
       this.renderer.outputColorSpace = SRGBColorSpace;
       this.renderer.toneMapping = ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 1;
