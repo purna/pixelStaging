@@ -1,8 +1,12 @@
 /**
  * Tutorial System
  *
- * Handles the display and interaction of tutorial steps
+ * Handles the display and interaction of tutorial steps.
+ * Steps can include a live `demo` so the tour shows a feature in action
+ * instead of only describing it.
  */
+
+import * as THREE from 'three';
 
 const TUTORIAL_SEEN_KEY = 'pixelstaging-tutorial-seen';
 const TUTORIAL_AUTOSTART_KEY = 'pixelstaging-tutorial-autostart';
@@ -15,6 +19,7 @@ class TutorialSystem {
         this.tutorialElement = null;
         this.overlayElement = null;
         this.isInitialized = false;
+        this.demoState = null;
     }
 
     init() {
@@ -68,6 +73,7 @@ class TutorialSystem {
                 <button id="tutorial-close">×</button>
             </div>
             <div id="tutorial-content"></div>
+            <div id="tutorial-demo"></div>
             <div id="tutorial-controls">
                 <div id="tutorial-buttons">
                     <button id="tutorial-prev" class="tutorial-btn" style="display: none;">Previous</button>
@@ -194,6 +200,9 @@ class TutorialSystem {
             return;
         }
 
+        // Clear any demo from the previous step before changing tabs/selection.
+        this.stopDemo();
+
         // Bring the relevant tab/section into view before positioning the tour.
         if (step.controlMode && this.app.setControlMode) {
             this.app.setControlMode(step.controlMode);
@@ -237,6 +246,182 @@ class TutorialSystem {
         // Add directional arrow based on arrowPosition config
         // If the target was missing/hidden we centred the box, so don't point an arrow at nothing.
         this.addDirectionalArrow(usedFallback ? 'center' : (step.arrowPosition || step.position), step.arrowPositionOverride);
+
+        // Show the feature in action.
+        this.startDemo(step);
+    }
+
+    /**
+     * Run the live demo attached to a tutorial step.
+     * Demos are deliberately temporary: camera movement stops when the step
+     * changes, and demo objects are removed from the scene.
+     */
+    startDemo(step) {
+        const demoEl = document.getElementById('tutorial-demo');
+        if (!demoEl) return;
+        demoEl.innerHTML = '';
+        if (!step.demo) return;
+
+        if (step.demo === 'camera') {
+            demoEl.innerHTML = `
+                <div class="tutorial-demo-title"><span class="tutorial-demo-dot"></span> Watch the camera move</div>
+                <div class="tutorial-demo-keys">
+                    <span class="tutorial-key">W</span><span class="tutorial-key">A</span>
+                    <span class="tutorial-key">S</span><span class="tutorial-key">D</span>
+                    <span class="tutorial-demo-key-label">move</span>
+                    <span class="tutorial-key">Q</span><span class="tutorial-key">E</span>
+                    <span class="tutorial-demo-key-label">rotate</span>
+                </div>
+                <div class="tutorial-demo-hint">Try it now while this step is open.</div>
+            `;
+            this.startCameraDemo();
+        } else if (step.demo === 'snap') {
+            demoEl.innerHTML = `
+                <div class="tutorial-demo-title"><span class="tutorial-demo-dot"></span> Snap in action</div>
+                <div class="tutorial-demo-hint">The moving block locks onto the target surface. Hold <b>Alt</b> while dragging to bypass snapping.</div>
+            `;
+            this.startSnapDemo();
+        } else if (step.demo === 'move') {
+            demoEl.innerHTML = `
+                <div class="tutorial-demo-title"><span class="tutorial-demo-dot"></span> Try the gizmo</div>
+                <div class="tutorial-demo-hint">The actor is selected. Drag an arrow to move it, then press <b>R</b> to rotate or <b>S</b> to scale.</div>
+            `;
+            this.selectDemoObject();
+        }
+    }
+
+    startCameraDemo() {
+        const camera = this.app.camera;
+        const target = this.app.orbit?.target;
+        if (!camera || !target || this.app.controlMode !== 'camera') return;
+
+        const startOffset = camera.position.clone().sub(target);
+        const started = performance.now();
+        const duration = 4200;
+        const state = { kind: 'camera', raf: 0 };
+        this.demoState = state;
+
+        // As soon as the user starts interacting, hand control back to them.
+        const cancelOnInteraction = () => {
+            if (state.raf) cancelAnimationFrame(state.raf);
+            state.raf = 0;
+        };
+        const cleanupListeners = () => {
+            window.removeEventListener('pointerdown', cancelOnInteraction);
+            window.removeEventListener('keydown', cancelOnInteraction);
+        };
+        state.cleanup = cleanupListeners;
+        window.addEventListener('pointerdown', cancelOnInteraction);
+        window.addEventListener('keydown', cancelOnInteraction);
+
+        const tick = (now) => {
+            if (this.demoState !== state) return;
+            const t = Math.min(1, (now - started) / duration);
+            // Ease in/out so the demonstration starts and ends gently.
+            const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+            const offset = startOffset.clone().applyAxisAngle(
+                new THREE.Vector3(0, 1, 0),
+                eased * Math.PI * 0.32
+            );
+            camera.position.copy(target).add(offset);
+            camera.lookAt(target);
+            camera.updateMatrixWorld(true);
+            if (this.app.orbit) {
+                this.app.orbit.target.copy(target);
+                this.app.orbit.update();
+            }
+            if (t < 1) state.raf = requestAnimationFrame(tick);
+            else cleanupListeners();
+        };
+        state.raf = requestAnimationFrame(tick);
+    }
+
+    startSnapDemo() {
+        const scene = this.app.scene;
+        if (!scene) return;
+
+        const group = new THREE.Group();
+        group.userData.isTutorialDemo = true;
+        group.userData.name = 'Tutorial snapping demo';
+
+        const targetBlock = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshStandardMaterial({ color: 0x00d9ff, roughness: 0.45, metalness: 0.1 })
+        );
+        targetBlock.position.set(3.2, 0.5, 0.2);
+        const movingBlock = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshStandardMaterial({ color: 0x00ff41, roughness: 0.45, metalness: 0.1 })
+        );
+        movingBlock.position.set(3.2, 0.5, 3.4);
+
+        const edges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(targetBlock.geometry),
+            new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.65 })
+        );
+        targetBlock.add(edges);
+        const movingEdges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(movingBlock.geometry),
+            new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.65 })
+        );
+        movingBlock.add(movingEdges);
+
+        group.add(targetBlock, movingBlock);
+        scene.add(group);
+
+        const startZ = movingBlock.position.z;
+        const snappedZ = 1.2; // Faces flush: target front is z=0.7, block is 1 unit deep.
+        const started = performance.now();
+        const state = { kind: 'snap', group, raf: 0 };
+        this.demoState = state;
+
+        const tick = (now) => {
+            if (this.demoState !== state) return;
+            const cycle = ((now - started) % 3600) / 3600;
+            // Slide in, hold at the snap point, then reset.
+            let t;
+            if (cycle < 0.55) t = Math.min(1, cycle / 0.35);
+            else if (cycle < 0.8) t = 1;
+            else t = Math.max(0, 1 - (cycle - 0.8) / 0.2);
+            const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+            movingBlock.position.z = startZ + (snappedZ - startZ) * eased;
+            group.children.forEach(child => {
+                if (child.material) child.material.emissive?.setHex(cycle > 0.38 && cycle < 0.8 ? 0x0a3a1a : 0x000000);
+            });
+            state.raf = requestAnimationFrame(tick);
+        };
+        state.raf = requestAnimationFrame(tick);
+    }
+
+    selectDemoObject() {
+        const objects = this.app.objects || [];
+        const demo = objects.find(obj => obj.userData?.staging?.kind === 'figure')
+            || objects.find(obj => obj.userData?.type === 'figure')
+            || objects.find(obj => obj.userData?.type === 'character')
+            || objects.find(obj => obj.userData?.type === 'shape');
+        if (!demo || !this.app.selectObject) return;
+        demo.userData._tutorialDemoSelected = true;
+        this.app.selectObject(demo);
+        this.app.orbit?.update?.();
+    }
+
+    stopDemo() {
+        const state = this.demoState;
+        if (state) {
+            state.cleanup?.();
+            if (state.raf) cancelAnimationFrame(state.raf);
+            if (state.group) {
+                this.app.scene?.remove(state.group);
+                state.group.traverse((child) => {
+                    child.geometry?.dispose?.();
+                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose?.());
+                    else child.material?.dispose?.();
+                });
+            }
+            this.demoState = null;
+        }
+        const demoEl = document.getElementById('tutorial-demo');
+        if (demoEl) demoEl.innerHTML = '';
     }
 
     positionTutorial(step) {
@@ -363,6 +548,7 @@ class TutorialSystem {
     }
 
     hideTutorial() {
+        this.stopDemo();
         // Closing, skipping or finishing all count as "seen" so the tour doesn't reappear on every load.
         if (this.config.isTutorialActive()) this.markTutorialSeen();
         this.tutorialElement.style.display = 'none';

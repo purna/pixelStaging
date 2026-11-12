@@ -41,7 +41,8 @@ class TutorialConfig {
                         position: 'center',
                         arrowPosition: 'none',
                         heading: '2. Look around',
-                        content: 'In Camera mode, drag empty space to orbit, right-drag to pan and scroll to zoom. The F, Shift+S, B and T keys jump to front, side, back and top views. Home resets the view.',
+                        content: 'In Camera mode, drag empty space to orbit, right-drag to pan and scroll to zoom. You can also use W A S D to move the camera and Q E to rotate it. F, Shift+S, B and T jump to front, side, back and top views; Home resets the view.',
+                        demo: 'camera',
                         showNext: true,
                         showSkip: true
                     },
@@ -52,7 +53,20 @@ class TutorialConfig {
                         position: 'center',
                         arrowPosition: 'none',
                         heading: '3. Move things',
-                        content: 'In Scene mode, click an object to select it. G moves, R rotates and S scales. Objects snap to the grid: hold Alt while dragging to place freely, or use the magnet button to turn snapping off. Right-click empty space to deselect.',
+                        content: 'Switch controls with Tab or the Camera/Scene toggle. In Scene mode, click the highlighted actor, then drag the coloured gizmo arrows. G moves, R rotates and S scales. Right-click empty space to deselect.',
+                        demo: 'move',
+                        showNext: true,
+                        showSkip: true
+                    },
+                    {
+                        id: 'quick-snap',
+                        elementId: 'snap-toggle',
+                        position: 'bottom',
+                        arrowPosition: 'top',
+                        marginOverride: '20px',
+                        heading: '4. Snapping',
+                        content: 'Objects snap to the grid while you move them. Hold Alt to bypass snapping for one drag, click the magnet to toggle it, or turn off “Snap objects to grid while moving” in Settings > General.',
+                        demo: 'snap',
                         showNext: true,
                         showSkip: true
                     },
@@ -63,7 +77,7 @@ class TutorialConfig {
                         position: 'left',
                         arrowPosition: 'right',
                         marginOverride: '20px',
-                        heading: '4. Edit properties',
+                        heading: '5. Edit properties',
                         content: 'With an object selected, Properties lets you change its colour, size and position. Spot and directional lights also have an Aim Target so they can point anywhere.',
                         showNext: true,
                         showSkip: true
@@ -76,7 +90,7 @@ class TutorialConfig {
                         position: 'left',
                         arrowPosition: 'right',
                         marginOverride: '20px',
-                        heading: '5. Plan shots',
+                        heading: '6. Plan shots',
                         content: 'Add a camera, then use the Shot Designer to add shots, set start and end frames and choose how the camera moves. The timeline at the bottom plays them back.',
                         showNext: true,
                         showSkip: true
@@ -87,7 +101,7 @@ class TutorialConfig {
                         position: 'bottom',
                         arrowPosition: 'top',
                         marginOverride: '25px',
-                        heading: '6. Save and export',
+                        heading: '7. Save and export',
                         content: 'Save to Browser keeps your work locally. Export gives you the project file, a storyboard report or PDF, or a GLB 3D model. For the full tour, open Settings > Tutorial.',
                         showNext: true,
                         showSkip: true
@@ -176,7 +190,20 @@ class TutorialConfig {
                         position: 'center',
                         arrowPosition: 'none',
                         heading: 'Scene Navigation',
-                        content: 'Use Camera/Scene mode to switch controls. Drag empty space to orbit, right-drag to pan, and use the floating pad for zoom, orbit and Home. F, S, B and T give front, side, back and top views.',
+                        content: 'Switch between Camera and Scene controls with Tab or the Camera/Scene toggle. In Camera mode use W A S D to move and Q E to rotate, or drag empty space to orbit. Right-drag pans and the wheel zooms. F, Shift+S, B and T give front, side, back and top views.',
+                        demo: 'camera',
+                        showNext: true,
+                        showSkip: true
+                    },
+                    {
+                        id: 'snapping',
+                        elementId: 'snap-toggle',
+                        position: 'bottom',
+                        arrowPosition: 'top',
+                        marginOverride: '20px',
+                        heading: 'Snapping While Moving',
+                        content: 'When snapping is on, objects lock to the grid and nearby surfaces as you drag. Hold Alt to temporarily bypass it, or turn snapping off with the magnet. The setting lives in Settings > General > “Snap objects to grid while moving”.',
+                        demo: 'snap',
                         showNext: true,
                         showSkip: true
                     },

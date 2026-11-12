@@ -348,6 +348,19 @@ export class UI {
             this.toggleAllOverlays();
         });
 
+        // Apply the snap-while-moving setting immediately, even before the
+        // settings modal has ever been opened.
+        document.getElementById('setting-snap')?.addEventListener('change', (e) => {
+            this.app.setSnapEnabled?.(e.target.checked);
+            try {
+                const raw = localStorage.getItem('pixel3d-settings');
+                const saved = raw ? JSON.parse(raw) : {};
+                saved.snap = e.target.checked;
+                localStorage.setItem('pixel3d-settings', JSON.stringify(saved));
+            } catch (error) { /* storage unavailable */ }
+            this.showNotification(e.target.checked ? 'Snap while moving is on' : 'Snap while moving is off', 'info');
+        });
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -378,7 +391,14 @@ export class UI {
 
             const key = e.key.toLowerCase();
             switch (key) {
+                case 'tab':
+                    // Quick, reliable Camera <-> Scene switch.
+                    e.preventDefault();
+                    this.app.setControlMode?.(this.app.controlMode === 'camera' ? 'scene' : 'camera');
+                    break;
                 case 'q':
+                    // In Camera mode Q rotates the view (handled by main.js).
+                    if (this.app.controlMode === 'camera') break;
                     document.getElementById('tool-select').click();
                     break;
                 case 'g':
@@ -399,6 +419,9 @@ export class UI {
                         }
                     } else if (e.shiftKey) {
                         this.applySceneView('side');
+                    } else if (this.app.controlMode === 'camera') {
+                        // In Camera mode S moves backwards (handled by main.js).
+                        break;
                     } else {
                         document.getElementById('mode-scale').click();
                     }

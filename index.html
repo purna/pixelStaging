@@ -870,7 +870,7 @@ Open application settings"><i class="fas fa-cog"></i></div>
                         </div>
                         <div class="welcome-step">
                             <span class="welcome-step-number">2</span>
-                            <div><h3>Select and edit</h3><p>Click an object to open its Properties. Change position, rotation, scale, colour and materials. Palette colours are available directly in the Properties panel.</p></div>
+                            <div><h3>Select and edit</h3><p>Switch to Scene mode, click an object and use the gizmo. Change position, rotation, scale, colour and materials in Properties. In Camera mode, use W A S D to move and Q E to rotate the view.</p></div>
                         </div>
                         <div class="welcome-step">
                             <span class="welcome-step-number">3</span>
@@ -991,8 +991,12 @@ Open application settings"><i class="fas fa-cog"></i></div>
                                 <div class="property-group">
                                     <label class="property-label">
                                         <input type="checkbox" id="setting-snap" checked>
-                                        Snap to Grid
+                                        Snap objects to grid while moving
                                     </label>
+                                    <div class="setting-description">
+                                        Turn this off to move objects freely. You can also hold Alt while dragging,
+                                        or use the magnet button above the viewport, to bypass snapping temporarily.
+                                    </div>
                                 </div>
                                 <div class="property-group">
                                     <label class="property-label">
@@ -1437,7 +1441,7 @@ Open application settings"><i class="fas fa-cog"></i></div>
                 <div class="shortcuts-content">
                     <div class="shortcuts-panel active" id="shortcuts-tools">
                         <div class="shortcut-grid">
-                            <div class="shortcut-item"><span class="shortcut-key">Q</span><span>Select tool</span></div>
+                            <div class="shortcut-item"><span class="shortcut-key">Q</span><span>Select tool (Scene mode) / rotate camera left (Camera mode)</span></div>
                             <div class="shortcut-item"><span class="shortcut-key">H</span><span>Hand / survey tool</span></div>
                             <div class="shortcut-item"><span class="shortcut-key">G</span><span>Move tool</span></div>
                             <div class="shortcut-item"><span class="shortcut-key">R</span><span>Rotate tool</span></div>
@@ -1458,6 +1462,9 @@ Open application settings"><i class="fas fa-cog"></i></div>
                     </div>
                     <div class="shortcuts-panel" id="shortcuts-navigation">
                         <div class="shortcut-grid">
+                            <div class="shortcut-item"><span class="shortcut-key">Tab</span><span>Switch Camera / Scene controls</span></div>
+                            <div class="shortcut-item"><span class="shortcut-key">W A S D</span><span>Move camera (Camera mode)</span></div>
+                            <div class="shortcut-item"><span class="shortcut-key">Q E</span><span>Rotate camera left / right (Camera mode)</span></div>
                             <div class="shortcut-item"><span class="shortcut-key">Left drag empty</span><span>Orbit / survey</span></div>
                             <div class="shortcut-item"><span class="shortcut-key">Middle drag</span><span>Orbit</span></div>
                             <div class="shortcut-item"><span class="shortcut-key">Right drag</span><span>Pan</span></div>

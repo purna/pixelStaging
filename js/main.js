@@ -55,6 +55,9 @@ class StageApp {
         // 'camera' = drag/navigate the view; 'scene' = select and transform objects.
         this.controlMode = 'camera';
         this.cameraGuidesEnabled = false;
+        this.cameraNavKeys = new Set();
+        this.cameraNavBaseSpeed = 9;
+        this.cameraNavRotateSpeed = 1.4;
 
         // Snap state
         this.APP_DEFAULTS = APP_DEFAULTS;
@@ -200,15 +203,17 @@ class StageApp {
         window.addEventListener('blur', () => this.endPointerGesture());
         this.renderer.domElement.addEventListener('contextmenu', (e) => this.onRightClick(e));
 
-        // Add event listener for transform space toggle
-        setTimeout(() => {
-            const spaceCheckbox = document.getElementById('transform-space-checkbox');
-            if (spaceCheckbox) {
-                spaceCheckbox.addEventListener('change', (e) => {
-                    this.toggleTransformSpace(e.target.checked);
-                });
-            }
-        }, APP_DEFAULTS.init.checkboxInitDelay);
+        // Camera/Scene switch. Bind immediately so it works as soon as the
+        // canvas is ready (a delayed binding could miss early clicks).
+        const spaceCheckbox = document.getElementById('transform-space-checkbox');
+        if (spaceCheckbox) {
+            spaceCheckbox.addEventListener('change', (e) => {
+                this.toggleTransformSpace(e.target.checked);
+            });
+            // The whole label is clickable; make the hit area obvious.
+            const spaceLabel = spaceCheckbox.closest('.transform-space-toggle');
+            if (spaceLabel) spaceLabel.style.cursor = 'pointer';
+        }
 
         // Ensure grid and axes are visible by default
         this.setGridVisible(true);
@@ -238,6 +243,7 @@ class StageApp {
     initializeEditorModules() {
         const modules = [
             ['UI', () => this.ui.init()],
+            ['Camera keyboard controls', () => this.setupCameraKeyboardControls()],
             ['Snap controls', () => this.setupSnapControls()],
             ['Tutorial', () => this.tutorialSystem.init()]
         ];
@@ -602,8 +608,13 @@ class StageApp {
      * Camera mode: drag to look around / navigate the view.
      * Scene mode: click objects and use the transform gizmo.
      */
-    setControlMode(mode) {
+    setControlMode(mode, { silent = false } = {}) {
+        const previousMode = this.controlMode;
         this.controlMode = mode === 'scene' ? 'scene' : 'camera';
+        const modeChanged = previousMode !== this.controlMode;
+
+        // Keyboard movement only applies to the editor camera.
+        if (this.controlMode === 'camera') this.cameraNavKeys.clear();
 
         if (this.orbit) {
             this.orbit.enabled = true;
@@ -632,8 +643,17 @@ class StageApp {
 
         if (this.transformControl) {
             this.transformControl.enabled = this.controlMode === 'scene';
-            this.transformControl.visible = this.controlMode === 'scene' && !!this.selectedObject;
-            if (this.controlMode === 'camera') this.transformControl.detach();
+            if (this.controlMode === 'scene' && this.selectedObject) {
+                // Re-attach after a trip through Camera mode. Without this the
+                // gizmo stayed detached even though an object was still selected.
+                if (this.transformControl.object !== this.selectedObject) {
+                    this.transformControl.attach(this.selectedObject);
+                }
+                this.transformControl.visible = true;
+            } else {
+                this.transformControl.visible = false;
+                if (this.controlMode === 'camera') this.transformControl.detach();
+            }
         }
 
         // Dragging the editor camera exits the shot preview so the user sees
@@ -655,7 +675,14 @@ class StageApp {
         document.getElementById('selection-info')?.classList.toggle('hidden', !(this.selectedObject && this.controlMode === 'scene'));
 
         this.renderer?.domElement && (this.renderer.domElement.style.cursor = 'default');
-        this.ui?.showNotification?.(this.controlMode === 'camera' ? 'Camera controls: drag the view' : 'Scene controls: move objects', 'info');
+        if (modeChanged && !silent) {
+            this.ui?.showNotification?.(
+                this.controlMode === 'camera'
+                    ? 'Camera mode: drag to look, WASD to move, Q/E to rotate'
+                    : 'Scene mode: click an object and use the gizmo to move it',
+                'info'
+            );
+        }
     }
 
     // Configure orbit controls for optimal touch/trackpad experience
@@ -1496,8 +1523,93 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     }
 
     setSnapEnabled(enabled) {
-        this.snapEnabled = enabled;
+        this.snapEnabled = !!enabled;
         this.syncSnapControls();
+    }
+
+    /**
+     * Continuous editor-camera navigation.
+     * WASD pans the camera in the view plane and Q/E orbit around the target.
+     */
+    setupCameraKeyboardControls() {
+        const isTypingTarget = (target) => {
+            if (!target) return false;
+            const tag = target.tagName;
+            return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+            if (this.controlMode !== 'camera') return;
+            const code = e.code;
+            if (!['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'].includes(code)) return;
+
+            // S is also the Scale shortcut in Scene mode; in Camera mode it
+            // belongs to navigation, so stop it from triggering other tools.
+            e.preventDefault();
+            this.cameraNavKeys.add(code);
+        }, { passive: false });
+
+        const release = (e) => this.cameraNavKeys.delete(e.code);
+        window.addEventListener('keyup', release);
+        window.addEventListener('blur', () => this.cameraNavKeys.clear());
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) this.cameraNavKeys.clear();
+        });
+    }
+
+    updateKeyboardCamera(delta) {
+        if (!this.orbit || !this.camera || this.cameraNavKeys.size === 0) return;
+
+        // A backgrounded tab can hand us a huge delta on its first frame.
+        // Clamp it so returning to the tab never teleports the camera.
+        const safeDelta = Math.min(Math.max(delta, 0), 0.1);
+
+        // Keyboard navigation is editor navigation, not shot playback.
+        if (this.staging?.shotManager?.previewActive) {
+            this.staging.shotManager.previewActive = false;
+            this.staging.shotManager.clearPreviewBlur?.();
+            this.staging.shotManager.clearTransitionOverlay?.();
+        }
+
+        const camera = this.camera;
+        const target = this.orbit.target;
+        const speedSetting = Number(this.cameraSpeedMultiplier || 1);
+        const distance = Math.max(2, camera.position.distanceTo(target));
+        const moveSpeed = this.cameraNavBaseSpeed * Math.max(0.15, speedSetting) * (distance / 12) * safeDelta;
+        const rotateSpeed = this.cameraNavRotateSpeed * Math.max(0.15, speedSetting) * safeDelta;
+
+        const forward = target.clone().sub(camera.position);
+        forward.y = 0;
+        if (forward.lengthSq() < 0.0001) {
+            camera.getWorldDirection(forward);
+            forward.y = 0;
+        }
+        forward.normalize();
+        const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+        const move = new THREE.Vector3();
+
+        if (this.cameraNavKeys.has('KeyW')) move.add(forward);
+        if (this.cameraNavKeys.has('KeyS')) move.sub(forward);
+        if (this.cameraNavKeys.has('KeyD')) move.add(right);
+        if (this.cameraNavKeys.has('KeyA')) move.sub(right);
+
+        if (move.lengthSq() > 0) {
+            move.normalize().multiplyScalar(moveSpeed);
+            camera.position.add(move);
+            target.add(move);
+        }
+
+        const yaw = (this.cameraNavKeys.has('KeyQ') ? 1 : 0) - (this.cameraNavKeys.has('KeyE') ? 1 : 0);
+        if (yaw !== 0) {
+            const offset = camera.position.clone().sub(target);
+            offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw * rotateSpeed);
+            camera.position.copy(target).add(offset);
+        }
+
+        camera.lookAt(target);
+        camera.updateMatrixWorld(true);
+        this.orbit.update();
     }
 
     /** True while snapping is on and the user is not holding Alt. */
@@ -1804,6 +1916,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
     }
 
     setCameraSpeed(speed) {
+        this.cameraSpeedMultiplier = Number(speed) || 1;
         // Adjust orbit controls speed (only if orbit controls are initialized)
         if (this.orbit) {
             this.orbit.rotateSpeed = speed;
@@ -1910,6 +2023,9 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
         // Update character animations
         this.characterManager.update(delta);
+
+        // WASD move / QE rotate the editor camera in Camera mode.
+        if (this.controlMode === 'camera') this.updateKeyboardCamera(delta);
 
         // Update orbit controls (only if initialized and enabled)
         if (this.orbit && this.orbit.enabled) {

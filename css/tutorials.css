@@ -251,3 +251,91 @@
     padding: 8px 12px;
     font-size: 0.8rem;
 }
+
+/* --- LIVE TUTORIAL DEMOS --- */
+#tutorial-demo:not(:empty) {
+    margin: 0 0 14px;
+    padding: 10px;
+    background: rgba(0, 217, 255, 0.07);
+    border: 1px solid rgba(0, 217, 255, 0.28);
+    border-radius: 6px;
+}
+
+.tutorial-demo-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.tutorial-demo-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.5);
+    animation: tutorial-demo-pulse 1.4s infinite;
+}
+
+@keyframes tutorial-demo-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.5); }
+    70% { box-shadow: 0 0 0 7px rgba(0, 255, 65, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0); }
+}
+
+.tutorial-demo-keys {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 7px;
+}
+
+.tutorial-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 5px;
+    border: 1px solid var(--border-color);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: var(--bg-medium);
+    color: var(--text-primary);
+    font-size: 10px;
+    font-weight: 700;
+    animation: tutorial-key-press 2.4s infinite;
+}
+
+.tutorial-key:nth-child(2) { animation-delay: 0.15s; }
+.tutorial-key:nth-child(3) { animation-delay: 0.3s; }
+.tutorial-key:nth-child(4) { animation-delay: 0.45s; }
+.tutorial-key:nth-child(6) { animation-delay: 0.7s; }
+.tutorial-key:nth-child(7) { animation-delay: 0.85s; }
+
+@keyframes tutorial-key-press {
+    0%, 70%, 100% { transform: translateY(0); border-color: var(--border-color); }
+    78%, 86% { transform: translateY(1px); border-color: var(--accent-primary); color: var(--accent-primary); }
+}
+
+.tutorial-demo-key-label {
+    margin: 0 3px 0 1px;
+    color: var(--text-secondary);
+    font-size: 10px;
+}
+
+.tutorial-demo-hint {
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.tutorial-demo-hint b {
+    color: var(--text-primary);
+}

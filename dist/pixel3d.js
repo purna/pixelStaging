@@ -7596,7 +7596,7 @@
       }
     }
   }
-  var REVISION, MOUSE, TOUCH, CullFaceNone, CullFaceBack, CullFaceFront, PCFShadowMap, PCFSoftShadowMap, VSMShadowMap, FrontSide, BackSide, DoubleSide, NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending, CustomBlending, AddEquation, SubtractEquation, ReverseSubtractEquation, MinEquation, MaxEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, ConstantColorFactor, OneMinusConstantColorFactor, ConstantAlphaFactor, OneMinusConstantAlphaFactor, NeverDepth, AlwaysDepth, LessDepth, LessEqualDepth, EqualDepth, GreaterEqualDepth, GreaterDepth, NotEqualDepth, MultiplyOperation, MixOperation, AddOperation, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, CustomToneMapping, AgXToneMapping, AttachedBindMode, DetachedBindMode, UVMapping, CubeReflectionMapping, CubeRefractionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping, CubeUVReflectionMapping, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, AlphaFormat, RGBAFormat, LuminanceFormat, LuminanceAlphaFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, LoopOnce, LoopRepeat, LoopPingPong, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, AdditiveAnimationBlendMode, TrianglesDrawMode, TriangleStripDrawMode, TriangleFanDrawMode, LinearEncoding, sRGBEncoding, BasicDepthPacking, RGBADepthPacking, TangentSpaceNormalMap, ObjectSpaceNormalMap, NoColorSpace, SRGBColorSpace, LinearSRGBColorSpace, DisplayP3ColorSpace, LinearDisplayP3ColorSpace, LinearTransfer, SRGBTransfer, Rec709Primaries, P3Primaries, KeepStencilOp, AlwaysStencilFunc, NeverCompare, LessCompare, EqualCompare, LessEqualCompare, GreaterCompare, NotEqualCompare, GreaterEqualCompare, AlwaysCompare, StaticDrawUsage, GLSL3, _SRGBAFormat, WebGLCoordinateSystem, WebGPUCoordinateSystem, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Matrix3, _m3, _cache, LINEAR_SRGB_TO_LINEAR_DISPLAY_P3, LINEAR_DISPLAY_P3_TO_LINEAR_SRGB, COLOR_SPACES, SUPPORTED_WORKING_COLOR_SPACES, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Quaternion, Vector3, _vector$c, _quaternion$4, Box3, _points, _vector$b, _box$4, _v0$2, _v1$7, _v2$4, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _box$3, _v1$6, _v2$3, Sphere, _vector$a, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, Matrix4, _v1$5, _m1$2, _zero, _one, _x, _y, _z, _matrix$1, _quaternion$3, Euler, Layers, _object3DId, _v1$4, _q1, _m1$1, _target, _position$3, _scale$2, _quaternion$2, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, Object3D, _v0$1, _v1$3, _v2$2, _v3$1, _vab, _vac, _vbc, _vap, _vbp, _vcp, warnedGetUV, Triangle, _colorKeywords, _hslA, _hslB, Color, _color, _materialId, Material, MeshBasicMaterial, _vector$9, _vector2$1, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _id$2, _m1, _obj, _offset, _box$2, _boxMorphTargets, _vector$8, BufferGeometry, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA$1, _vB$1, _vC$1, _tempA, _morphA, _uvA$1, _uvB$1, _uvC$1, _normalA, _normalB, _normalC, _intersectionPoint, _intersectionPointWorld, Mesh, BoxGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, Camera, PerspectiveCamera, fov, aspect, CubeCamera, CubeTexture, WebGLCubeRenderTarget, _vector1, _vector2, _normalMatrix, Plane, _sphere$5, _vector$7, Frustum, PlaneGeometry, alphahash_fragment, alphahash_pars_fragment, alphamap_fragment, alphamap_pars_fragment, alphatest_fragment, alphatest_pars_fragment, aomap_fragment, aomap_pars_fragment, batching_pars_vertex, batching_vertex, begin_vertex, beginnormal_vertex, bsdfs, iridescence_fragment, bumpmap_pars_fragment, clipping_planes_fragment, clipping_planes_pars_fragment, clipping_planes_pars_vertex, clipping_planes_vertex, color_fragment, color_pars_fragment, color_pars_vertex, color_vertex, common, cube_uv_reflection_fragment, defaultnormal_vertex, displacementmap_pars_vertex, displacementmap_vertex, emissivemap_fragment, emissivemap_pars_fragment, colorspace_fragment, colorspace_pars_fragment, envmap_fragment, envmap_common_pars_fragment, envmap_pars_fragment, envmap_pars_vertex, envmap_vertex, fog_vertex, fog_pars_vertex, fog_fragment, fog_pars_fragment, gradientmap_pars_fragment, lightmap_fragment, lightmap_pars_fragment, lights_lambert_fragment, lights_lambert_pars_fragment, lights_pars_begin, envmap_physical_pars_fragment, lights_toon_fragment, lights_toon_pars_fragment, lights_phong_fragment, lights_phong_pars_fragment, lights_physical_fragment, lights_physical_pars_fragment, lights_fragment_begin, lights_fragment_maps, lights_fragment_end, logdepthbuf_fragment, logdepthbuf_pars_fragment, logdepthbuf_pars_vertex, logdepthbuf_vertex, map_fragment, map_pars_fragment, map_particle_fragment, map_particle_pars_fragment, metalnessmap_fragment, metalnessmap_pars_fragment, morphcolor_vertex, morphnormal_vertex, morphtarget_pars_vertex, morphtarget_vertex, normal_fragment_begin, normal_fragment_maps, normal_pars_fragment, normal_pars_vertex, normal_vertex, normalmap_pars_fragment, clearcoat_normal_fragment_begin, clearcoat_normal_fragment_maps, clearcoat_pars_fragment, iridescence_pars_fragment, opaque_fragment, packing, premultiplied_alpha_fragment, project_vertex, dithering_fragment, dithering_pars_fragment, roughnessmap_fragment, roughnessmap_pars_fragment, shadowmap_pars_fragment, shadowmap_pars_vertex, shadowmap_vertex, shadowmask_pars_fragment, skinbase_vertex, skinning_pars_vertex, skinning_vertex, skinnormal_vertex, specularmap_fragment, specularmap_pars_fragment, tonemapping_fragment, tonemapping_pars_fragment, transmission_fragment, transmission_pars_fragment, uv_pars_fragment, uv_pars_vertex, uv_vertex, worldpos_vertex, vertex$h, fragment$h, vertex$g, fragment$g, vertex$f, fragment$f, vertex$e, fragment$e, vertex$d, fragment$d, vertex$c, fragment$c, vertex$b, fragment$b, vertex$a, fragment$a, vertex$9, fragment$9, vertex$8, fragment$8, vertex$7, fragment$7, vertex$6, fragment$6, vertex$5, fragment$5, vertex$4, fragment$4, vertex$3, fragment$3, vertex$2, fragment$2, vertex$1, fragment$1, ShaderChunk, UniformsLib, ShaderLib, _rgb, OrthographicCamera, LOD_MIN, EXTRA_LOD_SIGMA, MAX_SAMPLES, _flatCamera, _clearColor, _oldTarget, _oldActiveCubeFace, _oldActiveMipmapLevel, PHI, INV_PHI, _axisDirections, PMREMGenerator, DepthTexture, emptyTexture, emptyShadowTexture, emptyArrayTexture, empty3dTexture, emptyCubeTexture, arrayCacheF32, arrayCacheI32, mat4array, mat3array, mat2array, SingleUniform, PureArrayUniform, StructuredUniform, RePathPart, WebGLUniforms, COMPLETION_STATUS_KHR, programIdCount, includePattern, shaderChunkMap, unrollLoopPattern, _id$1, WebGLShaderCache, WebGLShaderStage, nextVersion, MeshDepthMaterial, MeshDistanceMaterial, vertex, fragment, ArrayCamera, Group, _moveEvent, WebXRController, WebXRManager, WebGLRenderer, WebGL1Renderer, Fog, Scene, InterleavedBuffer, _vector$6, InterleavedBufferAttribute, _basePosition, _skinIndex, _skinWeight, _vector3, _matrix4, _vertex, _sphere$4, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$3, InstancedMesh, LineBasicMaterial, _start$1, _end$1, _inverseMatrix$1, _ray$1, _sphere$1, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray, _sphere, _position$2, Points, CompressedTexture, CanvasTexture, Curve, EllipseCurve, ArcCurve, tmp, px, py, pz, CatmullRomCurve3, CubicBezierCurve, CubicBezierCurve3, LineCurve, LineCurve3, QuadraticBezierCurve, QuadraticBezierCurve3, SplineCurve, Curves, CurvePath, Path, LatheGeometry, CapsuleGeometry, CircleGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, DodecahedronGeometry, Shape, Earcut, ShapeUtils, ExtrudeGeometry, WorldUVGenerator, IcosahedronGeometry, OctahedronGeometry, ShapeGeometry, SphereGeometry, TetrahedronGeometry, TorusGeometry, TorusKnotGeometry, MeshStandardMaterial, MeshPhysicalMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, SpotLightShadow, SpotLight, _projScreenMatrix, _lightPositionWorld, _lookTarget, PointLightShadow, PointLight, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, ImageBitmapLoader, Clock, PropertyMixer, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, AnimationAction, _controlInterpolantsResultBuffer, AnimationMixer, Uniform, Raycaster, Spherical, _vector$3, SpotLightHelper, PointLightHelper, _vector$1, _color1, _color2, HemisphereLightHelper, GridHelper, _v1, _v2, _v3, DirectionalLightHelper, AxesHelper;
+  var REVISION, MOUSE, TOUCH, CullFaceNone, CullFaceBack, CullFaceFront, PCFShadowMap, PCFSoftShadowMap, VSMShadowMap, FrontSide, BackSide, DoubleSide, NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending, CustomBlending, AddEquation, SubtractEquation, ReverseSubtractEquation, MinEquation, MaxEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, ConstantColorFactor, OneMinusConstantColorFactor, ConstantAlphaFactor, OneMinusConstantAlphaFactor, NeverDepth, AlwaysDepth, LessDepth, LessEqualDepth, EqualDepth, GreaterEqualDepth, GreaterDepth, NotEqualDepth, MultiplyOperation, MixOperation, AddOperation, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, CustomToneMapping, AgXToneMapping, AttachedBindMode, DetachedBindMode, UVMapping, CubeReflectionMapping, CubeRefractionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping, CubeUVReflectionMapping, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, AlphaFormat, RGBAFormat, LuminanceFormat, LuminanceAlphaFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, LoopOnce, LoopRepeat, LoopPingPong, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, AdditiveAnimationBlendMode, TrianglesDrawMode, TriangleStripDrawMode, TriangleFanDrawMode, LinearEncoding, sRGBEncoding, BasicDepthPacking, RGBADepthPacking, TangentSpaceNormalMap, ObjectSpaceNormalMap, NoColorSpace, SRGBColorSpace, LinearSRGBColorSpace, DisplayP3ColorSpace, LinearDisplayP3ColorSpace, LinearTransfer, SRGBTransfer, Rec709Primaries, P3Primaries, KeepStencilOp, AlwaysStencilFunc, NeverCompare, LessCompare, EqualCompare, LessEqualCompare, GreaterCompare, NotEqualCompare, GreaterEqualCompare, AlwaysCompare, StaticDrawUsage, GLSL3, _SRGBAFormat, WebGLCoordinateSystem, WebGPUCoordinateSystem, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Matrix3, _m3, _cache, LINEAR_SRGB_TO_LINEAR_DISPLAY_P3, LINEAR_DISPLAY_P3_TO_LINEAR_SRGB, COLOR_SPACES, SUPPORTED_WORKING_COLOR_SPACES, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Quaternion, Vector3, _vector$c, _quaternion$4, Box3, _points, _vector$b, _box$4, _v0$2, _v1$7, _v2$4, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _box$3, _v1$6, _v2$3, Sphere, _vector$a, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, Matrix4, _v1$5, _m1$2, _zero, _one, _x, _y, _z, _matrix$1, _quaternion$3, Euler, Layers, _object3DId, _v1$4, _q1, _m1$1, _target, _position$3, _scale$2, _quaternion$2, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, Object3D, _v0$1, _v1$3, _v2$2, _v3$1, _vab, _vac, _vbc, _vap, _vbp, _vcp, warnedGetUV, Triangle, _colorKeywords, _hslA, _hslB, Color, _color, _materialId, Material, MeshBasicMaterial, _vector$9, _vector2$1, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _id$2, _m1, _obj, _offset, _box$2, _boxMorphTargets, _vector$8, BufferGeometry, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA$1, _vB$1, _vC$1, _tempA, _morphA, _uvA$1, _uvB$1, _uvC$1, _normalA, _normalB, _normalC, _intersectionPoint, _intersectionPointWorld, Mesh, BoxGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, Camera, PerspectiveCamera, fov, aspect, CubeCamera, CubeTexture, WebGLCubeRenderTarget, _vector1, _vector2, _normalMatrix, Plane, _sphere$5, _vector$7, Frustum, PlaneGeometry, alphahash_fragment, alphahash_pars_fragment, alphamap_fragment, alphamap_pars_fragment, alphatest_fragment, alphatest_pars_fragment, aomap_fragment, aomap_pars_fragment, batching_pars_vertex, batching_vertex, begin_vertex, beginnormal_vertex, bsdfs, iridescence_fragment, bumpmap_pars_fragment, clipping_planes_fragment, clipping_planes_pars_fragment, clipping_planes_pars_vertex, clipping_planes_vertex, color_fragment, color_pars_fragment, color_pars_vertex, color_vertex, common, cube_uv_reflection_fragment, defaultnormal_vertex, displacementmap_pars_vertex, displacementmap_vertex, emissivemap_fragment, emissivemap_pars_fragment, colorspace_fragment, colorspace_pars_fragment, envmap_fragment, envmap_common_pars_fragment, envmap_pars_fragment, envmap_pars_vertex, envmap_vertex, fog_vertex, fog_pars_vertex, fog_fragment, fog_pars_fragment, gradientmap_pars_fragment, lightmap_fragment, lightmap_pars_fragment, lights_lambert_fragment, lights_lambert_pars_fragment, lights_pars_begin, envmap_physical_pars_fragment, lights_toon_fragment, lights_toon_pars_fragment, lights_phong_fragment, lights_phong_pars_fragment, lights_physical_fragment, lights_physical_pars_fragment, lights_fragment_begin, lights_fragment_maps, lights_fragment_end, logdepthbuf_fragment, logdepthbuf_pars_fragment, logdepthbuf_pars_vertex, logdepthbuf_vertex, map_fragment, map_pars_fragment, map_particle_fragment, map_particle_pars_fragment, metalnessmap_fragment, metalnessmap_pars_fragment, morphcolor_vertex, morphnormal_vertex, morphtarget_pars_vertex, morphtarget_vertex, normal_fragment_begin, normal_fragment_maps, normal_pars_fragment, normal_pars_vertex, normal_vertex, normalmap_pars_fragment, clearcoat_normal_fragment_begin, clearcoat_normal_fragment_maps, clearcoat_pars_fragment, iridescence_pars_fragment, opaque_fragment, packing, premultiplied_alpha_fragment, project_vertex, dithering_fragment, dithering_pars_fragment, roughnessmap_fragment, roughnessmap_pars_fragment, shadowmap_pars_fragment, shadowmap_pars_vertex, shadowmap_vertex, shadowmask_pars_fragment, skinbase_vertex, skinning_pars_vertex, skinning_vertex, skinnormal_vertex, specularmap_fragment, specularmap_pars_fragment, tonemapping_fragment, tonemapping_pars_fragment, transmission_fragment, transmission_pars_fragment, uv_pars_fragment, uv_pars_vertex, uv_vertex, worldpos_vertex, vertex$h, fragment$h, vertex$g, fragment$g, vertex$f, fragment$f, vertex$e, fragment$e, vertex$d, fragment$d, vertex$c, fragment$c, vertex$b, fragment$b, vertex$a, fragment$a, vertex$9, fragment$9, vertex$8, fragment$8, vertex$7, fragment$7, vertex$6, fragment$6, vertex$5, fragment$5, vertex$4, fragment$4, vertex$3, fragment$3, vertex$2, fragment$2, vertex$1, fragment$1, ShaderChunk, UniformsLib, ShaderLib, _rgb, OrthographicCamera, LOD_MIN, EXTRA_LOD_SIGMA, MAX_SAMPLES, _flatCamera, _clearColor, _oldTarget, _oldActiveCubeFace, _oldActiveMipmapLevel, PHI, INV_PHI, _axisDirections, PMREMGenerator, DepthTexture, emptyTexture, emptyShadowTexture, emptyArrayTexture, empty3dTexture, emptyCubeTexture, arrayCacheF32, arrayCacheI32, mat4array, mat3array, mat2array, SingleUniform, PureArrayUniform, StructuredUniform, RePathPart, WebGLUniforms, COMPLETION_STATUS_KHR, programIdCount, includePattern, shaderChunkMap, unrollLoopPattern, _id$1, WebGLShaderCache, WebGLShaderStage, nextVersion, MeshDepthMaterial, MeshDistanceMaterial, vertex, fragment, ArrayCamera, Group, _moveEvent, WebXRController, WebXRManager, WebGLRenderer, WebGL1Renderer, Fog, Scene, InterleavedBuffer, _vector$6, InterleavedBufferAttribute, _basePosition, _skinIndex, _skinWeight, _vector3, _matrix4, _vertex, _sphere$4, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$3, InstancedMesh, LineBasicMaterial, _start$1, _end$1, _inverseMatrix$1, _ray$1, _sphere$1, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray, _sphere, _position$2, Points, CompressedTexture, CanvasTexture, Curve, EllipseCurve, ArcCurve, tmp, px, py, pz, CatmullRomCurve3, CubicBezierCurve, CubicBezierCurve3, LineCurve, LineCurve3, QuadraticBezierCurve, QuadraticBezierCurve3, SplineCurve, Curves, CurvePath, Path, LatheGeometry, CapsuleGeometry, CircleGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, DodecahedronGeometry, _v0, _v1$1, _normal, _triangle, EdgesGeometry, Shape, Earcut, ShapeUtils, ExtrudeGeometry, WorldUVGenerator, IcosahedronGeometry, OctahedronGeometry, ShapeGeometry, SphereGeometry, TetrahedronGeometry, TorusGeometry, TorusKnotGeometry, MeshStandardMaterial, MeshPhysicalMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, SpotLightShadow, SpotLight, _projScreenMatrix, _lightPositionWorld, _lookTarget, PointLightShadow, PointLight, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, ImageBitmapLoader, Clock, PropertyMixer, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, AnimationAction, _controlInterpolantsResultBuffer, AnimationMixer, Uniform, Raycaster, Spherical, _vector$3, SpotLightHelper, PointLightHelper, _vector$1, _color1, _color2, HemisphereLightHelper, GridHelper, _v1, _v2, _v3, DirectionalLightHelper, AxesHelper;
   var init_three_module = __esm({
     "node_modules/three/build/three.module.js"() {
       REVISION = "160";
@@ -21065,6 +21065,92 @@
           return new _DodecahedronGeometry(data.radius, data.detail);
         }
       };
+      _v0 = /* @__PURE__ */ new Vector3();
+      _v1$1 = /* @__PURE__ */ new Vector3();
+      _normal = /* @__PURE__ */ new Vector3();
+      _triangle = /* @__PURE__ */ new Triangle();
+      EdgesGeometry = class extends BufferGeometry {
+        constructor(geometry = null, thresholdAngle = 1) {
+          super();
+          this.type = "EdgesGeometry";
+          this.parameters = {
+            geometry,
+            thresholdAngle
+          };
+          if (geometry !== null) {
+            const precisionPoints = 4;
+            const precision = Math.pow(10, precisionPoints);
+            const thresholdDot = Math.cos(DEG2RAD * thresholdAngle);
+            const indexAttr = geometry.getIndex();
+            const positionAttr = geometry.getAttribute("position");
+            const indexCount = indexAttr ? indexAttr.count : positionAttr.count;
+            const indexArr = [0, 0, 0];
+            const vertKeys = ["a", "b", "c"];
+            const hashes = new Array(3);
+            const edgeData = {};
+            const vertices = [];
+            for (let i = 0; i < indexCount; i += 3) {
+              if (indexAttr) {
+                indexArr[0] = indexAttr.getX(i);
+                indexArr[1] = indexAttr.getX(i + 1);
+                indexArr[2] = indexAttr.getX(i + 2);
+              } else {
+                indexArr[0] = i;
+                indexArr[1] = i + 1;
+                indexArr[2] = i + 2;
+              }
+              const { a, b, c } = _triangle;
+              a.fromBufferAttribute(positionAttr, indexArr[0]);
+              b.fromBufferAttribute(positionAttr, indexArr[1]);
+              c.fromBufferAttribute(positionAttr, indexArr[2]);
+              _triangle.getNormal(_normal);
+              hashes[0] = `${Math.round(a.x * precision)},${Math.round(a.y * precision)},${Math.round(a.z * precision)}`;
+              hashes[1] = `${Math.round(b.x * precision)},${Math.round(b.y * precision)},${Math.round(b.z * precision)}`;
+              hashes[2] = `${Math.round(c.x * precision)},${Math.round(c.y * precision)},${Math.round(c.z * precision)}`;
+              if (hashes[0] === hashes[1] || hashes[1] === hashes[2] || hashes[2] === hashes[0]) {
+                continue;
+              }
+              for (let j = 0; j < 3; j++) {
+                const jNext = (j + 1) % 3;
+                const vecHash0 = hashes[j];
+                const vecHash1 = hashes[jNext];
+                const v0 = _triangle[vertKeys[j]];
+                const v1 = _triangle[vertKeys[jNext]];
+                const hash = `${vecHash0}_${vecHash1}`;
+                const reverseHash = `${vecHash1}_${vecHash0}`;
+                if (reverseHash in edgeData && edgeData[reverseHash]) {
+                  if (_normal.dot(edgeData[reverseHash].normal) <= thresholdDot) {
+                    vertices.push(v0.x, v0.y, v0.z);
+                    vertices.push(v1.x, v1.y, v1.z);
+                  }
+                  edgeData[reverseHash] = null;
+                } else if (!(hash in edgeData)) {
+                  edgeData[hash] = {
+                    index0: indexArr[j],
+                    index1: indexArr[jNext],
+                    normal: _normal.clone()
+                  };
+                }
+              }
+            }
+            for (const key in edgeData) {
+              if (edgeData[key]) {
+                const { index0, index1 } = edgeData[key];
+                _v0.fromBufferAttribute(positionAttr, index0);
+                _v1$1.fromBufferAttribute(positionAttr, index1);
+                vertices.push(_v0.x, _v0.y, _v0.z);
+                vertices.push(_v1$1.x, _v1$1.y, _v1$1.z);
+              }
+            }
+            this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+          }
+        }
+        copy(source) {
+          super.copy(source);
+          this.parameters = Object.assign({}, source.parameters);
+          return this;
+        }
+      };
       Shape = class extends Path {
         constructor(points) {
           super(points);
@@ -33214,6 +33300,17 @@
       document.getElementById("tool-toggle-overlays")?.addEventListener("click", () => {
         this.toggleAllOverlays();
       });
+      document.getElementById("setting-snap")?.addEventListener("change", (e) => {
+        this.app.setSnapEnabled?.(e.target.checked);
+        try {
+          const raw = localStorage.getItem("pixel3d-settings");
+          const saved = raw ? JSON.parse(raw) : {};
+          saved.snap = e.target.checked;
+          localStorage.setItem("pixel3d-settings", JSON.stringify(saved));
+        } catch (error) {
+        }
+        this.showNotification(e.target.checked ? "Snap while moving is on" : "Snap while moving is off", "info");
+      });
       document.addEventListener("keydown", (e) => {
         if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
         if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
@@ -33238,7 +33335,12 @@
         }
         const key = e.key.toLowerCase();
         switch (key) {
+          case "tab":
+            e.preventDefault();
+            this.app.setControlMode?.(this.app.controlMode === "camera" ? "scene" : "camera");
+            break;
           case "q":
+            if (this.app.controlMode === "camera") break;
             document.getElementById("tool-select").click();
             break;
           case "g":
@@ -33259,6 +33361,8 @@
               }
             } else if (e.shiftKey) {
               this.applySceneView("side");
+            } else if (this.app.controlMode === "camera") {
+              break;
             } else {
               document.getElementById("mode-scale").click();
             }
@@ -43665,7 +43769,8 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               position: "center",
               arrowPosition: "none",
               heading: "2. Look around",
-              content: "In Camera mode, drag empty space to orbit, right-drag to pan and scroll to zoom. The F, Shift+S, B and T keys jump to front, side, back and top views. Home resets the view.",
+              content: "In Camera mode, drag empty space to orbit, right-drag to pan and scroll to zoom. You can also use W A S D to move the camera and Q E to rotate it. F, Shift+S, B and T jump to front, side, back and top views; Home resets the view.",
+              demo: "camera",
               showNext: true,
               showSkip: true
             },
@@ -43676,7 +43781,20 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               position: "center",
               arrowPosition: "none",
               heading: "3. Move things",
-              content: "In Scene mode, click an object to select it. G moves, R rotates and S scales. Objects snap to the grid: hold Alt while dragging to place freely, or use the magnet button to turn snapping off. Right-click empty space to deselect.",
+              content: "Switch controls with Tab or the Camera/Scene toggle. In Scene mode, click the highlighted actor, then drag the coloured gizmo arrows. G moves, R rotates and S scales. Right-click empty space to deselect.",
+              demo: "move",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "quick-snap",
+              elementId: "snap-toggle",
+              position: "bottom",
+              arrowPosition: "top",
+              marginOverride: "20px",
+              heading: "4. Snapping",
+              content: "Objects snap to the grid while you move them. Hold Alt to bypass snapping for one drag, click the magnet to toggle it, or turn off \u201CSnap objects to grid while moving\u201D in Settings > General.",
+              demo: "snap",
               showNext: true,
               showSkip: true
             },
@@ -43687,7 +43805,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               position: "left",
               arrowPosition: "right",
               marginOverride: "20px",
-              heading: "4. Edit properties",
+              heading: "5. Edit properties",
               content: "With an object selected, Properties lets you change its colour, size and position. Spot and directional lights also have an Aim Target so they can point anywhere.",
               showNext: true,
               showSkip: true
@@ -43700,7 +43818,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               position: "left",
               arrowPosition: "right",
               marginOverride: "20px",
-              heading: "5. Plan shots",
+              heading: "6. Plan shots",
               content: "Add a camera, then use the Shot Designer to add shots, set start and end frames and choose how the camera moves. The timeline at the bottom plays them back.",
               showNext: true,
               showSkip: true
@@ -43711,7 +43829,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               position: "bottom",
               arrowPosition: "top",
               marginOverride: "25px",
-              heading: "6. Save and export",
+              heading: "7. Save and export",
               content: "Save to Browser keeps your work locally. Export gives you the project file, a storyboard report or PDF, or a GLB 3D model. For the full tour, open Settings > Tutorial.",
               showNext: true,
               showSkip: true
@@ -43800,7 +43918,20 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               position: "center",
               arrowPosition: "none",
               heading: "Scene Navigation",
-              content: "Use Camera/Scene mode to switch controls. Drag empty space to orbit, right-drag to pan, and use the floating pad for zoom, orbit and Home. F, S, B and T give front, side, back and top views.",
+              content: "Switch between Camera and Scene controls with Tab or the Camera/Scene toggle. In Camera mode use W A S D to move and Q E to rotate, or drag empty space to orbit. Right-drag pans and the wheel zooms. F, Shift+S, B and T give front, side, back and top views.",
+              demo: "camera",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "snapping",
+              elementId: "snap-toggle",
+              position: "bottom",
+              arrowPosition: "top",
+              marginOverride: "20px",
+              heading: "Snapping While Moving",
+              content: "When snapping is on, objects lock to the grid and nearby surfaces as you drag. Hold Alt to temporarily bypass it, or turn snapping off with the magnet. The setting lives in Settings > General > \u201CSnap objects to grid while moving\u201D.",
+              demo: "snap",
               showNext: true,
               showSkip: true
             },
@@ -43974,6 +44105,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
   var tutorialConfig = new TutorialConfig();
 
   // js/tutorialSystem.js
+  init_three_module();
   var TUTORIAL_SEEN_KEY = "pixelstaging-tutorial-seen";
   var TUTORIAL_AUTOSTART_KEY = "pixelstaging-tutorial-autostart";
   var TutorialSystem = class {
@@ -43984,6 +44116,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       this.tutorialElement = null;
       this.overlayElement = null;
       this.isInitialized = false;
+      this.demoState = null;
     }
     init() {
       this.createTutorialElements();
@@ -44019,6 +44152,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
                 <button id="tutorial-close">\xD7</button>
             </div>
             <div id="tutorial-content"></div>
+            <div id="tutorial-demo"></div>
             <div id="tutorial-controls">
                 <div id="tutorial-buttons">
                     <button id="tutorial-prev" class="tutorial-btn" style="display: none;">Previous</button>
@@ -44128,6 +44262,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
         this.hideTutorial();
         return;
       }
+      this.stopDemo();
       if (step.controlMode && this.app.setControlMode) {
         this.app.setControlMode(step.controlMode);
       }
@@ -44154,6 +44289,159 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       this.updateProgressDots();
       this.highlightTargetElement(step.elementId);
       this.addDirectionalArrow(usedFallback ? "center" : step.arrowPosition || step.position, step.arrowPositionOverride);
+      this.startDemo(step);
+    }
+    /**
+     * Run the live demo attached to a tutorial step.
+     * Demos are deliberately temporary: camera movement stops when the step
+     * changes, and demo objects are removed from the scene.
+     */
+    startDemo(step) {
+      const demoEl = document.getElementById("tutorial-demo");
+      if (!demoEl) return;
+      demoEl.innerHTML = "";
+      if (!step.demo) return;
+      if (step.demo === "camera") {
+        demoEl.innerHTML = `
+                <div class="tutorial-demo-title"><span class="tutorial-demo-dot"></span> Watch the camera move</div>
+                <div class="tutorial-demo-keys">
+                    <span class="tutorial-key">W</span><span class="tutorial-key">A</span>
+                    <span class="tutorial-key">S</span><span class="tutorial-key">D</span>
+                    <span class="tutorial-demo-key-label">move</span>
+                    <span class="tutorial-key">Q</span><span class="tutorial-key">E</span>
+                    <span class="tutorial-demo-key-label">rotate</span>
+                </div>
+                <div class="tutorial-demo-hint">Try it now while this step is open.</div>
+            `;
+        this.startCameraDemo();
+      } else if (step.demo === "snap") {
+        demoEl.innerHTML = `
+                <div class="tutorial-demo-title"><span class="tutorial-demo-dot"></span> Snap in action</div>
+                <div class="tutorial-demo-hint">The moving block locks onto the target surface. Hold <b>Alt</b> while dragging to bypass snapping.</div>
+            `;
+        this.startSnapDemo();
+      } else if (step.demo === "move") {
+        demoEl.innerHTML = `
+                <div class="tutorial-demo-title"><span class="tutorial-demo-dot"></span> Try the gizmo</div>
+                <div class="tutorial-demo-hint">The actor is selected. Drag an arrow to move it, then press <b>R</b> to rotate or <b>S</b> to scale.</div>
+            `;
+        this.selectDemoObject();
+      }
+    }
+    startCameraDemo() {
+      const camera = this.app.camera;
+      const target = this.app.orbit?.target;
+      if (!camera || !target || this.app.controlMode !== "camera") return;
+      const startOffset = camera.position.clone().sub(target);
+      const started = performance.now();
+      const duration = 4200;
+      const state = { kind: "camera", raf: 0 };
+      this.demoState = state;
+      const cancelOnInteraction = () => {
+        if (state.raf) cancelAnimationFrame(state.raf);
+        state.raf = 0;
+      };
+      const cleanupListeners = () => {
+        window.removeEventListener("pointerdown", cancelOnInteraction);
+        window.removeEventListener("keydown", cancelOnInteraction);
+      };
+      state.cleanup = cleanupListeners;
+      window.addEventListener("pointerdown", cancelOnInteraction);
+      window.addEventListener("keydown", cancelOnInteraction);
+      const tick = (now2) => {
+        if (this.demoState !== state) return;
+        const t = Math.min(1, (now2 - started) / duration);
+        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        const offset = startOffset.clone().applyAxisAngle(
+          new Vector3(0, 1, 0),
+          eased * Math.PI * 0.32
+        );
+        camera.position.copy(target).add(offset);
+        camera.lookAt(target);
+        camera.updateMatrixWorld(true);
+        if (this.app.orbit) {
+          this.app.orbit.target.copy(target);
+          this.app.orbit.update();
+        }
+        if (t < 1) state.raf = requestAnimationFrame(tick);
+        else cleanupListeners();
+      };
+      state.raf = requestAnimationFrame(tick);
+    }
+    startSnapDemo() {
+      const scene = this.app.scene;
+      if (!scene) return;
+      const group = new Group();
+      group.userData.isTutorialDemo = true;
+      group.userData.name = "Tutorial snapping demo";
+      const targetBlock = new Mesh(
+        new BoxGeometry(1, 1, 1),
+        new MeshStandardMaterial({ color: 55807, roughness: 0.45, metalness: 0.1 })
+      );
+      targetBlock.position.set(3.2, 0.5, 0.2);
+      const movingBlock = new Mesh(
+        new BoxGeometry(1, 1, 1),
+        new MeshStandardMaterial({ color: 65345, roughness: 0.45, metalness: 0.1 })
+      );
+      movingBlock.position.set(3.2, 0.5, 3.4);
+      const edges = new LineSegments(
+        new EdgesGeometry(targetBlock.geometry),
+        new LineBasicMaterial({ color: 16777215, transparent: true, opacity: 0.65 })
+      );
+      targetBlock.add(edges);
+      const movingEdges = new LineSegments(
+        new EdgesGeometry(movingBlock.geometry),
+        new LineBasicMaterial({ color: 16777215, transparent: true, opacity: 0.65 })
+      );
+      movingBlock.add(movingEdges);
+      group.add(targetBlock, movingBlock);
+      scene.add(group);
+      const startZ = movingBlock.position.z;
+      const snappedZ = 1.2;
+      const started = performance.now();
+      const state = { kind: "snap", group, raf: 0 };
+      this.demoState = state;
+      const tick = (now2) => {
+        if (this.demoState !== state) return;
+        const cycle = (now2 - started) % 3600 / 3600;
+        let t;
+        if (cycle < 0.55) t = Math.min(1, cycle / 0.35);
+        else if (cycle < 0.8) t = 1;
+        else t = Math.max(0, 1 - (cycle - 0.8) / 0.2);
+        const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        movingBlock.position.z = startZ + (snappedZ - startZ) * eased;
+        group.children.forEach((child) => {
+          if (child.material) child.material.emissive?.setHex(cycle > 0.38 && cycle < 0.8 ? 670234 : 0);
+        });
+        state.raf = requestAnimationFrame(tick);
+      };
+      state.raf = requestAnimationFrame(tick);
+    }
+    selectDemoObject() {
+      const objects = this.app.objects || [];
+      const demo = objects.find((obj) => obj.userData?.staging?.kind === "figure") || objects.find((obj) => obj.userData?.type === "figure") || objects.find((obj) => obj.userData?.type === "character") || objects.find((obj) => obj.userData?.type === "shape");
+      if (!demo || !this.app.selectObject) return;
+      demo.userData._tutorialDemoSelected = true;
+      this.app.selectObject(demo);
+      this.app.orbit?.update?.();
+    }
+    stopDemo() {
+      const state = this.demoState;
+      if (state) {
+        state.cleanup?.();
+        if (state.raf) cancelAnimationFrame(state.raf);
+        if (state.group) {
+          this.app.scene?.remove(state.group);
+          state.group.traverse((child) => {
+            child.geometry?.dispose?.();
+            if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose?.());
+            else child.material?.dispose?.();
+          });
+        }
+        this.demoState = null;
+      }
+      const demoEl = document.getElementById("tutorial-demo");
+      if (demoEl) demoEl.innerHTML = "";
     }
     positionTutorial(step) {
       const targetElement = document.getElementById(step.elementId);
@@ -44253,6 +44541,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       }
     }
     hideTutorial() {
+      this.stopDemo();
       if (this.config.isTutorialActive()) this.markTutorialSeen();
       this.tutorialElement.style.display = "none";
       this.overlayElement.style.display = "none";
@@ -48942,6 +49231,9 @@ ${xrefOffset}
       this.originalColors = /* @__PURE__ */ new Map();
       this.controlMode = "camera";
       this.cameraGuidesEnabled = false;
+      this.cameraNavKeys = /* @__PURE__ */ new Set();
+      this.cameraNavBaseSpeed = 9;
+      this.cameraNavRotateSpeed = 1.4;
       this.APP_DEFAULTS = APP_DEFAULTS2;
       this.snapEnabled = APP_DEFAULTS2.snap.enabled;
       this.snapMode = APP_DEFAULTS2.snap.mode;
@@ -49059,14 +49351,14 @@ ${xrefOffset}
       window.addEventListener("pointerup", () => this.endPointerGesture());
       window.addEventListener("blur", () => this.endPointerGesture());
       this.renderer.domElement.addEventListener("contextmenu", (e) => this.onRightClick(e));
-      setTimeout(() => {
-        const spaceCheckbox = document.getElementById("transform-space-checkbox");
-        if (spaceCheckbox) {
-          spaceCheckbox.addEventListener("change", (e) => {
-            this.toggleTransformSpace(e.target.checked);
-          });
-        }
-      }, APP_DEFAULTS2.init.checkboxInitDelay);
+      const spaceCheckbox = document.getElementById("transform-space-checkbox");
+      if (spaceCheckbox) {
+        spaceCheckbox.addEventListener("change", (e) => {
+          this.toggleTransformSpace(e.target.checked);
+        });
+        const spaceLabel = spaceCheckbox.closest(".transform-space-toggle");
+        if (spaceLabel) spaceLabel.style.cursor = "pointer";
+      }
       this.setGridVisible(true);
       this.setAxesVisible(true);
       this.addDefaultTestObjects();
@@ -49080,6 +49372,7 @@ ${xrefOffset}
     initializeEditorModules() {
       const modules = [
         ["UI", () => this.ui.init()],
+        ["Camera keyboard controls", () => this.setupCameraKeyboardControls()],
         ["Snap controls", () => this.setupSnapControls()],
         ["Tutorial", () => this.tutorialSystem.init()]
       ];
@@ -49387,8 +49680,11 @@ ${xrefOffset}
      * Camera mode: drag to look around / navigate the view.
      * Scene mode: click objects and use the transform gizmo.
      */
-    setControlMode(mode) {
+    setControlMode(mode, { silent = false } = {}) {
+      const previousMode = this.controlMode;
       this.controlMode = mode === "scene" ? "scene" : "camera";
+      const modeChanged = previousMode !== this.controlMode;
+      if (this.controlMode === "camera") this.cameraNavKeys.clear();
       if (this.orbit) {
         this.orbit.enabled = true;
         this.orbit.enablePan = true;
@@ -49412,8 +49708,15 @@ ${xrefOffset}
       }
       if (this.transformControl) {
         this.transformControl.enabled = this.controlMode === "scene";
-        this.transformControl.visible = this.controlMode === "scene" && !!this.selectedObject;
-        if (this.controlMode === "camera") this.transformControl.detach();
+        if (this.controlMode === "scene" && this.selectedObject) {
+          if (this.transformControl.object !== this.selectedObject) {
+            this.transformControl.attach(this.selectedObject);
+          }
+          this.transformControl.visible = true;
+        } else {
+          this.transformControl.visible = false;
+          if (this.controlMode === "camera") this.transformControl.detach();
+        }
       }
       if (this.controlMode === "camera" && this.staging?.shotManager) {
         this.staging.shotManager.previewActive = false;
@@ -49428,7 +49731,12 @@ ${xrefOffset}
       if (this.controlMode === "camera") this.staging?.shotManager?.refreshUI?.();
       document.getElementById("selection-info")?.classList.toggle("hidden", !(this.selectedObject && this.controlMode === "scene"));
       this.renderer?.domElement && (this.renderer.domElement.style.cursor = "default");
-      this.ui?.showNotification?.(this.controlMode === "camera" ? "Camera controls: drag the view" : "Scene controls: move objects", "info");
+      if (modeChanged && !silent) {
+        this.ui?.showNotification?.(
+          this.controlMode === "camera" ? "Camera mode: drag to look, WASD to move, Q/E to rotate" : "Scene mode: click an object and use the gizmo to move it",
+          "info"
+        );
+      }
     }
     // Configure orbit controls for optimal touch/trackpad experience
     configureOrbitControlsForTouch() {
@@ -50083,8 +50391,75 @@ ${xrefOffset}
       });
     }
     setSnapEnabled(enabled) {
-      this.snapEnabled = enabled;
+      this.snapEnabled = !!enabled;
       this.syncSnapControls();
+    }
+    /**
+     * Continuous editor-camera navigation.
+     * WASD pans the camera in the view plane and Q/E orbit around the target.
+     */
+    setupCameraKeyboardControls() {
+      const isTypingTarget = (target) => {
+        if (!target) return false;
+        const tag = target.tagName;
+        return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+      };
+      window.addEventListener("keydown", (e) => {
+        if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (this.controlMode !== "camera") return;
+        const code = e.code;
+        if (!["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE"].includes(code)) return;
+        e.preventDefault();
+        this.cameraNavKeys.add(code);
+      }, { passive: false });
+      const release = (e) => this.cameraNavKeys.delete(e.code);
+      window.addEventListener("keyup", release);
+      window.addEventListener("blur", () => this.cameraNavKeys.clear());
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) this.cameraNavKeys.clear();
+      });
+    }
+    updateKeyboardCamera(delta) {
+      if (!this.orbit || !this.camera || this.cameraNavKeys.size === 0) return;
+      const safeDelta = Math.min(Math.max(delta, 0), 0.1);
+      if (this.staging?.shotManager?.previewActive) {
+        this.staging.shotManager.previewActive = false;
+        this.staging.shotManager.clearPreviewBlur?.();
+        this.staging.shotManager.clearTransitionOverlay?.();
+      }
+      const camera = this.camera;
+      const target = this.orbit.target;
+      const speedSetting = Number(this.cameraSpeedMultiplier || 1);
+      const distance = Math.max(2, camera.position.distanceTo(target));
+      const moveSpeed = this.cameraNavBaseSpeed * Math.max(0.15, speedSetting) * (distance / 12) * safeDelta;
+      const rotateSpeed = this.cameraNavRotateSpeed * Math.max(0.15, speedSetting) * safeDelta;
+      const forward = target.clone().sub(camera.position);
+      forward.y = 0;
+      if (forward.lengthSq() < 1e-4) {
+        camera.getWorldDirection(forward);
+        forward.y = 0;
+      }
+      forward.normalize();
+      const right = new Vector3().crossVectors(forward, camera.up).normalize();
+      const move = new Vector3();
+      if (this.cameraNavKeys.has("KeyW")) move.add(forward);
+      if (this.cameraNavKeys.has("KeyS")) move.sub(forward);
+      if (this.cameraNavKeys.has("KeyD")) move.add(right);
+      if (this.cameraNavKeys.has("KeyA")) move.sub(right);
+      if (move.lengthSq() > 0) {
+        move.normalize().multiplyScalar(moveSpeed);
+        camera.position.add(move);
+        target.add(move);
+      }
+      const yaw = (this.cameraNavKeys.has("KeyQ") ? 1 : 0) - (this.cameraNavKeys.has("KeyE") ? 1 : 0);
+      if (yaw !== 0) {
+        const offset = camera.position.clone().sub(target);
+        offset.applyAxisAngle(new Vector3(0, 1, 0), yaw * rotateSpeed);
+        camera.position.copy(target).add(offset);
+      }
+      camera.lookAt(target);
+      camera.updateMatrixWorld(true);
+      this.orbit.update();
     }
     /** True while snapping is on and the user is not holding Alt. */
     isSnapActive() {
@@ -50337,6 +50712,7 @@ ${xrefOffset}
       this.scene.add(patch);
     }
     setCameraSpeed(speed) {
+      this.cameraSpeedMultiplier = Number(speed) || 1;
       if (this.orbit) {
         this.orbit.rotateSpeed = speed;
         this.orbit.panSpeed = speed;
@@ -50418,6 +50794,7 @@ ${xrefOffset}
         }
       });
       this.characterManager.update(delta);
+      if (this.controlMode === "camera") this.updateKeyboardCamera(delta);
       if (this.orbit && this.orbit.enabled) {
         this.orbit.update();
       }
