@@ -242,6 +242,7 @@ export class SceneManager {
             this.app.staging.shotManager.shots = (sceneData.shots || []).map(s => ({ ...s }));
             this.app.staging.shotManager.currentTime = 0;
             this.app.staging.shotManager.previewActive = false;
+            this.app.staging.shotManager.ensureDefaultShot();
             this.app.staging.shotManager.refreshUI();
         }
         

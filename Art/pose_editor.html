@@ -132,13 +132,28 @@ addEventListener('resize', resize); resize();
 
 // ---------- state ----------
 let poser = null, modelRoot = null, meshes = [], handles = new Map(), selected = null, height = 1;
-let library = null, homePos = new THREE.Vector3(), homeTarget = new THREE.Vector3();
+let library = null, pendingCustomPoses = null, homePos = new THREE.Vector3(), homeTarget = new THREE.Vector3();
 const handleGeo = new THREE.SphereGeometry(1, 12, 8);
 const HIDE_ALWAYS = /_End$|Eye|HeadTop/;
 const FINGER = /Hand(Thumb|Index|Middle|Ring|Pinky)\d/;
 const pretty = (k) => k.replace(/([a-z])([A-Z0-9])/g, '$1 $2');
 
 try { library = await (await fetch('poses.json')).json(); } catch { /* optional, can be loaded by button */ }
+
+// Custom presets saved in the main app are sent in by the parent frame.
+function applyPendingCustomPoses() {
+  if (!poser || !pendingCustomPoses) return;
+  poser.addLibrary({ poses: pendingCustomPoses });
+  pendingCustomPoses = null;
+  buildPresets();
+}
+addEventListener('message', (event) => {
+  if (event.origin !== location.origin) return;
+  const data = event.data;
+  if (data?.type !== 'pixelstaging-load-poses' || !data.poses) return;
+  pendingCustomPoses = data.poses;
+  applyPendingCustomPoses();
+});
 
 // ---------- loading ----------
 async function loadModel(url, isBlob) {
@@ -176,7 +191,7 @@ async function loadModel(url, isBlob) {
     m.scale.setScalar(height * (FINGER.test(key) ? 0.006 : 0.011));
     m.renderOrder = 10; m.userData.bone = key; scene.add(m); handles.set(key, m);
   }
-  buildBoneList(); buildPresets(); applyHandleVisibility();
+  buildBoneList(); buildPresets(); applyHandleVisibility(); applyPendingCustomPoses();
   poser.setBone('Hips', 0, 0, 0); // ensures the poser is in a clean rest state
   select('Hips');
 }
@@ -272,7 +287,16 @@ function currentPose() {
 }
 $('savePreset').onclick = () => {
   const name = prompt('Preset name (no spaces):'); if (!name || !poser) return;
-  poser.addLibrary({ poses: { [name.trim().replace(/\s+/g, '_')]: currentPose() } }); buildPresets();
+  const clean = name.trim().replace(/\s+/g, '_');
+  const pose = currentPose();
+  // Replace an existing preset with the same name in this editor session.
+  poser.poses.delete(clean);
+  poser.addLibrary({ poses: { [clean]: pose } });
+  buildPresets();
+  // The main app owns the persistent preset store; send it there too.
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'pixelstaging-pose-preset', name: clean, pose }, window.location.origin);
+  }
 };
 $('useInScene').onclick = () => {
   if (!poser || !window.parent || window.parent === window) return;

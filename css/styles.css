@@ -5272,6 +5272,58 @@ input[type="number"].color-slider-value-compact {
     transform: scale(1.1);
 }
 
+/* Palette colour picker inside the Properties panel */
+.prop-palette-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.prop-palette-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.prop-palette-swatch {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 4px;
+    border: 2px solid var(--border-color);
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.prop-palette-swatch:hover {
+    transform: scale(1.12);
+    border-color: var(--accent-primary);
+}
+
+.prop-palette-swatch.active {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--bg-darkest), 0 0 0 4px var(--accent-primary);
+    transform: scale(1.08);
+}
+
+.prop-palette-custom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.prop-palette-custom input[type="color"] {
+    width: 40px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+}
+
 /* =============================================
    POLYFORK.DEV 3D MODELS
    ============================================= */
@@ -7853,6 +7905,25 @@ body.overlays-hidden #floating-camera-controls {
     background: var(--accent-secondary) !important;
     box-shadow: 0 0 8px rgba(255, 0, 110, 0.8) !important;
     z-index: 20 !important;
+    pointer-events: auto !important;
+    cursor: ew-resize;
+}
+.shot-time-indicator::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 18px;
+    transform: translateX(-50%);
+    cursor: ew-resize;
+}
+body.timeline-scrubbing {
+    user-select: none;
+    cursor: ew-resize;
+}
+body.timeline-scrubbing * {
+    cursor: ew-resize !important;
 }
 .shot-time-indicator::before {
     content: '';
@@ -8030,4 +8101,22 @@ body.overlays-hidden #floating-camera-controls {
     text-align: center;
     color: var(--text-secondary);
     font-size: 0.75rem;
+}
+
+
+/* Snap controls (canvas overlay) */
+.overlay-controls .snap-toggle.active {
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+.overlay-controls .snap-toggle.bypassed {
+    opacity: 0.45;
+}
+.overlay-controls .snap-grid-size {
+    background: var(--bg-medium);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    padding: 0 4px;
 }

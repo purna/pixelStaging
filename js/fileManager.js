@@ -577,6 +577,7 @@ export class FileManager {
                     item.lightType = obj.userData.lightType;
                     item.color = '#' + l.color.getHexString();
                     item.intensity = l.intensity;
+                    if (obj.userData.aimTarget) item.aim = { ...obj.userData.aimTarget };
                 } else if (obj.userData.type === 'figure') {
                     item.gender = obj.userData.gender;
                     item.joints = {};
@@ -767,6 +768,7 @@ export class FileManager {
                 if (newObj) {
                     newObj.children[0].color.set(item.color);
                     newObj.children[0].intensity = item.intensity;
+                    if (item.aim) this.app.setLightAim(newObj, item.aim.x, item.aim.y, item.aim.z);
                 }
             }
             else if (item.type === 'figure') {

@@ -61,6 +61,7 @@
         <div class="header-controls">
             <button id="undoBtn" class="btn icon-only" title="Undo (Ctrl+Z)"><i class="fas fa-undo"></i></button>
             <button id="redoBtn" class="btn icon-only" title="Redo (Ctrl+Y)"><i class="fas fa-redo"></i></button>
+            <button id="helpBtn" class="btn icon-only" title="Help: quick tour of the main controls"><i class="fas fa-question-circle"></i></button>
             <div class="separator" style="height: 20px; width: 1px; margin: 0 10px;"></div>
             <input type="file" id="file-input" accept=".json" style="display:none">
             <button class="btn primary" id="btn-save"><i class="fas fa-save"></i> Save to Browser</button>
@@ -316,6 +317,18 @@ Open application settings"><i class="fas fa-cog"></i></div>
                 Resize objects
                 --Keyboard: S--"><i class="fas fa-expand-arrows-alt"></i></button>
 
+
+                <!-- Snap controls -->
+                <button class="btn icon-only snap-toggle" id="snap-toggle" title="Snap to grid (hold Alt while dragging to bypass)" data-tooltip="**Snap to Grid**
+                Toggle snapping
+
+                --Hold Alt while dragging to bypass--"><i class="fas fa-magnet"></i></button>
+                <select id="snap-grid-size" class="snap-grid-size" title="Snap grid size">
+                    <option value="0.1">0.1</option>
+                    <option value="0.25">0.25</option>
+                    <option value="0.5">0.5</option>
+                    <option value="1">1</option>
+                </select>
 
                 <!-- Camera / Scene controls -->
                 <label class="transform-space-toggle" title="Camera controls: drag to look. Scene controls: select and move objects.">
@@ -832,6 +845,78 @@ Open application settings"><i class="fas fa-cog"></i></div>
     </div>
 
 
+        <!-- WELCOME GUIDE MODAL -->
+        <div class="modal-overlay" id="welcome-modal">
+            <div class="modal welcome-modal" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+                <header class="welcome-header">
+                    <div>
+                        <div class="welcome-eyebrow">Welcome guide</div>
+                        <h2 id="welcome-title">Welcome to Pixel Staging</h2>
+                        <p>Block out a set, place actors, plan camera shots and export a storyboard — all in one workspace.</p>
+                    </div>
+                    <button class="modal-close-btn" id="welcome-close" title="Close" aria-label="Close welcome guide">&times;</button>
+                </header>
+
+                <div class="welcome-body">
+                    <figure class="welcome-hero">
+                        <img src="review-shot.png" alt="Pixel Staging workspace showing the 3D set, toolbar, properties panel and shot timeline" loading="lazy">
+                        <figcaption>The staging workspace: build on the left, edit on the right, and plan shots along the bottom timeline.</figcaption>
+                    </figure>
+
+                    <div class="welcome-steps">
+                        <div class="welcome-step">
+                            <span class="welcome-step-number">1</span>
+                            <div><h3>Build the set</h3><p>Use the left toolbar to add actors, furniture, walls, doors, windows and stairs. Drag objects to move them, or use the transform gizmo.</p></div>
+                        </div>
+                        <div class="welcome-step">
+                            <span class="welcome-step-number">2</span>
+                            <div><h3>Select and edit</h3><p>Click an object to open its Properties. Change position, rotation, scale, colour and materials. Palette colours are available directly in the Properties panel.</p></div>
+                        </div>
+                        <div class="welcome-step">
+                            <span class="welcome-step-number">3</span>
+                            <div><h3>Plan camera shots</h3><p>Add a camera, then use the Shot Designer to choose a move, set start and end frames, and adjust duration, speed and easing.</p></div>
+                        </div>
+                        <div class="welcome-step">
+                            <span class="welcome-step-number">4</span>
+                            <div><h3>Save and export</h3><p>Save to Browser keeps your work locally. Export a project file, storyboard report, PDF or a GLB 3D scene.</p></div>
+                        </div>
+                    </div>
+
+                    <div class="welcome-features">
+                        <article class="welcome-feature">
+                            <img src="images/colourpicker.png" alt="Colour asset editor with spectrum, saturation and transparency controls" loading="lazy">
+                            <div>
+                                <h3>Colour palettes</h3>
+                                <p>Keep a consistent look with reusable palettes. Click a swatch to apply it to the selected object, or save a custom colour.</p>
+                            </div>
+                        </article>
+                        <article class="welcome-feature">
+                            <img src="images/editmateril.png" alt="Material editor with stacked texture layers and material properties" loading="lazy">
+                            <div>
+                                <h3>Materials and textures</h3>
+                                <p>Stack colour, noise, glass and outline layers to build surfaces, then tune metalness, roughness and opacity.</p>
+                            </div>
+                        </article>
+                        <article class="welcome-feature">
+                            <img src="export-shot.jpg" alt="Rendered staging scene with floor, walls and a standing actor" loading="lazy">
+                            <div>
+                                <h3>Preview and export</h3>
+                                <p>Frame the scene with a virtual camera, play the shot timeline, then export a storyboard or 3D model.</p>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+
+                <footer class="welcome-footer">
+                    <span class="welcome-hint">Tip: reopen this guide any time with the <b>?</b> button in the header.</span>
+                    <div class="welcome-actions">
+                        <button class="btn" id="welcome-explore">Explore the studio</button>
+                        <button class="btn primary" id="welcome-tour">Start quick tour</button>
+                    </div>
+                </footer>
+            </div>
+        </div>
+
         <!-- AI MODAL -->
         <div class="modal-overlay" id="ai-modal">
             <div class="modal">
@@ -1138,7 +1223,7 @@ Open application settings"><i class="fas fa-cog"></i></div>
                                         <span class="checkmark"></span> Auto-start Tutorial
                                     </label>
                                     <div class="setting-description">
-                                        Automatically start the tutorial on app launch
+                                        Automatically show the quick tour the first time the app is opened (use the ? button any time to replay it)
                                     </div>
                                 </div>
                             </div>

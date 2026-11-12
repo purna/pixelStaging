@@ -86,6 +86,15 @@ export class ShotManager {
         return shot;
     }
 
+    /** Every scene should start with a usable shot on its default camera. */
+    ensureDefaultShot() {
+        if (this.shots.length > 0) return this.shots[0];
+        const cameras = this.app.staging?.cameras;
+        const rig = cameras?.defaultRig || cameras?.ensureDefaultRig?.();
+        if (!rig) return null;
+        return this.createShot(rig.id, { name: 'Shot 1' });
+    }
+
     removeShot(shotId) {
         const i = this.shots.findIndex(s => s.id === shotId);
         if (i > -1) {
@@ -631,6 +640,50 @@ export class ShotManager {
         this.refreshUI();
     }
 
+    /** Resolve a shot's effective start/end frame, including auto-generated moves. */
+    evaluateShotFrame(shot, frameType) {
+        if (!shot) return null;
+        const stored = shot[frameType === 'start' ? 'startFrame' : 'endFrame'];
+        if (stored) return JSON.parse(JSON.stringify(stored));
+
+        const rig = this.app.staging?.cameras?.get(shot.cameraId);
+        if (!rig) return null;
+        const temp = rig.camera.clone();
+        this.applyShotMove(temp, rig, shot, frameType === 'start' ? 0 : shot.duration, 0);
+        const forward = new V3(0, 0, -1).applyQuaternion(temp.quaternion);
+        return {
+            position: temp.position.toArray(),
+            quaternion: temp.quaternion.toArray(),
+            target: temp.position.clone().addScaledVector(forward, 10).toArray(),
+            fov: Number.isFinite(temp.fov) ? temp.fov : 55
+        };
+    }
+
+    /** Make this shot start exactly where the previous shot ended. */
+    matchPreviousEnd(index = this.selectedShotIndex) {
+        const shot = this.shots[index];
+        const previous = this.shots[index - 1];
+        if (!shot || !previous) return;
+        const frame = this.evaluateShotFrame(previous, 'end');
+        if (!frame) return;
+        shot.startFrame = frame;
+        this.selectedShotIndex = index;
+        this.refreshUI();
+        this.app.ui?.showNotification?.(`Start matched to end of “${previous.name}”`, 'success');
+    }
+
+    /** Make the next shot start exactly where this shot ends. */
+    copyEndToNextStart(index = this.selectedShotIndex) {
+        const shot = this.shots[index];
+        const next = this.shots[index + 1];
+        if (!shot || !next) return;
+        const frame = this.evaluateShotFrame(shot, 'end');
+        if (!frame) return;
+        next.startFrame = frame;
+        this.refreshUI();
+        this.app.ui?.showNotification?.(`“${next.name}” start matched to this shot's end`, 'success');
+    }
+
     getShotStartTime(shotIndex) {
         let t = 0;
         for (let i = 0; i < shotIndex; i++) {
@@ -827,6 +880,10 @@ export class ShotManager {
                         <button class="shot-btn framing-btn" data-action="reset-start"${!shot.startFrame ? ' disabled' : ''}>Reset Start</button>
                         <button class="shot-btn framing-btn" data-action="reset-end"${!shot.endFrame ? ' disabled' : ''}>Reset End</button>
                     </div>
+                    <div class="framing-btn-group">
+                        <button class="shot-btn framing-btn" data-action="match-prev-end" title="Copy the previous shot's end frame to this shot's start"${index === 0 ? ' disabled' : ''}>Match Prev End</button>
+                        <button class="shot-btn framing-btn" data-action="copy-next-start" title="Copy this shot's end frame to the next shot's start"${index >= this.shots.length - 1 ? ' disabled' : ''}>End → Next Start</button>
+                    </div>
                     ${this.viewMode === 'frame' ? `
                     <div class="framing-btn-group">
                         <button class="shot-btn framing-btn" data-action="commit-frame">Confirm Frame</button>
@@ -951,6 +1008,12 @@ export class ShotManager {
             case 'reset-end':
                 shot.endFrame = null;
                 this.refreshUI();
+                break;
+            case 'match-prev-end':
+                this.matchPreviousEnd(index);
+                break;
+            case 'copy-next-start':
+                this.copyEndToNextStart(index);
                 break;
             case 'commit-frame':
                 this.commitFraming(this.editingFrame);
@@ -1368,13 +1431,36 @@ export class ShotManager {
         container.appendChild(indicator);
         indicator.style.left = total > 0 ? (this.currentTime / total) * 100 + '%' : '0%';
         
-        // Click/drag the ruler or empty track to seek.
-        container.onmousedown = (e) => {
-            if (e.target !== container && !e.target.classList.contains('shot-timeline-ruler') && !e.target.parentElement?.classList.contains('shot-timeline-ruler')) return;
-            const rect = container.getBoundingClientRect();
-            const time = Math.max(0, Math.min(total, ((e.clientX - rect.left) / rect.width) * total));
-            this.seek(time);
+        // Click/drag the ruler, empty track or playhead to seek.
+        const beginScrub = (e) => {
+            const isPlayhead = e.target === indicator || indicator.contains(e.target);
+            const isTrack = e.target === container
+                || e.target.classList.contains('shot-timeline-ruler')
+                || e.target.parentElement?.classList.contains('shot-timeline-ruler');
+            if (!isPlayhead && !isTrack) return;
+
+            e.preventDefault();
+            this.playing = false;
+            this.isScrubbing = true;
+            document.body.classList.add('timeline-scrubbing');
+
+            const seekAt = (ev) => {
+                const rect = container.getBoundingClientRect();
+                const time = Math.max(0, Math.min(total, ((ev.clientX - rect.left) / rect.width) * total));
+                this.seek(time);
+            };
+            seekAt(e);
+            const onMove = (ev) => seekAt(ev);
+            const onUp = () => {
+                this.isScrubbing = false;
+                document.body.classList.remove('timeline-scrubbing');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
         };
+        container.onmousedown = beginScrub;
     }
 
     addShotForSelectedCamera() {

@@ -65,12 +65,12 @@ export class UI {
             ['floating camera controls', () => this.setupFloatingCameraControls()],
             ['camera nudge', () => this.setupCameraNudge()],
             ['pose editor bridge', () => this.setupPoseEditorBridge()],
-            ['palette colour restriction', () => this.setupPaletteColorRestriction()],
             ['camera panel', () => this.setupCameraTab()],
             ['scene list', () => this.setupSceneList()],
             ['color editor', () => this.setupColorEditor()],
             ['hierarchy', () => this.renderHierarchyPanel()],
-            ['assets', () => this.renderAssetsPanel('colors')]
+            ['assets', () => this.renderAssetsPanel('colors')],
+            ['welcome guide', () => this.setupWelcomeModal()]
         ];
 
         initializers.forEach(([name, initialize]) => {
@@ -80,6 +80,56 @@ export class UI {
                 console.error(`Could not initialize UI ${name}:`, error);
             }
         });
+    }
+
+    setupWelcomeModal() {
+        const modal = document.getElementById('welcome-modal');
+        if (!modal) return;
+
+        const close = () => this.closeWelcomeModal();
+        document.getElementById('welcome-close')?.addEventListener('click', close);
+        document.getElementById('welcome-explore')?.addEventListener('click', close);
+        document.getElementById('welcome-tour')?.addEventListener('click', () => {
+            this.closeWelcomeModal();
+            this.app.tutorialSystem?.startTutorial?.('quick', { force: true });
+        });
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) close();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && modal.classList.contains('open')) close();
+        });
+
+        let seen = false;
+        try { seen = localStorage.getItem('pixelstaging-welcome-seen') === '1'; } catch (error) { /* storage unavailable */ }
+        if (!seen) {
+            // Let the workspace paint first so the guide opens over a ready scene.
+            setTimeout(() => {
+                let stillUnseen = true;
+                try { stillUnseen = localStorage.getItem('pixelstaging-welcome-seen') !== '1'; } catch (error) { /* storage unavailable */ }
+                if (stillUnseen) this.openWelcomeModal();
+            }, 350);
+        }
+    }
+
+    openWelcomeModal() {
+        const modal = document.getElementById('welcome-modal');
+        if (!modal) return;
+        modal.classList.add('open');
+        document.body.classList.add('welcome-open');
+    }
+
+    closeWelcomeModal() {
+        const modal = document.getElementById('welcome-modal');
+        if (!modal) return;
+        modal.classList.remove('open');
+        document.body.classList.remove('welcome-open');
+        try {
+            localStorage.setItem('pixelstaging-welcome-seen', '1');
+            // The welcome guide is the first-run onboarding; don't also auto-start
+            // the quick tour after it closes. The tour is still available from the guide.
+            localStorage.setItem('pixelstaging-tutorial-seen', '1');
+        } catch (error) { /* storage unavailable */ }
     }
 
     setupEventListeners() {
@@ -2015,37 +2065,6 @@ export class UI {
         }
     }
 
-    setupPaletteColorRestriction() {
-        const parseColor = (hex) => {
-            const value = String(hex || '').replace('#', '');
-            if (value.length !== 6) return null;
-            return [parseInt(value.slice(0, 2), 16), parseInt(value.slice(2, 4), 16), parseInt(value.slice(4, 6), 16)];
-        };
-
-        document.addEventListener('change', (event) => {
-            const input = event.target;
-            if (!(input instanceof HTMLInputElement) || input.type !== 'color') return;
-            // Palette editing itself must keep full colour access.
-            if (input.closest('#tab-assets, .palette-groups, .palette-color-picker, #material-asset-modal, #texture-asset-modal')) return;
-
-            const colors = (this.getActivePaletteGroup()?.colors || []).filter(color => /^#[0-9a-f]{6}$/i.test(color));
-            const rgb = parseColor(input.value);
-            if (!colors.length || !rgb) return;
-
-            let nearest = colors[0];
-            let best = Infinity;
-            for (const color of colors) {
-                const candidate = parseColor(color);
-                const distance = (candidate[0] - rgb[0]) ** 2 + (candidate[1] - rgb[1]) ** 2 + (candidate[2] - rgb[2]) ** 2;
-                if (distance < best) { best = distance; nearest = color; }
-            }
-            if (nearest.toLowerCase() !== input.value.toLowerCase()) {
-                input.value = nearest;
-                input.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        }, true);
-    }
-
     setupSceneList() {
         const scenes = this.app.staging?.scenes;
         if (!scenes) return;
@@ -2186,8 +2205,21 @@ export class UI {
         if (!modal || !frame) return;
 
         this.poseEditorTarget = char.model;
-        const modelFile = (this.app.characterManager.models[char.model.userData.characterType] || './Art/Xbot.glb')
+        const characterType = char.model.userData.characterType;
+        const modelFile = (this.app.characterManager.models[characterType] || './Art/Xbot.glb')
             .split('/').pop();
+        // Share saved custom presets with the editor once its document has loaded.
+        frame.onload = () => {
+            const saved = this.app.characterManager.exportCustomPoses?.()?.[characterType] || {};
+            const poses = {};
+            for (const [name, pose] of Object.entries(saved)) {
+                poses[name] = {
+                    rotations: pose.rotations,
+                    hipsDrop: (pose.hipsScale ?? 1) - 1
+                };
+            }
+            frame.contentWindow?.postMessage({ type: 'pixelstaging-load-poses', poses }, window.location.origin);
+        };
         frame.src = `Art/pose_editor.html?model=${encodeURIComponent(modelFile)}&embedded=1`;
         modal.classList.add('open');
         modal.style.display = 'flex';
@@ -2200,7 +2232,10 @@ export class UI {
             modal.classList.remove('open');
             modal.style.display = 'none';
         }
-        if (frame) frame.src = 'about:blank';
+        if (frame) {
+            frame.onload = null;
+            frame.src = 'about:blank';
+        }
         this.poseEditorTarget = null;
     }
 
@@ -2208,10 +2243,30 @@ export class UI {
         window.addEventListener('message', (event) => {
             if (event.origin !== window.location.origin) return;
             const data = event.data;
-            if (!data || data.type !== 'pixelstaging-pose') return;
+            if (!data || (data.type !== 'pixelstaging-pose' && data.type !== 'pixelstaging-pose-preset')) return;
             if (!this.poseEditorTarget) return;
 
-            const key = this.app.characterManager.applyPoseFromEditor(
+            const characterManager = this.app.characterManager;
+            const char = characterManager?.findCharacter?.(this.poseEditorTarget);
+            const characterType = char?.model?.userData?.characterType || 'character';
+
+            // Save-as-preset in the editor should persist, not just live in the iframe.
+            if (data.type === 'pixelstaging-pose-preset') {
+                const name = String(data.name || '').trim();
+                if (!name || !data.pose?.rotations) return;
+                if (!characterManager.customPoses[characterType]) characterManager.customPoses[characterType] = {};
+                characterManager.customPoses[characterType][name] = {
+                    rotations: data.pose.rotations,
+                    positions: data.pose.positions || undefined,
+                    hipsScale: 1 + (data.pose.hipsDrop ?? 0)
+                };
+                characterManager.persistCustomPoses();
+                this.showNotification(`Preset “${name}” saved`, 'success');
+                if (this.app.selectedObject) this.renderPropertiesPanel(this.app.selectedObject);
+                return;
+            }
+
+            const key = characterManager.applyPoseFromEditor(
                 this.poseEditorTarget,
                 data.name,
                 data.pose
@@ -3107,8 +3162,6 @@ export class UI {
         if (!target?.colors?.length) return;
 
         const oldColors = (oldGroup?.colors || []).map(color => color.toLowerCase());
-        const extraColorIndex = new Map();
-        let nextExtraIndex = 0;
         const materials = new Set();
         const objects = this.app.getAllObjects ? this.app.getAllObjects() : this.app.objects;
 
@@ -3122,17 +3175,20 @@ export class UI {
                     materials.add(material);
 
                     const current = ('#' + material.color.getHexString()).toLowerCase();
-                    let index = oldColors.indexOf(current);
-                    if (index < 0) {
-                        if (!extraColorIndex.has(current)) extraColorIndex.set(current, nextExtraIndex++);
-                        index = extraColorIndex.get(current);
+                    // Prefer an explicit palette slot; fall back to matching the previous palette's colour.
+                    let index = Number.isInteger(material.userData?.paletteIndex) ? material.userData.paletteIndex : oldColors.indexOf(current);
+
+                    // Custom colours not in the palette keep their value when palettes change.
+                    if (index < 0 || index >= oldColors.length) {
+                        if (material.userData) delete material.userData.paletteIndex;
+                        return;
                     }
 
-                    material.userData.paletteIndex = index;
+                    if (material.userData) material.userData.paletteIndex = index;
                     const next = target.colors[index]
-                        || target.colors[index % target.colors.length]
                         || defaultGroup.colors[index]
-                        || defaultGroup.colors[index % defaultGroup.colors.length];
+                        || target.colors[0]
+                        || defaultGroup.colors[0];
                     if (next) material.color.set(next);
                 });
             });
@@ -3281,6 +3337,9 @@ export class UI {
         if (colorHex) colorHex.value = hex;
         
         // Apply to selected object and remember its palette slot.
+        if (!this.app.selectedObject) {
+            this.showNotification('Select an object first, then click a palette colour', 'info');
+        }
         this.app.applyColorToSelected?.(hex);
         const group = this.getActivePaletteGroup();
         const index = group.colors.findIndex(color => color.toLowerCase() === hex.toLowerCase());
@@ -5030,8 +5089,23 @@ export class UI {
 
             // The staging menu is a grouped column; the others are icon grids.
             submenu.style.display = submenu.classList.contains('staging-submenu') ? 'flex' : 'grid';
-            submenu.style.top = `${topOffset}px`;
-            submenu.style.setProperty('--submenu-top', `${topOffset}px`); // For CSS custom prop if needed
+
+            // Keep the whole menu inside the viewport. Without this, menus opened
+            // from buttons near the bottom (e.g. Staging) extend past the window
+            // and their lower items cannot be reached.
+            const margin = 8;
+            const viewportHeight = window.innerHeight;
+            const maxHeight = Math.max(120, viewportHeight - margin * 2);
+            submenu.style.maxHeight = `${maxHeight}px`;
+            const menuHeight = Math.min(submenu.offsetHeight || submenu.scrollHeight, maxHeight);
+            let top = topOffset;
+            if (top + menuHeight > viewportHeight - margin) {
+                top = viewportHeight - margin - menuHeight;
+            }
+            top = Math.max(margin, top);
+
+            submenu.style.top = `${top}px`;
+            submenu.style.setProperty('--submenu-top', `${top}px`); // For CSS custom prop if needed
 
             btn.classList.add('active');
             this.activeSubmenu = submenu;
@@ -5069,6 +5143,15 @@ export class UI {
         document.querySelectorAll('.menu-parent').forEach(btn => btn.classList.remove('active'));
         this.activeSubmenu = null;
     }
+
+     showRightTab(name) {
+         const panel = document.getElementById('right-panel');
+         if (panel && panel.classList.contains('hidden')) {
+             this.togglePropertiesPanel();
+         }
+         const tab = document.querySelector(`.right-tab[data-right-tab="${name}"]`);
+         if (tab) tab.click();
+     }
 
      togglePropertiesPanel() {
          const panel = document.getElementById('right-panel');
@@ -5504,6 +5587,54 @@ export class UI {
         this.app.selectObject(replacement);
     }
 
+    createPaletteColorPicker(currentHex, onApply) {
+        const wrap = document.createElement('div');
+        wrap.className = 'prop-palette-picker';
+
+        const group = this.getActivePaletteGroup();
+        const colors = group?.colors || [];
+        const current = (currentHex || '').toLowerCase();
+
+        const grid = document.createElement('div');
+        grid.className = 'prop-palette-swatches';
+
+        colors.forEach(color => {
+            const swatch = document.createElement('button');
+            swatch.type = 'button';
+            swatch.className = 'prop-palette-swatch';
+            swatch.style.backgroundColor = color;
+            swatch.title = color;
+            swatch.dataset.color = color;
+            if (color.toLowerCase() === current) swatch.classList.add('active');
+            swatch.addEventListener('click', () => {
+                onApply(color);
+                grid.querySelectorAll('.prop-palette-swatch').forEach(s => {
+                    s.classList.toggle('active', s === swatch);
+                });
+            });
+            grid.appendChild(swatch);
+        });
+
+        wrap.appendChild(grid);
+
+        const customRow = document.createElement('div');
+        customRow.className = 'prop-palette-custom';
+        const label = document.createElement('span');
+        label.textContent = 'Custom';
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.id = 'prop-color-picker';
+        input.value = currentHex;
+        input.addEventListener('input', (e) => {
+            onApply(e.target.value);
+            grid.querySelectorAll('.prop-palette-swatch').forEach(s => s.classList.remove('active'));
+        });
+        customRow.append(label, input);
+        wrap.appendChild(customRow);
+
+        return wrap;
+    }
+
     renderPropertiesPanel(selectedObject) {
         this.propsContent.innerHTML = '';
 
@@ -5739,34 +5870,52 @@ export class UI {
             lblRow.innerHTML = `<div class="property-label">Color</div>`;
             colorGroup.appendChild(lblRow);
 
-            const colInput = document.createElement('input');
-            colInput.type = 'color';
-            colInput.id = 'prop-color-picker'; // ID for easier targeting
-            colInput.value = '#' + activeMaterial.color.getHexString();
-            colInput.addEventListener('input', (e) => {
-                const hex = e.target.value;
+            const applyColor = (hex) => {
+                const palette = this.getActivePaletteGroup();
+                const paletteIndex = palette?.colors?.findIndex(c => c.toLowerCase() === hex.toLowerCase()) ?? -1;
+                const markPaletteIndex = (material) => {
+                    if (!material?.userData) return;
+                    if (paletteIndex >= 0) material.userData.paletteIndex = paletteIndex;
+                    else delete material.userData.paletteIndex;
+                };
+
                 if (isText && this.app.factory && this.app.factory.updateTextLabel) {
                     activeMaterial.color.set(hex);
+                    markPaletteIndex(activeMaterial);
                     this.app.factory.updateTextLabel(obj, obj.userData.text || 'Text', obj.userData.fontFamily);
                 } else if (obj.userData.type === 'figure') {
-                    obj.traverse(c => { if (c.isMesh) c.material.color.set(hex); });
-                } else if (isStaging) {
-                    // For staging objects, color all meshes with the default color
                     obj.traverse(c => {
-                        if (c.isMesh && c.material && c.material.color) {
-                            const materials = Array.isArray(c.material) ? c.material : [c.material];
-                            materials.forEach(m => {
-                                if (m.color && m.color.getHex() === activeMaterial.color.getHex()) {
-                                    m.color.set(hex);
-                                }
-                            });
-                        }
+                        if (!c.isMesh) return;
+                        const materials = Array.isArray(c.material) ? c.material : [c.material];
+                        materials.forEach(m => {
+                            if (!m?.color) return;
+                            m.color.set(hex);
+                            markPaletteIndex(m);
+                        });
+                    });
+                } else if (isStaging) {
+                    // For staging objects, color all meshes that share the active colour.
+                    const baseHex = activeMaterial.color.getHex();
+                    obj.traverse(c => {
+                        if (!c.isMesh || !c.material) return;
+                        const materials = Array.isArray(c.material) ? c.material : [c.material];
+                        materials.forEach(m => {
+                            if (m.color && m.color.getHex() === baseHex) {
+                                m.color.set(hex);
+                                markPaletteIndex(m);
+                            }
+                        });
                     });
                 } else {
                     activeMaterial.color.set(hex);
+                    markPaletteIndex(activeMaterial);
                 }
-            });
-            colorGroup.appendChild(colInput);
+            };
+
+            colorGroup.appendChild(this.createPaletteColorPicker(
+                '#' + activeMaterial.color.getHexString(),
+                applyColor
+            ));
             this.propsContent.appendChild(colorGroup);
 
             // Add per-object physics controls
@@ -5889,6 +6038,70 @@ export class UI {
 
             // Spot/Directional specific properties
             if (lightType === 'spot' || lightType === 'directional') {
+                // Aim target (world space). Lets the light point anywhere, not just at the scene centre.
+                const aimGroup = document.createElement('div');
+                aimGroup.className = 'property-group';
+                aimGroup.innerHTML = `<div class="property-label">Aim Target (world X / Y / Z)</div>`;
+                const aimRow = document.createElement('div');
+                aimRow.className = 'input-row';
+                aimRow.style.gap = '6px';
+                const aim = this.app.getLightAim(obj);
+                const aimInputs = ['x', 'y', 'z'].map(axis => {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.step = '0.5';
+                    input.value = Number(aim[axis]).toFixed(2);
+                    input.title = `Aim ${axis.toUpperCase()}`;
+                    input.addEventListener('input', () => {
+                        const v = aimInputs.map(i => parseFloat(i.value) || 0);
+                        this.app.setLightAim(obj, v[0], v[1], v[2]);
+                    });
+                    aimRow.appendChild(input);
+                    return input;
+                });
+                aimGroup.appendChild(aimRow);
+
+                const setAimInputs = (x, y, z) => {
+                    [x, y, z].forEach((v, i) => { aimInputs[i].value = Number(v).toFixed(2); });
+                    this.app.setLightAim(obj, x, y, z);
+                };
+
+                // Aim at another object in the scene
+                const aimSelect = document.createElement('select');
+                aimSelect.style.width = '100%';
+                aimSelect.style.marginTop = '6px';
+                aimSelect.style.background = 'var(--bg-light)';
+                aimSelect.style.border = '1px solid var(--border-color)';
+                aimSelect.style.borderRadius = '4px';
+                aimSelect.style.padding = '6px 10px';
+                aimSelect.style.fontSize = '0.8rem';
+                aimSelect.style.color = 'var(--text-primary)';
+                aimSelect.add(new Option('Aim at object…', ''));
+                const aimTargets = this.app.scene.children.filter(c =>
+                    c !== obj && c.userData?.type && c.userData.type !== 'light');
+                aimTargets.forEach((target, index) => {
+                    const t = target.userData;
+                    const label = t.name || target.name || t.shapeType || t.characterType || t.type;
+                    aimSelect.add(new Option(`${label} (${index + 1})`, String(index)));
+                });
+                aimSelect.addEventListener('change', () => {
+                    const target = aimTargets[parseInt(aimSelect.value, 10)];
+                    if (!target) return;
+                    const center = new THREE.Box3().setFromObject(target).getCenter(new THREE.Vector3());
+                    setAimInputs(center.x, center.y, center.z);
+                    aimSelect.value = '';
+                });
+                aimGroup.appendChild(aimSelect);
+
+                const aimReset = document.createElement('button');
+                aimReset.className = 'btn';
+                aimReset.style.width = '100%';
+                aimReset.style.marginTop = '6px';
+                aimReset.textContent = 'Reset aim to scene centre';
+                aimReset.addEventListener('click', () => setAimInputs(0, 0, 0));
+                aimGroup.appendChild(aimReset);
+                this.propsContent.appendChild(aimGroup);
+
                 // Resolution
                 const resGroup = document.createElement('div');
                 resGroup.className = 'property-group';

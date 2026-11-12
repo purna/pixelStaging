@@ -4,6 +4,9 @@
  * Handles the display and interaction of tutorial steps
  */
 
+const TUTORIAL_SEEN_KEY = 'pixelstaging-tutorial-seen';
+const TUTORIAL_AUTOSTART_KEY = 'pixelstaging-tutorial-autostart';
+
 class TutorialSystem {
     constructor(app) {
         this.app = app;
@@ -28,13 +31,19 @@ class TutorialSystem {
         window.addEventListener('resize', () => this.handleResize());
 
         // Auto-start tutorial if enabled in settings
+        // Auto-start the short tour on the first visit only; the ? button and Settings replay it.
         setTimeout(() => {
-            const enableTutorialsCheckbox = document.getElementById('settings-enable-tutorials');
-            const autoStartCheckbox = document.getElementById('settings-tutorial-auto-start');
-            const appDefault = this.app.APP_DEFAULTS?.ui?.tutorialAutoStart ?? true;
-            const autoStart = autoStartCheckbox ? autoStartCheckbox.checked : appDefault;
-            if (enableTutorialsCheckbox && enableTutorialsCheckbox.checked && autoStart) {
-                this.startTutorial('main');
+            try {
+                const enableTutorialsCheckbox = document.getElementById('settings-enable-tutorials');
+                const autoStartCheckbox = document.getElementById('settings-tutorial-auto-start');
+                const appDefault = this.app.APP_DEFAULTS?.ui?.tutorialAutoStart ?? true;
+                const autoStart = autoStartCheckbox ? autoStartCheckbox.checked : appDefault;
+                const welcomeOpen = document.getElementById('welcome-modal')?.classList.contains('open');
+                if (enableTutorialsCheckbox && enableTutorialsCheckbox.checked && autoStart && !welcomeOpen && !this.hasSeenTutorial()) {
+                    this.startTutorial('quick');
+                }
+            } catch (error) {
+                console.warn('Tutorial auto-start failed:', error);
             }
         }, 1000); // Small delay to allow UI to fully initialize
 
@@ -89,19 +98,38 @@ class TutorialSystem {
         }
 
         if (autoStartCheckbox) {
-            const defaultValue = this.app.APP_DEFAULTS?.ui?.tutorialAutoStart ?? true;
+            let defaultValue = this.app.APP_DEFAULTS?.ui?.tutorialAutoStart ?? true;
+            try {
+                const stored = localStorage.getItem(TUTORIAL_AUTOSTART_KEY);
+                if (stored !== null) defaultValue = stored === '1';
+            } catch (e) { /* storage unavailable */ }
             autoStartCheckbox.checked = defaultValue;
             autoStartCheckbox.addEventListener('change', (e) => {
                 this.tutorialAutoStart = e.target.checked;
-                if (this.app.APP_DEFAULTS) {
+                try { localStorage.setItem(TUTORIAL_AUTOSTART_KEY, e.target.checked ? '1' : '0'); } catch (err) { /* ignore */ }
+                if (this.app.APP_DEFAULTS?.ui) {
                     this.app.APP_DEFAULTS.ui.tutorialAutoStart = e.target.checked;
                 }
             });
         }
 
+        // Settings > Tutorial > Start Tutorial runs the full tour.
         if (startTutorialBtn) {
             startTutorialBtn.addEventListener('click', () => {
-                this.startTutorial('main');
+                document.getElementById('unified-settings-modal')?.classList.remove('open');
+                this.startTutorial('main', { force: true });
+            });
+        }
+
+        // Header "?" button runs the short quick-start tour.
+        const helpBtn = document.getElementById('helpBtn');
+        if (helpBtn) {
+            helpBtn.addEventListener('click', () => {
+                if (this.app.ui?.openWelcomeModal) {
+                    this.app.ui.openWelcomeModal();
+                } else {
+                    this.startTutorial('quick', { force: true });
+                }
             });
         }
     }
@@ -137,10 +165,18 @@ class TutorialSystem {
         });
     }
 
-    startTutorial(tutorialId) {
-        // Check if tutorials are enabled
+    hasSeenTutorial() {
+        try { return localStorage.getItem(TUTORIAL_SEEN_KEY) === '1'; } catch (e) { return false; }
+    }
+
+    markTutorialSeen() {
+        try { localStorage.setItem(TUTORIAL_SEEN_KEY, '1'); } catch (e) { /* ignore */ }
+    }
+
+    startTutorial(tutorialId, { force = false } = {}) {
+        // Check if tutorials are enabled (an explicit click on ? or Start Tutorial always works)
         const enableTutorialsCheckbox = document.getElementById('settings-enable-tutorials');
-        if (enableTutorialsCheckbox && !enableTutorialsCheckbox.checked) {
+        if (!force && enableTutorialsCheckbox && !enableTutorialsCheckbox.checked) {
             if (this.app.notifications) {
                 this.app.notifications.showNotification('Tutorials are disabled in settings', 'info');
             }
@@ -174,7 +210,7 @@ class TutorialSystem {
         this.currentTutorialStep = step;
 
         // Position tutorial based on step configuration
-        this.positionTutorial(step);
+        const usedFallback = this.positionTutorial(step);
 
         // Update content
         const headingElement = document.getElementById('tutorial-heading');
@@ -199,15 +235,24 @@ class TutorialSystem {
         this.highlightTargetElement(step.elementId);
 
         // Add directional arrow based on arrowPosition config
-        this.addDirectionalArrow(step.arrowPosition || step.position, step.arrowPositionOverride);
+        // If the target was missing/hidden we centred the box, so don't point an arrow at nothing.
+        this.addDirectionalArrow(usedFallback ? 'center' : (step.arrowPosition || step.position), step.arrowPositionOverride);
     }
 
     positionTutorial(step) {
         const targetElement = document.getElementById(step.elementId);
-        if (!targetElement || !this.tutorialElement) return;
+        if (!this.tutorialElement) return false;
 
-        const targetRect = targetElement.getBoundingClientRect();
+        const targetRect = targetElement ? targetElement.getBoundingClientRect() : null;
         const tutorialRect = this.tutorialElement.getBoundingClientRect();
+
+        // Target missing, or hidden (display:none gives a 0x0 rect): centre the box instead of
+        // leaving it wherever it was, so a step never points at an invisible element.
+        if (!targetRect || (targetRect.width === 0 && targetRect.height === 0)) {
+            this.tutorialElement.style.top = Math.max(10, window.innerHeight / 2 - tutorialRect.height / 2) + 'px';
+            this.tutorialElement.style.left = Math.max(10, window.innerWidth / 2 - tutorialRect.width / 2) + 'px';
+            return true;
+        }
 
         // Get margin override from config or use default
         const margin = step.marginOverride ? parseInt(step.marginOverride) : 10;
@@ -251,6 +296,7 @@ class TutorialSystem {
 
         this.tutorialElement.style.top = top + 'px';
         this.tutorialElement.style.left = left + 'px';
+        return false;
     }
 
     highlightTargetElement(elementId) {
@@ -317,6 +363,8 @@ class TutorialSystem {
     }
 
     hideTutorial() {
+        // Closing, skipping or finishing all count as "seen" so the tour doesn't reappear on every load.
+        if (this.config.isTutorialActive()) this.markTutorialSeen();
         this.tutorialElement.style.display = 'none';
         this.overlayElement.style.display = 'none';
         this.config.stopTutorial();

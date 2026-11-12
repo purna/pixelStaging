@@ -29,7 +29,26 @@ export class CharacterManager {
     }
 
     persistCustomPoses() {
-        localStorage.setItem('pixel3d-custom-poses', JSON.stringify(this.customPoses));
+        try {
+            localStorage.setItem('pixel3d-custom-poses', JSON.stringify(this.customPoses));
+        } catch (error) {
+            console.warn('Could not save custom poses:', error);
+        }
+    }
+
+    exportCustomPoses() {
+        return JSON.parse(JSON.stringify(this.customPoses || {}));
+    }
+
+    importCustomPoses(data) {
+        if (!data || typeof data !== 'object') return;
+        // Merge imported poses into existing per-type maps so project poses travel with the file.
+        for (const [type, poses] of Object.entries(data)) {
+            if (!poses || typeof poses !== 'object') continue;
+            if (!this.customPoses[type]) this.customPoses[type] = {};
+            Object.assign(this.customPoses[type], poses);
+        }
+        this.persistCustomPoses();
     }
 
     async loadPoseLibrary() {
@@ -299,6 +318,11 @@ export class CharacterManager {
         const endAction = actions[targetState];
         if (!endAction) return;
 
+        // Resume mixer-driven animation after a static pose.
+        if (char.poser && char.state === 'pose') {
+            char.poser.reset({ duration: 0 });
+        }
+
         // Find currently active action (highest weight)
         let startAction = null;
         let maxWeight = -1;
@@ -314,8 +338,10 @@ export class CharacterManager {
         // Only transition if different
         if (startAction !== endAction) {
             this.executeCrossFade(startAction, endAction, 1.0); // 1.0s duration
-            char.state = targetState;
         }
+        char.state = targetState;
+        char.pose = null;
+        if (char.model?.userData) char.model.userData.currentPose = targetState;
     }
 
     executeCrossFade(startAction, endAction, duration) {

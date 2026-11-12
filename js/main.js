@@ -192,6 +192,12 @@ class StageApp {
         this.renderer.domElement.addEventListener('pointerdown', (e) => this.onPointerDown(e), true);
         this.renderer.domElement.addEventListener('pointermove', (e) => this.onPointerMove(e), true);
         this.renderer.domElement.addEventListener('pointerup', (e) => this.onPointerUpForDeselect(e), true);
+        // Clear hover highlight + drag cursor when the pointer leaves the canvas or the gesture is cancelled.
+        // Without this the last hovered object keeps its highlight until another canvas pointermove fires.
+        this.renderer.domElement.addEventListener('pointerleave', () => this.onPointerLeaveCanvas());
+        this.renderer.domElement.addEventListener('pointercancel', () => this.endPointerGesture());
+        window.addEventListener('pointerup', () => this.endPointerGesture());
+        window.addEventListener('blur', () => this.endPointerGesture());
         this.renderer.domElement.addEventListener('contextmenu', (e) => this.onRightClick(e));
 
         // Add event listener for transform space toggle
@@ -215,6 +221,9 @@ class StageApp {
         // Every scene owns a permanent camera, even before any shot is added.
         this.staging.cameras.ensureDefaultRig();
 
+        // Start with a shot on that camera so the timeline is immediately usable.
+        this.staging.shotManager.ensureDefaultShot();
+
         this.initializeEditorModules();
 
         // Initialize undo/redo buttons state
@@ -229,6 +238,7 @@ class StageApp {
     initializeEditorModules() {
         const modules = [
             ['UI', () => this.ui.init()],
+            ['Snap controls', () => this.setupSnapControls()],
             ['Tutorial', () => this.tutorialSystem.init()]
         ];
 
@@ -264,6 +274,7 @@ class StageApp {
         try {
             if (this.staging.scenes.restorePersistedScenes()) {
                 this.staging.cameras.ensureDefaultRig();
+                this.staging.shotManager.ensureDefaultShot();
                 this.ui.renderHierarchyPanel();
             }
         } catch (error) {
@@ -314,7 +325,7 @@ class StageApp {
 
             this.transformControl.addEventListener('change', () => {
                 // --- Apply snapping while gizmo is being dragged ---
-                if (this.snapEnabled && this.selectedObject) {
+                if (this.isSnapActive() && this.selectedObject) {
                     if (this.snapMode === 'grid') {
                         this.selectedObject.position.copy(this.snapObjectToGrid(this.selectedObject));
                     } else if (this.snapMode === 'object') {
@@ -327,6 +338,8 @@ class StageApp {
                         }
                         this.updateSnapGuides(snap, this.selectedObject);
                     }
+                } else if (this.snapEnabled && this.snapBypass) {
+                    this.clearSnapGuides();
                 }
                 if (this.selectedObject) this.ui.updateUI(this.selectedObject);
             });
@@ -334,7 +347,7 @@ class StageApp {
             // Track transform changes for history
             this.transformControl.addEventListener('mouseUp', () => {
                 // Final snap before recording the transform in history
-                if (this.snapEnabled && this.selectedObject) {
+                if (this.isSnapActive() && this.selectedObject) {
                     if (this.snapMode === 'grid') {
                         this.selectedObject.position.copy(this.snapObjectToGrid(this.selectedObject));
                     } else if (this.snapMode === 'object' && this.snapOffset) {
@@ -725,6 +738,30 @@ class StageApp {
         }
     }
 
+    // --- LIGHT AIM (spot / directional) ---
+    // The aim point is stored in world space on the light container (userData.aimTarget), so the
+    // light keeps pointing at the same place however the light itself is moved.
+
+    getLightAim(container) {
+        const a = container?.userData?.aimTarget;
+        return { x: a?.x || 0, y: a?.y || 0, z: a?.z || 0 };
+    }
+
+    setLightAim(container, x, y, z) {
+        if (!container?.children?.[0]?.target) return;
+        container.userData.aimTarget = { x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0 };
+        this.applyLightAim(container);
+    }
+
+    applyLightAim(container) {
+        const light = container?.children?.[0];
+        if (!light?.target) return;
+        const a = this.getLightAim(container);
+        light.target.position.set(a.x, a.y, a.z);
+        // The target is not part of the scene graph, so keep its world matrix current by hand.
+        light.target.updateMatrixWorld(true);
+    }
+
     addLight(type) {
         const lightContainer = this.factory.createLight(type);
         const addCommand = new AddObjectCommand(this, lightContainer);
@@ -923,28 +960,65 @@ class StageApp {
     applyColorToSelected(hexColor) {
         if (!this.selectedObject) return;
         const obj = this.selectedObject;
+        const hex = (hexColor || '').toLowerCase();
 
         // Find mesh to color
         let targetMesh = null;
         if (obj.userData.type === 'shape' || obj.userData.type === 'shape2d') targetMesh = obj;
         else if (obj.userData.name) targetMesh = obj.children.find(c => c.isMesh); // Limb
         else if (obj.userData.type === 'figure') targetMesh = obj.children.find(c => c.userData.name === 'Torso');
+        else if (obj.userData.type === 'staging') {
+            obj.traverse(c => { if (c.isMesh && !targetMesh) targetMesh = c; });
+        } else if (obj.isMesh) {
+            targetMesh = obj;
+        }
+
+        const setPaletteIndex = (material) => {
+            if (!material?.userData) return;
+            const group = this.ui?.getActivePaletteGroup?.();
+            const idx = group?.colors?.findIndex(c => c.toLowerCase() === hex) ?? -1;
+            if (idx >= 0) material.userData.paletteIndex = idx;
+            else delete material.userData.paletteIndex;
+        };
 
         if (targetMesh || obj.userData.type === 'figure') {
             if (obj.userData.type === 'figure') {
                 obj.traverse(c => {
                     if (!c.isMesh) return;
                     const materials = Array.isArray(c.material) ? c.material : [c.material];
-                    materials.forEach(material => material?.color?.set(hexColor));
+                    materials.forEach(material => {
+                        material?.color?.set(hexColor);
+                        setPaletteIndex(material);
+                    });
                 });
             } else if (targetMesh) {
                 const materials = Array.isArray(targetMesh.material) ? targetMesh.material : [targetMesh.material];
                 const index = Math.min(targetMesh.userData.activeMaterialSlot || 0, materials.length - 1);
-                materials[index]?.color?.set(hexColor);
+                const activeMaterial = materials[index];
+                if (activeMaterial) {
+                    if (obj.userData.type === 'staging') {
+                        // Recolour every staging mesh that shares the active colour.
+                        const baseHex = activeMaterial.color.getHex();
+                        obj.traverse(c => {
+                            if (!c.isMesh || !c.material) return;
+                            const slots = Array.isArray(c.material) ? c.material : [c.material];
+                            slots.forEach(material => {
+                                if (material?.color && material.color.getHex() === baseHex) {
+                                    material.color.set(hexColor);
+                                    setPaletteIndex(material);
+                                }
+                            });
+                        });
+                    } else {
+                        activeMaterial.color.set(hexColor);
+                        setPaletteIndex(activeMaterial);
+                    }
+                }
             }
             // Force UI update
-            this.ui.renderPropertiesPanel(this.selectedObject);
+            this.ui?.renderPropertiesPanel(this.selectedObject);
         }
+
     }
 
     // Change figure gender
@@ -1023,6 +1097,18 @@ class StageApp {
     // --- MANIPULATION ---
 
     onPointerMove(event) {
+        // Orbit/pan drag in camera mode: show "grabbing" only once the pointer has really moved
+        // with the button held, and never let the hover logic overwrite it mid-drag.
+        if (this._pressPos && (event.buttons & 1) && this.controlMode === 'camera') {
+            if (!this._orbitDragging && Math.hypot(event.clientX - this._pressPos.x, event.clientY - this._pressPos.y) > 4) {
+                this._orbitDragging = true;
+                this.setHoverObject(null);
+            }
+            if (this._orbitDragging) {
+                this.renderer.domElement.style.cursor = 'grabbing';
+                return;
+            }
+        }
         const rect = this.renderer.domElement.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -1067,28 +1153,51 @@ class StageApp {
     
     setHoverObject(obj) {
         if (obj === this.hoveredObject) return;
-        
+
         // Clear previous hover highlight
-        if (this.hoveredObject && this.originalColors.has(this.hoveredObject.uuid)) {
-            this.restoreObjectColor(this.hoveredObject);
-        }
-        
+        if (this.hoveredObject) this.restoreObjectColor(this.hoveredObject);
+
         this.hoveredObject = obj;
-        
-        // Apply hover highlight
+
+        // Apply hover highlight. We use the emissive channel rather than lerping material.color,
+        // so the user's colour edits (Properties / palette) can never be overwritten by a stale
+        // "original colour" when the highlight is cleared.
         if (obj && obj.isMesh) {
-            const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-            this.originalColors.set(obj.uuid, materials.map(material => material?.color?.getHex()));
-            materials.forEach(material => material?.color?.lerp(new THREE.Color(0xffffff), 0.15));
+            const materials = (Array.isArray(obj.material) ? obj.material : [obj.material]).filter(m => m && m.emissive);
+            if (!materials.length) return;
+            this.originalColors.set(obj.uuid, materials.map(material => ({
+                material,
+                emissive: material.emissive.getHex(),
+                intensity: material.emissiveIntensity
+            })));
+            materials.forEach(material => {
+                material.emissive.setHex(0xffffff);
+                material.emissiveIntensity = 0.15;
+            });
         }
     }
-    
+
     restoreObjectColor(obj) {
-        if (obj && obj.isMesh && this.originalColors.has(obj.uuid)) {
-            const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-            const colors = this.originalColors.get(obj.uuid);
-            materials.forEach((material, index) => material?.color?.setHex(colors[index]));
-            this.originalColors.delete(obj.uuid);
+        if (!obj || !this.originalColors.has(obj.uuid)) return;
+        this.originalColors.get(obj.uuid).forEach(({ material, emissive, intensity }) => {
+            material.emissive.setHex(emissive);
+            material.emissiveIntensity = intensity;
+        });
+        this.originalColors.delete(obj.uuid);
+    }
+
+    onPointerLeaveCanvas() {
+        // Don't clear while dragging: OrbitControls/TransformControls capture the pointer.
+        if (this._orbitDragging || this.isDraggingGizmo) return;
+        this.setHoverObject(null);
+        if (this.renderer?.domElement) this.renderer.domElement.style.cursor = 'default';
+    }
+
+    endPointerGesture() {
+        this._pressPos = null;
+        if (this._orbitDragging) {
+            this._orbitDragging = false;
+            if (this.renderer?.domElement) this.renderer.domElement.style.cursor = 'default';
         }
     }
 
@@ -1148,7 +1257,9 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
             return;
         }
 
-        if (this.controlMode === 'camera') this.renderer.domElement.style.cursor = 'grabbing';
+        // Remember where the press started; the cursor only changes to "grabbing" once a real
+        // drag starts (see onPointerMove) and is reset on pointerup/cancel/leave.
+        this._pressPos = { x: event.clientX, y: event.clientY };
 
         // Calculate mouse position
         const rect = this.renderer.domElement.getBoundingClientRect();
@@ -1280,6 +1391,9 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         // This triggers UI update which now renders layers via LayerManager
         this.ui.updateUI(this.selectedObject);
 
+        // Selecting an object should bring its properties into view.
+        this.ui.showRightTab?.('object-properties');
+
     }
 
     deselect() {
@@ -1383,6 +1497,77 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
     setSnapEnabled(enabled) {
         this.snapEnabled = enabled;
+        this.syncSnapControls();
+    }
+
+    /** True while snapping is on and the user is not holding Alt. */
+    isSnapActive() {
+        return !!this.snapEnabled && !this.snapBypass;
+    }
+
+    setSnapBypass(active) {
+        if (this.snapBypass === active) return;
+        this.snapBypass = active;
+        document.getElementById('snap-toggle')?.classList.toggle('bypassed', active);
+    }
+
+    setSnapGridUnit(unit) {
+        const value = parseFloat(unit);
+        if (!(value > 0)) return;
+        this.snapGridUnit = value;
+        try { localStorage.setItem('pixelstaging-snap-unit', String(value)); } catch (e) { /* ignore */ }
+        const select = document.getElementById('snap-grid-size');
+        if (select && select.value !== String(value)) {
+            if (![...select.options].some(o => o.value === String(value))) {
+                select.add(new Option(String(value), String(value)));
+            }
+            select.value = String(value);
+        }
+    }
+
+    /** Keeps the canvas toggle button and the Settings checkbox in step with snapEnabled. */
+    syncSnapControls() {
+        document.getElementById('snap-toggle')?.classList.toggle('active', !!this.snapEnabled);
+        const checkbox = document.getElementById('setting-snap');
+        if (checkbox) checkbox.checked = !!this.snapEnabled;
+    }
+
+    setupSnapControls() {
+        // Hold Alt to temporarily bypass snapping while dragging.
+        window.addEventListener('keydown', (e) => { if (e.key === 'Alt') this.setSnapBypass(true); });
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'Alt') {
+                // Stops browsers focusing the menu bar when Alt is released.
+                if (this.snapBypass) e.preventDefault();
+                this.setSnapBypass(false);
+            }
+        });
+        window.addEventListener('blur', () => this.setSnapBypass(false));
+
+        const toggle = document.getElementById('snap-toggle');
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                this.setSnapEnabled(!this.snapEnabled);
+                // Persist into the saved settings blob so it survives a reload.
+                try {
+                    const raw = localStorage.getItem('pixel3d-settings');
+                    if (raw) {
+                        const saved = JSON.parse(raw);
+                        saved.snap = this.snapEnabled;
+                        localStorage.setItem('pixel3d-settings', JSON.stringify(saved));
+                    }
+                } catch (e) { /* ignore */ }
+                this.ui?.showNotification?.(this.snapEnabled ? 'Snap to grid on (hold Alt to bypass)' : 'Snap to grid off', 'info');
+            });
+        }
+        const select = document.getElementById('snap-grid-size');
+        if (select) {
+            select.addEventListener('change', () => this.setSnapGridUnit(select.value));
+        }
+        let savedUnit = null;
+        try { savedUnit = localStorage.getItem('pixelstaging-snap-unit'); } catch (e) { /* ignore */ }
+        this.setSnapGridUnit(savedUnit || this.snapGridUnit);
+        this.syncSnapControls();
     }
 
     // --- SNAP: GRID ALIGNMENT ---
@@ -1416,7 +1601,7 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
      * four side faces).  The closest hit within `snapThreshold` wins.
      */
     findSnapshot(curObj) {
-        if (!this.snapEnabled || this.snapMode === 'off') return null;
+        if (!this.isSnapActive() || this.snapMode === 'off') return null;
         if (!curObj || !curObj.geometry) return null;
 
         const curBB = new THREE.Box3().setFromObject(curObj);
@@ -1715,10 +1900,11 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
         const delta = this.clock.getDelta();
         
-        // Update light helpers
+        // Update light aim targets + helpers
         this.scene.traverse(obj => {
-            if (obj.userData.type === 'light' && obj.children[1]) {
-                obj.children[1].update();
+            if (obj.userData.type === 'light') {
+                if (obj.children[0]?.target) this.applyLightAim(obj);
+                if (obj.children[1]) obj.children[1].update();
             }
         });
 

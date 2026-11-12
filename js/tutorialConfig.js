@@ -9,6 +9,91 @@ class TutorialConfig {
     constructor() {
         // Default tutorial configuration
         this.tutorials = {
+            // Short first-run tour: just the controls people need to get started.
+            'quick': {
+                enabled: true,
+                steps: [
+                    {
+                        id: 'quick-welcome',
+                        elementId: 'canvas-container',
+                        position: 'center',
+                        arrowPosition: 'none',
+                        heading: 'Welcome to Pixel Staging',
+                        content: 'Build a scene, place cameras and plan shots. This one-minute tour covers the basics. Press Esc to close it at any time, and use the ? button in the header to bring it back.',
+                        showNext: true,
+                        showSkip: true
+                    },
+                    {
+                        id: 'quick-add',
+                        elementId: 'tools-container',
+                        position: 'left',
+                        arrowPosition: 'right',
+                        marginOverride: '20px',
+                        heading: '1. Add things',
+                        content: 'Use the left toolbar to add shapes, characters, lights and staging props (actors, furniture, walls). Hover an icon to see what it does.',
+                        showNext: true,
+                        showSkip: true
+                    },
+                    {
+                        id: 'quick-look',
+                        elementId: 'canvas-container',
+                        controlMode: 'camera',
+                        position: 'center',
+                        arrowPosition: 'none',
+                        heading: '2. Look around',
+                        content: 'In Camera mode, drag empty space to orbit, right-drag to pan and scroll to zoom. The F, Shift+S, B and T keys jump to front, side, back and top views. Home resets the view.',
+                        showNext: true,
+                        showSkip: true
+                    },
+                    {
+                        id: 'quick-move',
+                        elementId: 'canvas-container',
+                        controlMode: 'scene',
+                        position: 'center',
+                        arrowPosition: 'none',
+                        heading: '3. Move things',
+                        content: 'In Scene mode, click an object to select it. G moves, R rotates and S scales. Objects snap to the grid: hold Alt while dragging to place freely, or use the magnet button to turn snapping off. Right-click empty space to deselect.',
+                        showNext: true,
+                        showSkip: true
+                    },
+                    {
+                        id: 'quick-properties',
+                        elementId: 'props-content',
+                        openTab: 'object-properties',
+                        position: 'left',
+                        arrowPosition: 'right',
+                        marginOverride: '20px',
+                        heading: '4. Edit properties',
+                        content: 'With an object selected, Properties lets you change its colour, size and position. Spot and directional lights also have an Aim Target so they can point anywhere.',
+                        showNext: true,
+                        showSkip: true
+                    },
+                    {
+                        id: 'quick-shots',
+                        elementId: 'shot-designer-content',
+                        openTab: 'shot-designer',
+                        controlMode: 'camera',
+                        position: 'left',
+                        arrowPosition: 'right',
+                        marginOverride: '20px',
+                        heading: '5. Plan shots',
+                        content: 'Add a camera, then use the Shot Designer to add shots, set start and end frames and choose how the camera moves. The timeline at the bottom plays them back.',
+                        showNext: true,
+                        showSkip: true
+                    },
+                    {
+                        id: 'quick-export',
+                        elementId: 'btn-export',
+                        position: 'bottom',
+                        arrowPosition: 'top',
+                        marginOverride: '25px',
+                        heading: '6. Save and export',
+                        content: 'Save to Browser keeps your work locally. Export gives you the project file, a storyboard report or PDF, or a GLB 3D model. For the full tour, open Settings > Tutorial.',
+                        showNext: true,
+                        showSkip: true
+                    }
+                ]
+            },
             'main': {
                 enabled: true,
                 steps: [
@@ -37,6 +122,7 @@ class TutorialConfig {
                     {
                         id: 'hierarchy',
                         elementId: 'hierarchy-list',
+                        openTab: 'hierarchy',
                         position: 'right',
                         arrowPosition: 'left',
                         arrowPositionOverride: 'top-third',
@@ -49,6 +135,7 @@ class TutorialConfig {
                     {
                         id: 'properties',
                         elementId: 'props-content',
+                        openTab: 'object-properties',
                         position: 'right',
                         arrowPosition: 'left',
                         arrowPositionOverride: 'middle-third',
@@ -85,10 +172,9 @@ class TutorialConfig {
                     },
                     {
                         id: 'navigation',
-                        elementId: 'mobile-nav',
-                        position: 'top',
-                        arrowPosition: 'bottom',
-                        marginOverride: '20px',
+                        elementId: 'canvas-container',
+                        position: 'center',
+                        arrowPosition: 'none',
                         heading: 'Scene Navigation',
                         content: 'Use Camera/Scene mode to switch controls. Drag empty space to orbit, right-drag to pan, and use the floating pad for zoom, orbit and Home. F, S, B and T give front, side, back and top views.',
                         showNext: true,

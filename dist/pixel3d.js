@@ -32987,12 +32987,12 @@
         ["floating camera controls", () => this.setupFloatingCameraControls()],
         ["camera nudge", () => this.setupCameraNudge()],
         ["pose editor bridge", () => this.setupPoseEditorBridge()],
-        ["palette colour restriction", () => this.setupPaletteColorRestriction()],
         ["camera panel", () => this.setupCameraTab()],
         ["scene list", () => this.setupSceneList()],
         ["color editor", () => this.setupColorEditor()],
         ["hierarchy", () => this.renderHierarchyPanel()],
-        ["assets", () => this.renderAssetsPanel("colors")]
+        ["assets", () => this.renderAssetsPanel("colors")],
+        ["welcome guide", () => this.setupWelcomeModal()]
       ];
       initializers.forEach(([name, initialize]) => {
         try {
@@ -33001,6 +33001,55 @@
           console.error(`Could not initialize UI ${name}:`, error);
         }
       });
+    }
+    setupWelcomeModal() {
+      const modal = document.getElementById("welcome-modal");
+      if (!modal) return;
+      const close = () => this.closeWelcomeModal();
+      document.getElementById("welcome-close")?.addEventListener("click", close);
+      document.getElementById("welcome-explore")?.addEventListener("click", close);
+      document.getElementById("welcome-tour")?.addEventListener("click", () => {
+        this.closeWelcomeModal();
+        this.app.tutorialSystem?.startTutorial?.("quick", { force: true });
+      });
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) close();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && modal.classList.contains("open")) close();
+      });
+      let seen = false;
+      try {
+        seen = localStorage.getItem("pixelstaging-welcome-seen") === "1";
+      } catch (error) {
+      }
+      if (!seen) {
+        setTimeout(() => {
+          let stillUnseen = true;
+          try {
+            stillUnseen = localStorage.getItem("pixelstaging-welcome-seen") !== "1";
+          } catch (error) {
+          }
+          if (stillUnseen) this.openWelcomeModal();
+        }, 350);
+      }
+    }
+    openWelcomeModal() {
+      const modal = document.getElementById("welcome-modal");
+      if (!modal) return;
+      modal.classList.add("open");
+      document.body.classList.add("welcome-open");
+    }
+    closeWelcomeModal() {
+      const modal = document.getElementById("welcome-modal");
+      if (!modal) return;
+      modal.classList.remove("open");
+      document.body.classList.remove("welcome-open");
+      try {
+        localStorage.setItem("pixelstaging-welcome-seen", "1");
+        localStorage.setItem("pixelstaging-tutorial-seen", "1");
+      } catch (error) {
+      }
     }
     setupEventListeners() {
       document.getElementById("tools-container").addEventListener("click", (e) => {
@@ -34660,35 +34709,6 @@
         container.appendChild(card);
       }
     }
-    setupPaletteColorRestriction() {
-      const parseColor = (hex) => {
-        const value = String(hex || "").replace("#", "");
-        if (value.length !== 6) return null;
-        return [parseInt(value.slice(0, 2), 16), parseInt(value.slice(2, 4), 16), parseInt(value.slice(4, 6), 16)];
-      };
-      document.addEventListener("change", (event) => {
-        const input = event.target;
-        if (!(input instanceof HTMLInputElement) || input.type !== "color") return;
-        if (input.closest("#tab-assets, .palette-groups, .palette-color-picker, #material-asset-modal, #texture-asset-modal")) return;
-        const colors = (this.getActivePaletteGroup()?.colors || []).filter((color) => /^#[0-9a-f]{6}$/i.test(color));
-        const rgb = parseColor(input.value);
-        if (!colors.length || !rgb) return;
-        let nearest = colors[0];
-        let best = Infinity;
-        for (const color of colors) {
-          const candidate = parseColor(color);
-          const distance = (candidate[0] - rgb[0]) ** 2 + (candidate[1] - rgb[1]) ** 2 + (candidate[2] - rgb[2]) ** 2;
-          if (distance < best) {
-            best = distance;
-            nearest = color;
-          }
-        }
-        if (nearest.toLowerCase() !== input.value.toLowerCase()) {
-          input.value = nearest;
-          input.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-      }, true);
-    }
     setupSceneList() {
       const scenes = this.app.staging?.scenes;
       if (!scenes) return;
@@ -34813,7 +34833,19 @@
       const frame = document.getElementById("pose-editor-frame");
       if (!modal || !frame) return;
       this.poseEditorTarget = char.model;
-      const modelFile = (this.app.characterManager.models[char.model.userData.characterType] || "./Art/Xbot.glb").split("/").pop();
+      const characterType = char.model.userData.characterType;
+      const modelFile = (this.app.characterManager.models[characterType] || "./Art/Xbot.glb").split("/").pop();
+      frame.onload = () => {
+        const saved = this.app.characterManager.exportCustomPoses?.()?.[characterType] || {};
+        const poses = {};
+        for (const [name, pose] of Object.entries(saved)) {
+          poses[name] = {
+            rotations: pose.rotations,
+            hipsDrop: (pose.hipsScale ?? 1) - 1
+          };
+        }
+        frame.contentWindow?.postMessage({ type: "pixelstaging-load-poses", poses }, window.location.origin);
+      };
       frame.src = `Art/pose_editor.html?model=${encodeURIComponent(modelFile)}&embedded=1`;
       modal.classList.add("open");
       modal.style.display = "flex";
@@ -34825,16 +34857,36 @@
         modal.classList.remove("open");
         modal.style.display = "none";
       }
-      if (frame) frame.src = "about:blank";
+      if (frame) {
+        frame.onload = null;
+        frame.src = "about:blank";
+      }
       this.poseEditorTarget = null;
     }
     setupPoseEditorBridge() {
       window.addEventListener("message", (event) => {
         if (event.origin !== window.location.origin) return;
         const data = event.data;
-        if (!data || data.type !== "pixelstaging-pose") return;
+        if (!data || data.type !== "pixelstaging-pose" && data.type !== "pixelstaging-pose-preset") return;
         if (!this.poseEditorTarget) return;
-        const key = this.app.characterManager.applyPoseFromEditor(
+        const characterManager = this.app.characterManager;
+        const char = characterManager?.findCharacter?.(this.poseEditorTarget);
+        const characterType = char?.model?.userData?.characterType || "character";
+        if (data.type === "pixelstaging-pose-preset") {
+          const name = String(data.name || "").trim();
+          if (!name || !data.pose?.rotations) return;
+          if (!characterManager.customPoses[characterType]) characterManager.customPoses[characterType] = {};
+          characterManager.customPoses[characterType][name] = {
+            rotations: data.pose.rotations,
+            positions: data.pose.positions || void 0,
+            hipsScale: 1 + (data.pose.hipsDrop ?? 0)
+          };
+          characterManager.persistCustomPoses();
+          this.showNotification(`Preset \u201C${name}\u201D saved`, "success");
+          if (this.app.selectedObject) this.renderPropertiesPanel(this.app.selectedObject);
+          return;
+        }
+        const key = characterManager.applyPoseFromEditor(
           this.poseEditorTarget,
           data.name,
           data.pose
@@ -35651,8 +35703,6 @@
       const target = newGroup || defaultGroup;
       if (!target?.colors?.length) return;
       const oldColors = (oldGroup?.colors || []).map((color) => color.toLowerCase());
-      const extraColorIndex = /* @__PURE__ */ new Map();
-      let nextExtraIndex = 0;
       const materials = /* @__PURE__ */ new Set();
       const objects = this.app.getAllObjects ? this.app.getAllObjects() : this.app.objects;
       for (const root of objects) {
@@ -35664,13 +35714,13 @@
             if (materials.has(material)) return;
             materials.add(material);
             const current = ("#" + material.color.getHexString()).toLowerCase();
-            let index = oldColors.indexOf(current);
-            if (index < 0) {
-              if (!extraColorIndex.has(current)) extraColorIndex.set(current, nextExtraIndex++);
-              index = extraColorIndex.get(current);
+            let index = Number.isInteger(material.userData?.paletteIndex) ? material.userData.paletteIndex : oldColors.indexOf(current);
+            if (index < 0 || index >= oldColors.length) {
+              if (material.userData) delete material.userData.paletteIndex;
+              return;
             }
-            material.userData.paletteIndex = index;
-            const next = target.colors[index] || target.colors[index % target.colors.length] || defaultGroup.colors[index] || defaultGroup.colors[index % defaultGroup.colors.length];
+            if (material.userData) material.userData.paletteIndex = index;
+            const next = target.colors[index] || defaultGroup.colors[index] || target.colors[0] || defaultGroup.colors[0];
             if (next) material.color.set(next);
           });
         });
@@ -35802,6 +35852,9 @@
       const colorHex = document.getElementById("colorHex");
       if (colorPicker) colorPicker.value = hex;
       if (colorHex) colorHex.value = hex;
+      if (!this.app.selectedObject) {
+        this.showNotification("Select an object first, then click a palette colour", "info");
+      }
       this.app.applyColorToSelected?.(hex);
       const group = this.getActivePaletteGroup();
       const index = group.colors.findIndex((color) => color.toLowerCase() === hex.toLowerCase());
@@ -37575,8 +37628,18 @@
         const btnRect = btn.getBoundingClientRect();
         const topOffset = btnRect.top + btnRect.height / 2 - 24;
         submenu.style.display = submenu.classList.contains("staging-submenu") ? "flex" : "grid";
-        submenu.style.top = `${topOffset}px`;
-        submenu.style.setProperty("--submenu-top", `${topOffset}px`);
+        const margin = 8;
+        const viewportHeight = window.innerHeight;
+        const maxHeight = Math.max(120, viewportHeight - margin * 2);
+        submenu.style.maxHeight = `${maxHeight}px`;
+        const menuHeight = Math.min(submenu.offsetHeight || submenu.scrollHeight, maxHeight);
+        let top = topOffset;
+        if (top + menuHeight > viewportHeight - margin) {
+          top = viewportHeight - margin - menuHeight;
+        }
+        top = Math.max(margin, top);
+        submenu.style.top = `${top}px`;
+        submenu.style.setProperty("--submenu-top", `${top}px`);
         btn.classList.add("active");
         this.activeSubmenu = submenu;
       }
@@ -37603,6 +37666,14 @@
       });
       document.querySelectorAll(".menu-parent").forEach((btn) => btn.classList.remove("active"));
       this.activeSubmenu = null;
+    }
+    showRightTab(name) {
+      const panel = document.getElementById("right-panel");
+      if (panel && panel.classList.contains("hidden")) {
+        this.togglePropertiesPanel();
+      }
+      const tab = document.querySelector(`.right-tab[data-right-tab="${name}"]`);
+      if (tab) tab.click();
     }
     togglePropertiesPanel() {
       const panel = document.getElementById("right-panel");
@@ -37953,6 +38024,47 @@
       this.app.scene.add(replacement);
       this.app.selectObject(replacement);
     }
+    createPaletteColorPicker(currentHex, onApply) {
+      const wrap3 = document.createElement("div");
+      wrap3.className = "prop-palette-picker";
+      const group = this.getActivePaletteGroup();
+      const colors = group?.colors || [];
+      const current = (currentHex || "").toLowerCase();
+      const grid = document.createElement("div");
+      grid.className = "prop-palette-swatches";
+      colors.forEach((color) => {
+        const swatch = document.createElement("button");
+        swatch.type = "button";
+        swatch.className = "prop-palette-swatch";
+        swatch.style.backgroundColor = color;
+        swatch.title = color;
+        swatch.dataset.color = color;
+        if (color.toLowerCase() === current) swatch.classList.add("active");
+        swatch.addEventListener("click", () => {
+          onApply(color);
+          grid.querySelectorAll(".prop-palette-swatch").forEach((s) => {
+            s.classList.toggle("active", s === swatch);
+          });
+        });
+        grid.appendChild(swatch);
+      });
+      wrap3.appendChild(grid);
+      const customRow = document.createElement("div");
+      customRow.className = "prop-palette-custom";
+      const label = document.createElement("span");
+      label.textContent = "Custom";
+      const input = document.createElement("input");
+      input.type = "color";
+      input.id = "prop-color-picker";
+      input.value = currentHex;
+      input.addEventListener("input", (e) => {
+        onApply(e.target.value);
+        grid.querySelectorAll(".prop-palette-swatch").forEach((s) => s.classList.remove("active"));
+      });
+      customRow.append(label, input);
+      wrap3.appendChild(customRow);
+      return wrap3;
+    }
     renderPropertiesPanel(selectedObject) {
       this.propsContent.innerHTML = "";
       if (!selectedObject) {
@@ -38157,35 +38269,49 @@
         lblRow.style.justifyContent = "space-between";
         lblRow.innerHTML = `<div class="property-label">Color</div>`;
         colorGroup.appendChild(lblRow);
-        const colInput = document.createElement("input");
-        colInput.type = "color";
-        colInput.id = "prop-color-picker";
-        colInput.value = "#" + activeMaterial.color.getHexString();
-        colInput.addEventListener("input", (e) => {
-          const hex = e.target.value;
+        const applyColor = (hex) => {
+          const palette = this.getActivePaletteGroup();
+          const paletteIndex = palette?.colors?.findIndex((c) => c.toLowerCase() === hex.toLowerCase()) ?? -1;
+          const markPaletteIndex = (material) => {
+            if (!material?.userData) return;
+            if (paletteIndex >= 0) material.userData.paletteIndex = paletteIndex;
+            else delete material.userData.paletteIndex;
+          };
           if (isText && this.app.factory && this.app.factory.updateTextLabel) {
             activeMaterial.color.set(hex);
+            markPaletteIndex(activeMaterial);
             this.app.factory.updateTextLabel(obj, obj.userData.text || "Text", obj.userData.fontFamily);
           } else if (obj.userData.type === "figure") {
             obj.traverse((c) => {
-              if (c.isMesh) c.material.color.set(hex);
+              if (!c.isMesh) return;
+              const materials = Array.isArray(c.material) ? c.material : [c.material];
+              materials.forEach((m) => {
+                if (!m?.color) return;
+                m.color.set(hex);
+                markPaletteIndex(m);
+              });
             });
           } else if (isStaging) {
+            const baseHex = activeMaterial.color.getHex();
             obj.traverse((c) => {
-              if (c.isMesh && c.material && c.material.color) {
-                const materials = Array.isArray(c.material) ? c.material : [c.material];
-                materials.forEach((m) => {
-                  if (m.color && m.color.getHex() === activeMaterial.color.getHex()) {
-                    m.color.set(hex);
-                  }
-                });
-              }
+              if (!c.isMesh || !c.material) return;
+              const materials = Array.isArray(c.material) ? c.material : [c.material];
+              materials.forEach((m) => {
+                if (m.color && m.color.getHex() === baseHex) {
+                  m.color.set(hex);
+                  markPaletteIndex(m);
+                }
+              });
             });
           } else {
             activeMaterial.color.set(hex);
+            markPaletteIndex(activeMaterial);
           }
-        });
-        colorGroup.appendChild(colInput);
+        };
+        colorGroup.appendChild(this.createPaletteColorPicker(
+          "#" + activeMaterial.color.getHexString(),
+          applyColor
+        ));
         this.propsContent.appendChild(colorGroup);
         this.addPhysicsControls(obj);
         if (obj.userData.rigRef) {
@@ -38286,6 +38412,65 @@
         shadowGroup.appendChild(shadowRow);
         this.propsContent.appendChild(shadowGroup);
         if (lightType === "spot" || lightType === "directional") {
+          const aimGroup = document.createElement("div");
+          aimGroup.className = "property-group";
+          aimGroup.innerHTML = `<div class="property-label">Aim Target (world X / Y / Z)</div>`;
+          const aimRow = document.createElement("div");
+          aimRow.className = "input-row";
+          aimRow.style.gap = "6px";
+          const aim = this.app.getLightAim(obj);
+          const aimInputs = ["x", "y", "z"].map((axis) => {
+            const input = document.createElement("input");
+            input.type = "number";
+            input.step = "0.5";
+            input.value = Number(aim[axis]).toFixed(2);
+            input.title = `Aim ${axis.toUpperCase()}`;
+            input.addEventListener("input", () => {
+              const v = aimInputs.map((i) => parseFloat(i.value) || 0);
+              this.app.setLightAim(obj, v[0], v[1], v[2]);
+            });
+            aimRow.appendChild(input);
+            return input;
+          });
+          aimGroup.appendChild(aimRow);
+          const setAimInputs = (x, y, z) => {
+            [x, y, z].forEach((v, i) => {
+              aimInputs[i].value = Number(v).toFixed(2);
+            });
+            this.app.setLightAim(obj, x, y, z);
+          };
+          const aimSelect = document.createElement("select");
+          aimSelect.style.width = "100%";
+          aimSelect.style.marginTop = "6px";
+          aimSelect.style.background = "var(--bg-light)";
+          aimSelect.style.border = "1px solid var(--border-color)";
+          aimSelect.style.borderRadius = "4px";
+          aimSelect.style.padding = "6px 10px";
+          aimSelect.style.fontSize = "0.8rem";
+          aimSelect.style.color = "var(--text-primary)";
+          aimSelect.add(new Option("Aim at object\u2026", ""));
+          const aimTargets = this.app.scene.children.filter((c) => c !== obj && c.userData?.type && c.userData.type !== "light");
+          aimTargets.forEach((target, index) => {
+            const t = target.userData;
+            const label = t.name || target.name || t.shapeType || t.characterType || t.type;
+            aimSelect.add(new Option(`${label} (${index + 1})`, String(index)));
+          });
+          aimSelect.addEventListener("change", () => {
+            const target = aimTargets[parseInt(aimSelect.value, 10)];
+            if (!target) return;
+            const center = new Box3().setFromObject(target).getCenter(new Vector3());
+            setAimInputs(center.x, center.y, center.z);
+            aimSelect.value = "";
+          });
+          aimGroup.appendChild(aimSelect);
+          const aimReset = document.createElement("button");
+          aimReset.className = "btn";
+          aimReset.style.width = "100%";
+          aimReset.style.marginTop = "6px";
+          aimReset.textContent = "Reset aim to scene centre";
+          aimReset.addEventListener("click", () => setAimInputs(0, 0, 0));
+          aimGroup.appendChild(aimReset);
+          this.propsContent.appendChild(aimGroup);
           const resGroup = document.createElement("div");
           resGroup.className = "property-group";
           resGroup.innerHTML = `<div class="property-label">Resolution</div>`;
@@ -40489,6 +40674,7 @@
             item.lightType = obj.userData.lightType;
             item.color = "#" + l.color.getHexString();
             item.intensity = l.intensity;
+            if (obj.userData.aimTarget) item.aim = { ...obj.userData.aimTarget };
           } else if (obj.userData.type === "figure") {
             item.gender = obj.userData.gender;
             item.joints = {};
@@ -40645,6 +40831,7 @@
           if (newObj) {
             newObj.children[0].color.set(item.color);
             newObj.children[0].intensity = item.intensity;
+            if (item.aim) this.app.setLightAim(newObj, item.aim.x, item.aim.y, item.aim.z);
           }
         } else if (item.type === "figure") {
           this.app.addFigure(item.gender);
@@ -43026,7 +43213,23 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       }
     }
     persistCustomPoses() {
-      localStorage.setItem("pixel3d-custom-poses", JSON.stringify(this.customPoses));
+      try {
+        localStorage.setItem("pixel3d-custom-poses", JSON.stringify(this.customPoses));
+      } catch (error) {
+        console.warn("Could not save custom poses:", error);
+      }
+    }
+    exportCustomPoses() {
+      return JSON.parse(JSON.stringify(this.customPoses || {}));
+    }
+    importCustomPoses(data) {
+      if (!data || typeof data !== "object") return;
+      for (const [type, poses] of Object.entries(data)) {
+        if (!poses || typeof poses !== "object") continue;
+        if (!this.customPoses[type]) this.customPoses[type] = {};
+        Object.assign(this.customPoses[type], poses);
+      }
+      this.persistCustomPoses();
     }
     async loadPoseLibrary() {
       if (this.poseLibrary) return this.poseLibrary;
@@ -43252,6 +43455,9 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       const actions = char.actions;
       const endAction = actions[targetState];
       if (!endAction) return;
+      if (char.poser && char.state === "pose") {
+        char.poser.reset({ duration: 0 });
+      }
       let startAction = null;
       let maxWeight = -1;
       for (const key in actions) {
@@ -43263,8 +43469,10 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       }
       if (startAction !== endAction) {
         this.executeCrossFade(startAction, endAction, 1);
-        char.state = targetState;
       }
+      char.state = targetState;
+      char.pose = null;
+      if (char.model?.userData) char.model.userData.currentPose = targetState;
     }
     executeCrossFade(startAction, endAction, duration) {
       if (endAction) {
@@ -43425,6 +43633,91 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
   var TutorialConfig = class {
     constructor() {
       this.tutorials = {
+        // Short first-run tour: just the controls people need to get started.
+        "quick": {
+          enabled: true,
+          steps: [
+            {
+              id: "quick-welcome",
+              elementId: "canvas-container",
+              position: "center",
+              arrowPosition: "none",
+              heading: "Welcome to Pixel Staging",
+              content: "Build a scene, place cameras and plan shots. This one-minute tour covers the basics. Press Esc to close it at any time, and use the ? button in the header to bring it back.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "quick-add",
+              elementId: "tools-container",
+              position: "left",
+              arrowPosition: "right",
+              marginOverride: "20px",
+              heading: "1. Add things",
+              content: "Use the left toolbar to add shapes, characters, lights and staging props (actors, furniture, walls). Hover an icon to see what it does.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "quick-look",
+              elementId: "canvas-container",
+              controlMode: "camera",
+              position: "center",
+              arrowPosition: "none",
+              heading: "2. Look around",
+              content: "In Camera mode, drag empty space to orbit, right-drag to pan and scroll to zoom. The F, Shift+S, B and T keys jump to front, side, back and top views. Home resets the view.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "quick-move",
+              elementId: "canvas-container",
+              controlMode: "scene",
+              position: "center",
+              arrowPosition: "none",
+              heading: "3. Move things",
+              content: "In Scene mode, click an object to select it. G moves, R rotates and S scales. Objects snap to the grid: hold Alt while dragging to place freely, or use the magnet button to turn snapping off. Right-click empty space to deselect.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "quick-properties",
+              elementId: "props-content",
+              openTab: "object-properties",
+              position: "left",
+              arrowPosition: "right",
+              marginOverride: "20px",
+              heading: "4. Edit properties",
+              content: "With an object selected, Properties lets you change its colour, size and position. Spot and directional lights also have an Aim Target so they can point anywhere.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "quick-shots",
+              elementId: "shot-designer-content",
+              openTab: "shot-designer",
+              controlMode: "camera",
+              position: "left",
+              arrowPosition: "right",
+              marginOverride: "20px",
+              heading: "5. Plan shots",
+              content: "Add a camera, then use the Shot Designer to add shots, set start and end frames and choose how the camera moves. The timeline at the bottom plays them back.",
+              showNext: true,
+              showSkip: true
+            },
+            {
+              id: "quick-export",
+              elementId: "btn-export",
+              position: "bottom",
+              arrowPosition: "top",
+              marginOverride: "25px",
+              heading: "6. Save and export",
+              content: "Save to Browser keeps your work locally. Export gives you the project file, a storyboard report or PDF, or a GLB 3D model. For the full tour, open Settings > Tutorial.",
+              showNext: true,
+              showSkip: true
+            }
+          ]
+        },
         "main": {
           enabled: true,
           steps: [
@@ -43453,6 +43746,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
             {
               id: "hierarchy",
               elementId: "hierarchy-list",
+              openTab: "hierarchy",
               position: "right",
               arrowPosition: "left",
               arrowPositionOverride: "top-third",
@@ -43465,6 +43759,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
             {
               id: "properties",
               elementId: "props-content",
+              openTab: "object-properties",
               position: "right",
               arrowPosition: "left",
               arrowPositionOverride: "middle-third",
@@ -43501,10 +43796,9 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
             },
             {
               id: "navigation",
-              elementId: "mobile-nav",
-              position: "top",
-              arrowPosition: "bottom",
-              marginOverride: "20px",
+              elementId: "canvas-container",
+              position: "center",
+              arrowPosition: "none",
               heading: "Scene Navigation",
               content: "Use Camera/Scene mode to switch controls. Drag empty space to orbit, right-drag to pan, and use the floating pad for zoom, orbit and Home. F, S, B and T give front, side, back and top views.",
               showNext: true,
@@ -43680,6 +43974,8 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
   var tutorialConfig = new TutorialConfig();
 
   // js/tutorialSystem.js
+  var TUTORIAL_SEEN_KEY = "pixelstaging-tutorial-seen";
+  var TUTORIAL_AUTOSTART_KEY = "pixelstaging-tutorial-autostart";
   var TutorialSystem = class {
     constructor(app) {
       this.app = app;
@@ -43695,12 +43991,17 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       this.setupEventListeners();
       window.addEventListener("resize", () => this.handleResize());
       setTimeout(() => {
-        const enableTutorialsCheckbox = document.getElementById("settings-enable-tutorials");
-        const autoStartCheckbox = document.getElementById("settings-tutorial-auto-start");
-        const appDefault = this.app.APP_DEFAULTS?.ui?.tutorialAutoStart ?? true;
-        const autoStart = autoStartCheckbox ? autoStartCheckbox.checked : appDefault;
-        if (enableTutorialsCheckbox && enableTutorialsCheckbox.checked && autoStart) {
-          this.startTutorial("main");
+        try {
+          const enableTutorialsCheckbox = document.getElementById("settings-enable-tutorials");
+          const autoStartCheckbox = document.getElementById("settings-tutorial-auto-start");
+          const appDefault = this.app.APP_DEFAULTS?.ui?.tutorialAutoStart ?? true;
+          const autoStart = autoStartCheckbox ? autoStartCheckbox.checked : appDefault;
+          const welcomeOpen = document.getElementById("welcome-modal")?.classList.contains("open");
+          if (enableTutorialsCheckbox && enableTutorialsCheckbox.checked && autoStart && !welcomeOpen && !this.hasSeenTutorial()) {
+            this.startTutorial("quick");
+          }
+        } catch (error) {
+          console.warn("Tutorial auto-start failed:", error);
         }
       }, 1e3);
       this.isInitialized = true;
@@ -43742,18 +44043,38 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
         });
       }
       if (autoStartCheckbox) {
-        const defaultValue = this.app.APP_DEFAULTS?.ui?.tutorialAutoStart ?? true;
+        let defaultValue = this.app.APP_DEFAULTS?.ui?.tutorialAutoStart ?? true;
+        try {
+          const stored = localStorage.getItem(TUTORIAL_AUTOSTART_KEY);
+          if (stored !== null) defaultValue = stored === "1";
+        } catch (e) {
+        }
         autoStartCheckbox.checked = defaultValue;
         autoStartCheckbox.addEventListener("change", (e) => {
           this.tutorialAutoStart = e.target.checked;
-          if (this.app.APP_DEFAULTS) {
+          try {
+            localStorage.setItem(TUTORIAL_AUTOSTART_KEY, e.target.checked ? "1" : "0");
+          } catch (err) {
+          }
+          if (this.app.APP_DEFAULTS?.ui) {
             this.app.APP_DEFAULTS.ui.tutorialAutoStart = e.target.checked;
           }
         });
       }
       if (startTutorialBtn) {
         startTutorialBtn.addEventListener("click", () => {
-          this.startTutorial("main");
+          document.getElementById("unified-settings-modal")?.classList.remove("open");
+          this.startTutorial("main", { force: true });
+        });
+      }
+      const helpBtn = document.getElementById("helpBtn");
+      if (helpBtn) {
+        helpBtn.addEventListener("click", () => {
+          if (this.app.ui?.openWelcomeModal) {
+            this.app.ui.openWelcomeModal();
+          } else {
+            this.startTutorial("quick", { force: true });
+          }
         });
       }
     }
@@ -43777,9 +44098,22 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
         }
       });
     }
-    startTutorial(tutorialId) {
+    hasSeenTutorial() {
+      try {
+        return localStorage.getItem(TUTORIAL_SEEN_KEY) === "1";
+      } catch (e) {
+        return false;
+      }
+    }
+    markTutorialSeen() {
+      try {
+        localStorage.setItem(TUTORIAL_SEEN_KEY, "1");
+      } catch (e) {
+      }
+    }
+    startTutorial(tutorialId, { force = false } = {}) {
       const enableTutorialsCheckbox = document.getElementById("settings-enable-tutorials");
-      if (enableTutorialsCheckbox && !enableTutorialsCheckbox.checked) {
+      if (!force && enableTutorialsCheckbox && !enableTutorialsCheckbox.checked) {
         if (this.app.notifications) {
           this.app.notifications.showNotification("Tutorials are disabled in settings", "info");
         }
@@ -43806,7 +44140,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
         if (header && content?.classList.contains("hidden")) header.click();
       }
       this.currentTutorialStep = step;
-      this.positionTutorial(step);
+      const usedFallback = this.positionTutorial(step);
       const headingElement = document.getElementById("tutorial-heading");
       const contentElement = document.getElementById("tutorial-content");
       if (headingElement) headingElement.textContent = step.heading;
@@ -43819,13 +44153,18 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       this.overlayElement.style.display = "block";
       this.updateProgressDots();
       this.highlightTargetElement(step.elementId);
-      this.addDirectionalArrow(step.arrowPosition || step.position, step.arrowPositionOverride);
+      this.addDirectionalArrow(usedFallback ? "center" : step.arrowPosition || step.position, step.arrowPositionOverride);
     }
     positionTutorial(step) {
       const targetElement = document.getElementById(step.elementId);
-      if (!targetElement || !this.tutorialElement) return;
-      const targetRect = targetElement.getBoundingClientRect();
+      if (!this.tutorialElement) return false;
+      const targetRect = targetElement ? targetElement.getBoundingClientRect() : null;
       const tutorialRect = this.tutorialElement.getBoundingClientRect();
+      if (!targetRect || targetRect.width === 0 && targetRect.height === 0) {
+        this.tutorialElement.style.top = Math.max(10, window.innerHeight / 2 - tutorialRect.height / 2) + "px";
+        this.tutorialElement.style.left = Math.max(10, window.innerWidth / 2 - tutorialRect.width / 2) + "px";
+        return true;
+      }
       const margin = step.marginOverride ? parseInt(step.marginOverride) : 10;
       let top, left;
       switch (step.position) {
@@ -43857,6 +44196,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       left = Math.max(10, Math.min(left, window.innerWidth - tutorialRect.width - 10));
       this.tutorialElement.style.top = top + "px";
       this.tutorialElement.style.left = left + "px";
+      return false;
     }
     highlightTargetElement(elementId) {
       const existingHighlights = document.querySelectorAll(".tutorial-highlight");
@@ -43913,6 +44253,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       }
     }
     hideTutorial() {
+      if (this.config.isTutorialActive()) this.markTutorialSeen();
       this.tutorialElement.style.display = "none";
       this.overlayElement.style.display = "none";
       this.config.stopTutorial();
@@ -46246,6 +46587,14 @@ ${elements.join("\n")}
       this.refreshUI();
       return shot;
     }
+    /** Every scene should start with a usable shot on its default camera. */
+    ensureDefaultShot() {
+      if (this.shots.length > 0) return this.shots[0];
+      const cameras = this.app.staging?.cameras;
+      const rig = cameras?.defaultRig || cameras?.ensureDefaultRig?.();
+      if (!rig) return null;
+      return this.createShot(rig.id, { name: "Shot 1" });
+    }
     removeShot(shotId) {
       const i = this.shots.findIndex((s) => s.id === shotId);
       if (i > -1) {
@@ -46697,6 +47046,46 @@ ${elements.join("\n")}
       shot[frameType === "start" ? "startFrame" : "endFrame"] = null;
       this.refreshUI();
     }
+    /** Resolve a shot's effective start/end frame, including auto-generated moves. */
+    evaluateShotFrame(shot, frameType) {
+      if (!shot) return null;
+      const stored = shot[frameType === "start" ? "startFrame" : "endFrame"];
+      if (stored) return JSON.parse(JSON.stringify(stored));
+      const rig = this.app.staging?.cameras?.get(shot.cameraId);
+      if (!rig) return null;
+      const temp = rig.camera.clone();
+      this.applyShotMove(temp, rig, shot, frameType === "start" ? 0 : shot.duration, 0);
+      const forward = new V3(0, 0, -1).applyQuaternion(temp.quaternion);
+      return {
+        position: temp.position.toArray(),
+        quaternion: temp.quaternion.toArray(),
+        target: temp.position.clone().addScaledVector(forward, 10).toArray(),
+        fov: Number.isFinite(temp.fov) ? temp.fov : 55
+      };
+    }
+    /** Make this shot start exactly where the previous shot ended. */
+    matchPreviousEnd(index = this.selectedShotIndex) {
+      const shot = this.shots[index];
+      const previous = this.shots[index - 1];
+      if (!shot || !previous) return;
+      const frame = this.evaluateShotFrame(previous, "end");
+      if (!frame) return;
+      shot.startFrame = frame;
+      this.selectedShotIndex = index;
+      this.refreshUI();
+      this.app.ui?.showNotification?.(`Start matched to end of \u201C${previous.name}\u201D`, "success");
+    }
+    /** Make the next shot start exactly where this shot ends. */
+    copyEndToNextStart(index = this.selectedShotIndex) {
+      const shot = this.shots[index];
+      const next = this.shots[index + 1];
+      if (!shot || !next) return;
+      const frame = this.evaluateShotFrame(shot, "end");
+      if (!frame) return;
+      next.startFrame = frame;
+      this.refreshUI();
+      this.app.ui?.showNotification?.(`\u201C${next.name}\u201D start matched to this shot's end`, "success");
+    }
     getShotStartTime(shotIndex) {
       let t = 0;
       for (let i = 0; i < shotIndex; i++) {
@@ -46876,6 +47265,10 @@ ${elements.join("\n")}
                         <button class="shot-btn framing-btn" data-action="reset-start"${!shot.startFrame ? " disabled" : ""}>Reset Start</button>
                         <button class="shot-btn framing-btn" data-action="reset-end"${!shot.endFrame ? " disabled" : ""}>Reset End</button>
                     </div>
+                    <div class="framing-btn-group">
+                        <button class="shot-btn framing-btn" data-action="match-prev-end" title="Copy the previous shot's end frame to this shot's start"${index === 0 ? " disabled" : ""}>Match Prev End</button>
+                        <button class="shot-btn framing-btn" data-action="copy-next-start" title="Copy this shot's end frame to the next shot's start"${index >= this.shots.length - 1 ? " disabled" : ""}>End \u2192 Next Start</button>
+                    </div>
                     ${this.viewMode === "frame" ? `
                     <div class="framing-btn-group">
                         <button class="shot-btn framing-btn" data-action="commit-frame">Confirm Frame</button>
@@ -46989,6 +47382,12 @@ ${elements.join("\n")}
         case "reset-end":
           shot.endFrame = null;
           this.refreshUI();
+          break;
+        case "match-prev-end":
+          this.matchPreviousEnd(index);
+          break;
+        case "copy-next-start":
+          this.copyEndToNextStart(index);
           break;
         case "commit-frame":
           this.commitFraming(this.editingFrame);
@@ -47337,12 +47736,31 @@ ${elements.join("\n")}
       }
       container.appendChild(indicator);
       indicator.style.left = total > 0 ? this.currentTime / total * 100 + "%" : "0%";
-      container.onmousedown = (e) => {
-        if (e.target !== container && !e.target.classList.contains("shot-timeline-ruler") && !e.target.parentElement?.classList.contains("shot-timeline-ruler")) return;
-        const rect = container.getBoundingClientRect();
-        const time = Math.max(0, Math.min(total, (e.clientX - rect.left) / rect.width * total));
-        this.seek(time);
+      const beginScrub = (e) => {
+        const isPlayhead = e.target === indicator || indicator.contains(e.target);
+        const isTrack = e.target === container || e.target.classList.contains("shot-timeline-ruler") || e.target.parentElement?.classList.contains("shot-timeline-ruler");
+        if (!isPlayhead && !isTrack) return;
+        e.preventDefault();
+        this.playing = false;
+        this.isScrubbing = true;
+        document.body.classList.add("timeline-scrubbing");
+        const seekAt = (ev) => {
+          const rect = container.getBoundingClientRect();
+          const time = Math.max(0, Math.min(total, (ev.clientX - rect.left) / rect.width * total));
+          this.seek(time);
+        };
+        seekAt(e);
+        const onMove = (ev) => seekAt(ev);
+        const onUp = () => {
+          this.isScrubbing = false;
+          document.body.classList.remove("timeline-scrubbing");
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+        };
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
       };
+      container.onmousedown = beginScrub;
     }
     addShotForSelectedCamera() {
       const cameras = this.app.staging?.cameras;
@@ -47613,6 +48031,7 @@ ${elements.join("\n")}
         this.app.staging.shotManager.shots = (sceneData.shots || []).map((s) => ({ ...s }));
         this.app.staging.shotManager.currentTime = 0;
         this.app.staging.shotManager.previewActive = false;
+        this.app.staging.shotManager.ensureDefaultShot();
         this.app.staging.shotManager.refreshUI();
       }
       this.applySceneSettings(sceneData.settings);
@@ -48635,6 +49054,10 @@ ${xrefOffset}
       this.renderer.domElement.addEventListener("pointerdown", (e) => this.onPointerDown(e), true);
       this.renderer.domElement.addEventListener("pointermove", (e) => this.onPointerMove(e), true);
       this.renderer.domElement.addEventListener("pointerup", (e) => this.onPointerUpForDeselect(e), true);
+      this.renderer.domElement.addEventListener("pointerleave", () => this.onPointerLeaveCanvas());
+      this.renderer.domElement.addEventListener("pointercancel", () => this.endPointerGesture());
+      window.addEventListener("pointerup", () => this.endPointerGesture());
+      window.addEventListener("blur", () => this.endPointerGesture());
       this.renderer.domElement.addEventListener("contextmenu", (e) => this.onRightClick(e));
       setTimeout(() => {
         const spaceCheckbox = document.getElementById("transform-space-checkbox");
@@ -48648,6 +49071,7 @@ ${xrefOffset}
       this.setAxesVisible(true);
       this.addDefaultTestObjects();
       this.staging.cameras.ensureDefaultRig();
+      this.staging.shotManager.ensureDefaultShot();
       this.initializeEditorModules();
       this.historyManager.updateUndoRedoButtons();
       this.axisGizmo = new AxisGizmo(document.getElementById("axis-gizmo-canvas"));
@@ -48656,6 +49080,7 @@ ${xrefOffset}
     initializeEditorModules() {
       const modules = [
         ["UI", () => this.ui.init()],
+        ["Snap controls", () => this.setupSnapControls()],
         ["Tutorial", () => this.tutorialSystem.init()]
       ];
       modules.forEach(([name, initialize]) => {
@@ -48682,6 +49107,7 @@ ${xrefOffset}
       try {
         if (this.staging.scenes.restorePersistedScenes()) {
           this.staging.cameras.ensureDefaultRig();
+          this.staging.shotManager.ensureDefaultShot();
           this.ui.renderHierarchyPanel();
         }
       } catch (error) {
@@ -48719,7 +49145,7 @@ ${xrefOffset}
           }
         });
         this.transformControl.addEventListener("change", () => {
-          if (this.snapEnabled && this.selectedObject) {
+          if (this.isSnapActive() && this.selectedObject) {
             if (this.snapMode === "grid") {
               this.selectedObject.position.copy(this.snapObjectToGrid(this.selectedObject));
             } else if (this.snapMode === "object") {
@@ -48732,11 +49158,13 @@ ${xrefOffset}
               }
               this.updateSnapGuides(snap, this.selectedObject);
             }
+          } else if (this.snapEnabled && this.snapBypass) {
+            this.clearSnapGuides();
           }
           if (this.selectedObject) this.ui.updateUI(this.selectedObject);
         });
         this.transformControl.addEventListener("mouseUp", () => {
-          if (this.snapEnabled && this.selectedObject) {
+          if (this.isSnapActive() && this.selectedObject) {
             if (this.snapMode === "grid") {
               this.selectedObject.position.copy(this.snapObjectToGrid(this.selectedObject));
             } else if (this.snapMode === "object" && this.snapOffset) {
@@ -49063,6 +49491,25 @@ ${xrefOffset}
         this.notifications.show("Failed to add character", "error");
       }
     }
+    // --- LIGHT AIM (spot / directional) ---
+    // The aim point is stored in world space on the light container (userData.aimTarget), so the
+    // light keeps pointing at the same place however the light itself is moved.
+    getLightAim(container) {
+      const a = container?.userData?.aimTarget;
+      return { x: a?.x || 0, y: a?.y || 0, z: a?.z || 0 };
+    }
+    setLightAim(container, x, y, z) {
+      if (!container?.children?.[0]?.target) return;
+      container.userData.aimTarget = { x: Number(x) || 0, y: Number(y) || 0, z: Number(z) || 0 };
+      this.applyLightAim(container);
+    }
+    applyLightAim(container) {
+      const light = container?.children?.[0];
+      if (!light?.target) return;
+      const a = this.getLightAim(container);
+      light.target.position.set(a.x, a.y, a.z);
+      light.target.updateMatrixWorld(true);
+    }
     addLight(type) {
       const lightContainer = this.factory.createLight(type);
       const addCommand = new AddObjectCommand(this, lightContainer);
@@ -49224,23 +49671,59 @@ ${xrefOffset}
     applyColorToSelected(hexColor) {
       if (!this.selectedObject) return;
       const obj = this.selectedObject;
+      const hex = (hexColor || "").toLowerCase();
       let targetMesh = null;
       if (obj.userData.type === "shape" || obj.userData.type === "shape2d") targetMesh = obj;
       else if (obj.userData.name) targetMesh = obj.children.find((c) => c.isMesh);
       else if (obj.userData.type === "figure") targetMesh = obj.children.find((c) => c.userData.name === "Torso");
+      else if (obj.userData.type === "staging") {
+        obj.traverse((c) => {
+          if (c.isMesh && !targetMesh) targetMesh = c;
+        });
+      } else if (obj.isMesh) {
+        targetMesh = obj;
+      }
+      const setPaletteIndex = (material) => {
+        if (!material?.userData) return;
+        const group = this.ui?.getActivePaletteGroup?.();
+        const idx = group?.colors?.findIndex((c) => c.toLowerCase() === hex) ?? -1;
+        if (idx >= 0) material.userData.paletteIndex = idx;
+        else delete material.userData.paletteIndex;
+      };
       if (targetMesh || obj.userData.type === "figure") {
         if (obj.userData.type === "figure") {
           obj.traverse((c) => {
             if (!c.isMesh) return;
             const materials = Array.isArray(c.material) ? c.material : [c.material];
-            materials.forEach((material) => material?.color?.set(hexColor));
+            materials.forEach((material) => {
+              material?.color?.set(hexColor);
+              setPaletteIndex(material);
+            });
           });
         } else if (targetMesh) {
           const materials = Array.isArray(targetMesh.material) ? targetMesh.material : [targetMesh.material];
           const index = Math.min(targetMesh.userData.activeMaterialSlot || 0, materials.length - 1);
-          materials[index]?.color?.set(hexColor);
+          const activeMaterial = materials[index];
+          if (activeMaterial) {
+            if (obj.userData.type === "staging") {
+              const baseHex = activeMaterial.color.getHex();
+              obj.traverse((c) => {
+                if (!c.isMesh || !c.material) return;
+                const slots = Array.isArray(c.material) ? c.material : [c.material];
+                slots.forEach((material) => {
+                  if (material?.color && material.color.getHex() === baseHex) {
+                    material.color.set(hexColor);
+                    setPaletteIndex(material);
+                  }
+                });
+              });
+            } else {
+              activeMaterial.color.set(hexColor);
+              setPaletteIndex(activeMaterial);
+            }
+          }
         }
-        this.ui.renderPropertiesPanel(this.selectedObject);
+        this.ui?.renderPropertiesPanel(this.selectedObject);
       }
     }
     // Change figure gender
@@ -49295,6 +49778,16 @@ ${xrefOffset}
     }
     // --- MANIPULATION ---
     onPointerMove(event) {
+      if (this._pressPos && event.buttons & 1 && this.controlMode === "camera") {
+        if (!this._orbitDragging && Math.hypot(event.clientX - this._pressPos.x, event.clientY - this._pressPos.y) > 4) {
+          this._orbitDragging = true;
+          this.setHoverObject(null);
+        }
+        if (this._orbitDragging) {
+          this.renderer.domElement.style.cursor = "grabbing";
+          return;
+        }
+      }
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
       this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -49330,22 +49823,40 @@ ${xrefOffset}
     }
     setHoverObject(obj) {
       if (obj === this.hoveredObject) return;
-      if (this.hoveredObject && this.originalColors.has(this.hoveredObject.uuid)) {
-        this.restoreObjectColor(this.hoveredObject);
-      }
+      if (this.hoveredObject) this.restoreObjectColor(this.hoveredObject);
       this.hoveredObject = obj;
       if (obj && obj.isMesh) {
-        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-        this.originalColors.set(obj.uuid, materials.map((material) => material?.color?.getHex()));
-        materials.forEach((material) => material?.color?.lerp(new Color(16777215), 0.15));
+        const materials = (Array.isArray(obj.material) ? obj.material : [obj.material]).filter((m) => m && m.emissive);
+        if (!materials.length) return;
+        this.originalColors.set(obj.uuid, materials.map((material) => ({
+          material,
+          emissive: material.emissive.getHex(),
+          intensity: material.emissiveIntensity
+        })));
+        materials.forEach((material) => {
+          material.emissive.setHex(16777215);
+          material.emissiveIntensity = 0.15;
+        });
       }
     }
     restoreObjectColor(obj) {
-      if (obj && obj.isMesh && this.originalColors.has(obj.uuid)) {
-        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
-        const colors = this.originalColors.get(obj.uuid);
-        materials.forEach((material, index) => material?.color?.setHex(colors[index]));
-        this.originalColors.delete(obj.uuid);
+      if (!obj || !this.originalColors.has(obj.uuid)) return;
+      this.originalColors.get(obj.uuid).forEach(({ material, emissive, intensity }) => {
+        material.emissive.setHex(emissive);
+        material.emissiveIntensity = intensity;
+      });
+      this.originalColors.delete(obj.uuid);
+    }
+    onPointerLeaveCanvas() {
+      if (this._orbitDragging || this.isDraggingGizmo) return;
+      this.setHoverObject(null);
+      if (this.renderer?.domElement) this.renderer.domElement.style.cursor = "default";
+    }
+    endPointerGesture() {
+      this._pressPos = null;
+      if (this._orbitDragging) {
+        this._orbitDragging = false;
+        if (this.renderer?.domElement) this.renderer.domElement.style.cursor = "default";
       }
     }
     onMouseUp(event) {
@@ -49391,7 +49902,7 @@ ${xrefOffset}
         }
         return;
       }
-      if (this.controlMode === "camera") this.renderer.domElement.style.cursor = "grabbing";
+      this._pressPos = { x: event.clientX, y: event.clientY };
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
       this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -49485,6 +49996,7 @@ ${xrefOffset}
       }
       this.ui.resetPanelToDefault();
       this.ui.updateUI(this.selectedObject);
+      this.ui.showRightTab?.("object-properties");
     }
     deselect() {
       this.selectedObject = null;
@@ -49572,6 +50084,77 @@ ${xrefOffset}
     }
     setSnapEnabled(enabled) {
       this.snapEnabled = enabled;
+      this.syncSnapControls();
+    }
+    /** True while snapping is on and the user is not holding Alt. */
+    isSnapActive() {
+      return !!this.snapEnabled && !this.snapBypass;
+    }
+    setSnapBypass(active) {
+      if (this.snapBypass === active) return;
+      this.snapBypass = active;
+      document.getElementById("snap-toggle")?.classList.toggle("bypassed", active);
+    }
+    setSnapGridUnit(unit) {
+      const value = parseFloat(unit);
+      if (!(value > 0)) return;
+      this.snapGridUnit = value;
+      try {
+        localStorage.setItem("pixelstaging-snap-unit", String(value));
+      } catch (e) {
+      }
+      const select = document.getElementById("snap-grid-size");
+      if (select && select.value !== String(value)) {
+        if (![...select.options].some((o) => o.value === String(value))) {
+          select.add(new Option(String(value), String(value)));
+        }
+        select.value = String(value);
+      }
+    }
+    /** Keeps the canvas toggle button and the Settings checkbox in step with snapEnabled. */
+    syncSnapControls() {
+      document.getElementById("snap-toggle")?.classList.toggle("active", !!this.snapEnabled);
+      const checkbox = document.getElementById("setting-snap");
+      if (checkbox) checkbox.checked = !!this.snapEnabled;
+    }
+    setupSnapControls() {
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Alt") this.setSnapBypass(true);
+      });
+      window.addEventListener("keyup", (e) => {
+        if (e.key === "Alt") {
+          if (this.snapBypass) e.preventDefault();
+          this.setSnapBypass(false);
+        }
+      });
+      window.addEventListener("blur", () => this.setSnapBypass(false));
+      const toggle = document.getElementById("snap-toggle");
+      if (toggle) {
+        toggle.addEventListener("click", () => {
+          this.setSnapEnabled(!this.snapEnabled);
+          try {
+            const raw = localStorage.getItem("pixel3d-settings");
+            if (raw) {
+              const saved = JSON.parse(raw);
+              saved.snap = this.snapEnabled;
+              localStorage.setItem("pixel3d-settings", JSON.stringify(saved));
+            }
+          } catch (e) {
+          }
+          this.ui?.showNotification?.(this.snapEnabled ? "Snap to grid on (hold Alt to bypass)" : "Snap to grid off", "info");
+        });
+      }
+      const select = document.getElementById("snap-grid-size");
+      if (select) {
+        select.addEventListener("change", () => this.setSnapGridUnit(select.value));
+      }
+      let savedUnit = null;
+      try {
+        savedUnit = localStorage.getItem("pixelstaging-snap-unit");
+      } catch (e) {
+      }
+      this.setSnapGridUnit(savedUnit || this.snapGridUnit);
+      this.syncSnapControls();
     }
     // --- SNAP: GRID ALIGNMENT ---
     /** Round a value to the nearest snap unit. */
@@ -49599,7 +50182,7 @@ ${xrefOffset}
      * four side faces).  The closest hit within `snapThreshold` wins.
      */
     findSnapshot(curObj) {
-      if (!this.snapEnabled || this.snapMode === "off") return null;
+      if (!this.isSnapActive() || this.snapMode === "off") return null;
       if (!curObj || !curObj.geometry) return null;
       const curBB = new Box3().setFromObject(curObj);
       const curSize = new Vector3();
@@ -49829,8 +50412,9 @@ ${xrefOffset}
       requestAnimationFrame(() => this.animate());
       const delta = this.clock.getDelta();
       this.scene.traverse((obj) => {
-        if (obj.userData.type === "light" && obj.children[1]) {
-          obj.children[1].update();
+        if (obj.userData.type === "light") {
+          if (obj.children[0]?.target) this.applyLightAim(obj);
+          if (obj.children[1]) obj.children[1].update();
         }
       });
       this.characterManager.update(delta);
