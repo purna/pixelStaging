@@ -756,6 +756,55 @@ header {
     opacity: 0.8;
 }
 
+/* Mode info docked in the bottom-right side panel */
+.right-panel-mode-footer {
+    flex: 0 0 auto;
+    padding: 8px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-dark);
+}
+
+.right-panel-mode-footer .mode-banner {
+    position: static;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+        "icon copy"
+        "action action";
+    align-items: start;
+    gap: 6px 9px;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 8px;
+    background: rgba(15, 15, 27, 0.65);
+    box-shadow: none;
+    backdrop-filter: none;
+}
+
+.right-panel-mode-footer .mode-banner-icon {
+    grid-area: icon;
+    margin-top: 1px;
+}
+
+.right-panel-mode-footer .mode-banner-copy {
+    grid-area: copy;
+}
+
+.right-panel-mode-footer .mode-banner-hint {
+    display: block;
+    white-space: normal;
+}
+
+.right-panel-mode-footer .mode-banner-action {
+    grid-area: action;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 1px 0 0;
+}
+
 @media (max-width: 720px) {
     .mode-banner {
         left: 12px;

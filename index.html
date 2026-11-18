@@ -28,7 +28,7 @@
         }
     </style>
     <!-- External Styles -->
-    <link rel="stylesheet" href="css/styles.css?v=20261119-3">
+    <link rel="stylesheet" href="css/styles.css?v=20261119-4">
     <link rel="stylesheet" href="css/settings.css?v=20261111-2">
     <link rel="stylesheet" href="css/modal.css?v=20261119-1">
     <link rel="stylesheet" href="css/tutorials.css?v=20261119-1">
@@ -348,16 +348,6 @@ Show action-safe (90%) and title-safe (80%) guides
 --Camera mode only--">
                     <i class="fas fa-border-all"></i>
                 </button>
-            </div>
-
-            <!-- Always-visible mode badge so users know whether clicks edit or navigate -->
-            <div id="mode-banner" class="mode-banner" data-mode="camera" role="status" aria-live="polite">
-                <span class="mode-banner-icon"><i class="fas fa-video"></i></span>
-                <span class="mode-banner-copy">
-                    <strong class="mode-banner-title">Camera mode</strong>
-                    <span class="mode-banner-hint">View only — click an object to edit it, or press Tab</span>
-                </span>
-                <button type="button" class="mode-banner-action" id="mode-banner-action"><i class="fas fa-pen-ruler"></i> Edit scene <kbd>Tab</kbd></button>
             </div>
 
             <!-- Zoom Control -->
@@ -866,6 +856,17 @@ Show action-safe (90%) and title-safe (80%) guides
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            <!-- Mode info: bottom of the right-hand side panel -->
+            <div class="right-panel-mode-footer">
+                <div id="mode-banner" class="mode-banner" data-mode="camera" role="status" aria-live="polite">
+                    <span class="mode-banner-icon"><i class="fas fa-video"></i></span>
+                    <span class="mode-banner-copy">
+                        <strong class="mode-banner-title">Camera mode</strong>
+                        <span class="mode-banner-hint">View only — click an object to edit it, or press Tab</span>
+                    </span>
+                    <button type="button" class="mode-banner-action" id="mode-banner-action"><i class="fas fa-pen-ruler"></i> Edit scene <kbd>Tab</kbd></button>
                 </div>
             </div>
         </div>
@@ -1605,7 +1606,7 @@ Show action-safe (90%) and title-safe (80%) guides
         </div>
 
         <!-- Self-contained app bundle: works over http:// and when index.html is opened directly. -->
-        <script src="dist/pixel3d.js?v=20261119-3"></script>
+        <script src="dist/pixel3d.js?v=20261119-4"></script>
 
         <!-- ANIMATION TIMELINE PANEL -->
         <div id="anim-panel" style="display:none;">
