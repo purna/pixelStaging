@@ -200,7 +200,10 @@ export class ShotManager {
     }
 
     seek(t) {
-        this.currentTime = clamp(t, 0, this.duration);
+        // `clamp` in easing.js normalises to 0..1, so it must not be used for
+        // absolute seconds here. Clamp against the real timeline duration.
+        const max = this.duration;
+        this.currentTime = Math.max(0, Math.min(Number.isFinite(t) ? t : 0, max));
         this.previewActive = true;
         if (this.ui) this.ui.updateScrubber();
         this.updatePathPreview();
