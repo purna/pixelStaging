@@ -42832,6 +42832,11 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       observer.observe(document.body, { childList: true, subtree: true });
     }
     attachTooltipListeners(el) {
+      if (!el || el.dataset.tooltipBound === "true") return;
+      if (el.hasAttribute("data-tooltip") && el.hasAttribute("title")) {
+        el.removeAttribute("title");
+      }
+      el.dataset.tooltipBound = "true";
       el.style.cursor = "help";
       el.addEventListener("mouseenter", () => {
         if (!window.tooltipsEnabled) return;
@@ -42848,20 +42853,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
   };
   var tooltip = new ToolTip();
   document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll("[data-tooltip]").forEach((el) => {
-      el.style.cursor = "help";
-      el.addEventListener("mouseenter", () => {
-        if (!window.tooltipsEnabled) return;
-        const text = el.getAttribute("data-tooltip");
-        if (text) tooltip.show(text, el);
-      });
-      el.addEventListener("mouseleave", () => {
-        if (!window.tooltipsEnabled) return;
-        if (!tooltip.tooltip.matches(":hover")) {
-          tooltip.hide();
-        }
-      });
-    });
+    document.querySelectorAll("[data-tooltip]").forEach((el) => tooltip.attachTooltipListeners(el));
   });
 
   // js/historyManager.js

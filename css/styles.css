@@ -2536,25 +2536,6 @@ input[type="color"] {
     display: none;
 }
 
-/* Tooltip */
-[data-tooltip]:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-left: 10px;
-    background: var(--bg-medium);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    z-index: 100;
-    pointer-events: none;
-}
-
 .tool-btn {
     width: 40px;
     height: 40px;

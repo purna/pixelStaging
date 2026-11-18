@@ -120,6 +120,15 @@ export class ToolTip {
     }
 
     attachTooltipListeners(el) {
+        if (!el || el.dataset.tooltipBound === 'true') return;
+
+        // A native title tooltip would appear alongside the formatted custom
+        // one. data-tooltip is the single source of truth.
+        if (el.hasAttribute('data-tooltip') && el.hasAttribute('title')) {
+            el.removeAttribute('title');
+        }
+
+        el.dataset.tooltipBound = 'true';
         el.style.cursor = 'help';
         el.addEventListener('mouseenter', () => {
             if (!window.tooltipsEnabled) return;
@@ -139,18 +148,5 @@ export class ToolTip {
 export const tooltip = new ToolTip();
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('[data-tooltip]').forEach(el => {
-        el.style.cursor = 'help';
-        el.addEventListener('mouseenter', () => {
-            if (!window.tooltipsEnabled) return;
-            const text = el.getAttribute('data-tooltip');
-            if (text) tooltip.show(text, el);
-        });
-        el.addEventListener('mouseleave', () => {
-            if (!window.tooltipsEnabled) return;
-            if (!tooltip.tooltip.matches(':hover')) {
-                tooltip.hide();
-            }
-        });
-    });
+    document.querySelectorAll('[data-tooltip]').forEach(el => tooltip.attachTooltipListeners(el));
 });
