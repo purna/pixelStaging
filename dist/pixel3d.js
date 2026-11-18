@@ -50393,10 +50393,10 @@ ${xrefOffset}
         });
         this.transformControl.isHovered = transformHelpers.length > 0 && this.raycaster.intersectObjects(transformHelpers, true).length > 0;
       }
-      const selectableObjects = this.getSelectableRoots();
-      const intersects2 = this.raycaster.intersectObjects(selectableObjects, true);
-      if (intersects2.length > 0) {
-        this.setHoverObject(this.resolveSelectableRoot(intersects2[0].object));
+      const through = event.metaKey || event.ctrlKey;
+      const hoverTarget = this.pickSelectableRoot(event, { through });
+      if (hoverTarget) {
+        this.setHoverObject(hoverTarget);
         this.renderer.domElement.style.cursor = "pointer";
       } else if (!this.transformControl?.isHovered) {
         this.setHoverObject(null);
@@ -50414,6 +50414,11 @@ ${xrefOffset}
       });
       return roots;
     }
+    /** Floors stay neutral while hovering/selecting so the ground doesn't flash. */
+    isFloorObject(obj) {
+      if (!obj) return false;
+      return obj.userData?.staging?.presetId === "floor" || obj.userData?.name === "Floor" || obj.name === "Floor";
+    }
     /** Walk up from a raycast hit to the first selectable root object. */
     resolveSelectableRoot(object) {
       let target = object;
@@ -50429,7 +50434,7 @@ ${xrefOffset}
      * Pick the object under the pointer. Direct hits win, but a small screen-space
      * fallback lets users click near small props instead of pixel-perfect on them.
      */
-    pickSelectableRoot(event) {
+    pickSelectableRoot(event, { through = false } = {}) {
       const rect = this.renderer.domElement.getBoundingClientRect();
       this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
       this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -50437,7 +50442,16 @@ ${xrefOffset}
       const roots = this.getSelectableRoots();
       const intersects2 = this.raycaster.intersectObjects(roots, true);
       if (intersects2.length > 0) {
-        return this.resolveSelectableRoot(intersects2[0].object);
+        const orderedRoots = [];
+        for (const hit of intersects2) {
+          const root = this.resolveSelectableRoot(hit.object);
+          if (root && !orderedRoots.includes(root)) orderedRoots.push(root);
+        }
+        if (!through) return orderedRoots[0] || null;
+        if (orderedRoots.length === 1) return orderedRoots[0];
+        const selectedIndex = this.selectedObject ? orderedRoots.indexOf(this.selectedObject) : -1;
+        if (selectedIndex === -1) return orderedRoots[1];
+        return orderedRoots[(selectedIndex + 1) % orderedRoots.length];
       }
       const box = new Box3();
       const sphere = new Sphere();
@@ -50478,6 +50492,7 @@ ${xrefOffset}
       if (obj) this.applyHoverHighlight(obj);
     }
     applyHoverHighlight(root) {
+      if (this.isFloorObject(root)) return;
       root.traverse((child) => {
         if (!child.isMesh) return;
         const materials = (Array.isArray(child.material) ? child.material : [child.material]).filter((material) => material && material.emissive);
@@ -50589,7 +50604,8 @@ ${xrefOffset}
           return;
         }
       }
-      const target = this.pickSelectableRoot(event);
+      const through = event.metaKey || event.ctrlKey;
+      const target = this.pickSelectableRoot(event, { through });
       if (this.controlMode === "camera") {
         this._pendingClickSelection = target ? { root: target, x: event.clientX, y: event.clientY } : null;
         return;
