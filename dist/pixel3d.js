@@ -50003,35 +50003,45 @@ ${xrefOffset}
       const guides = document.getElementById("camera-guides");
       if (guides) guides.classList.toggle("hidden", !(active && inCameraMode));
     }
-    /** Align the guide overlay with the letterboxed camera view when one is rendered. */
+    /** Aspect ratio of the camera whose frame the guides represent. */
+    getCameraGuideAspect() {
+      const cameras = this.staging?.cameras;
+      if (cameras?.viewingRigId) {
+        const viewed = cameras.get(cameras.viewingRigId);
+        if (viewed?.camera?.aspect) return viewed.camera.aspect;
+      }
+      const shots = this.staging?.shotManager;
+      const shot = shots?.playing || shots?.previewActive ? shots.getActiveShot?.()?.shot : shots?.selectedShot || shots?.getActiveShot?.()?.shot;
+      const rig = (shot?.cameraId ? cameras?.get(shot.cameraId) : null) || cameras?.defaultRig || cameras?.rigs?.[0];
+      return rig?.camera?.aspect || this.camera?.aspect || 16 / 9;
+    }
+    /** Align the guide overlay with the active camera frame. */
     updateCameraGuideFrame(viewport) {
       const guides = document.getElementById("camera-guides");
-      if (!guides) return;
-      if (!viewport) {
-        const timeline = document.getElementById("shot-timeline");
-        const timelineVisible = timeline && getComputedStyle(timeline).display !== "none" && timeline.offsetHeight > 0;
-        if (timelineVisible && this.renderer) {
-          const width = this.renderer.domElement.clientWidth;
-          const height = Math.max(1, this.renderer.domElement.clientHeight - timeline.offsetHeight);
-          guides.style.inset = "auto";
-          guides.style.left = "0px";
-          guides.style.top = "0px";
-          guides.style.width = `${width}px`;
-          guides.style.height = `${height}px`;
-          return;
-        }
-        guides.style.inset = "";
-        guides.style.left = "";
-        guides.style.top = "";
-        guides.style.width = "";
-        guides.style.height = "";
-        return;
+      if (!guides || !this.renderer) return;
+      const timeline = document.getElementById("shot-timeline");
+      const timelineVisible = timeline && getComputedStyle(timeline).display !== "none" && timeline.offsetHeight > 0;
+      const availableWidth = this.renderer.domElement.clientWidth;
+      const availableHeight = Math.max(
+        1,
+        this.renderer.domElement.clientHeight - (timelineVisible ? timeline.offsetHeight : 0)
+      );
+      const aspect2 = viewport ? viewport.width / viewport.height : this.getCameraGuideAspect();
+      let width, height;
+      if (availableWidth / availableHeight > aspect2) {
+        height = availableHeight;
+        width = height * aspect2;
+      } else {
+        width = availableWidth;
+        height = width / aspect2;
       }
+      const left = (availableWidth - width) / 2;
+      const top = (availableHeight - height) / 2;
       guides.style.inset = "auto";
-      guides.style.left = `${viewport.x}px`;
-      guides.style.top = `${viewport.y}px`;
-      guides.style.width = `${viewport.width}px`;
-      guides.style.height = `${viewport.height}px`;
+      guides.style.left = `${left}px`;
+      guides.style.top = `${top}px`;
+      guides.style.width = `${width}px`;
+      guides.style.height = `${height}px`;
     }
     // Configure orbit controls for optimal touch/trackpad experience
     configureOrbitControlsForTouch() {
