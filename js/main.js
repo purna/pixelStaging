@@ -784,6 +784,15 @@ class StageApp {
         this.ui?.showNotification?.(`Camera safe zones ${this.cameraGuidesEnabled ? 'on' : 'off'}`, 'info');
     }
 
+    /** Colour used for the camera action/title safe-zone guides. */
+    setGuideColor(color) {
+        const fallback = this.APP_DEFAULTS?.ui?.guideColor || '#ffd54a';
+        const value = /^#[0-9a-f]{6}$/i.test(color || '') ? color : fallback;
+        this.guideColor = value;
+        const guides = document.getElementById('camera-guides');
+        if (guides) guides.style.setProperty('--guide-safe-color', value);
+    }
+
     syncCameraGuideControls() {
         const active = !!this.cameraGuidesEnabled;
         const inCameraMode = this.controlMode === 'camera';

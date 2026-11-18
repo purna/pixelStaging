@@ -37936,6 +37936,9 @@
         if (this.app.setAxesVisible) this.app.setAxesVisible(settings.axes);
         if (this.app.setSnapEnabled) this.app.setSnapEnabled(settings.snap);
         if (this.app.setCameraSpeed) this.app.setCameraSpeed(settings.cameraSpeed);
+        if (this.app.setGuideColor) {
+          this.app.setGuideColor(settings.guideColor || this.app.APP_DEFAULTS?.ui?.guideColor || "#ffd54a");
+        }
         window.tooltipsEnabled = settings.tooltips !== false;
         if (this.app.fileManager && this.app.fileManager.setAutosaveEnabled) {
           this.app.fileManager.setAutosaveEnabled(settings.autosave !== false);
@@ -37955,6 +37958,7 @@
         const tooltipsEl = document.getElementById("setting-tooltips");
         const speedEl = document.getElementById("setting-camera-speed");
         const speedValueEl = document.getElementById("camera-speed-value");
+        const guideColorEl = document.getElementById("setting-guide-color");
         const autosaveEl = document.getElementById("setting-autosave");
         const autosaveIntervalEl = document.getElementById("setting-autosave-interval");
         const autosaveIntervalValueEl = document.getElementById("autosave-interval-value");
@@ -37965,6 +37969,9 @@
         if (speedEl) {
           speedEl.value = settings.cameraSpeed || 1;
           if (speedValueEl) speedValueEl.textContent = settings.cameraSpeed || 1;
+        }
+        if (guideColorEl) {
+          guideColorEl.value = settings.guideColor || this.app.APP_DEFAULTS?.ui?.guideColor || "#ffd54a";
         }
         if (autosaveEl) autosaveEl.checked = settings.autosave !== false;
         if (autosaveIntervalEl) {
@@ -37985,6 +37992,7 @@
         snap: document.getElementById("setting-snap").checked,
         tooltips: document.getElementById("setting-tooltips").checked,
         cameraSpeed: parseFloat(document.getElementById("setting-camera-speed").value),
+        guideColor: document.getElementById("setting-guide-color")?.value || "#ffd54a",
         autosave: document.getElementById("setting-autosave").checked,
         autosaveInterval: parseInt(document.getElementById("setting-autosave-interval").value)
       };
@@ -37993,6 +38001,7 @@
       if (this.app.setAxesVisible) this.app.setAxesVisible(settings.axes);
       if (this.app.setSnapEnabled) this.app.setSnapEnabled(settings.snap);
       if (this.app.setCameraSpeed) this.app.setCameraSpeed(settings.cameraSpeed);
+      if (this.app.setGuideColor) this.app.setGuideColor(settings.guideColor);
       window.tooltipsEnabled = settings.tooltips;
       const exportFormat = document.getElementById("setting-export-format");
       if (exportFormat && this.app.fileManager) {
@@ -38008,6 +38017,7 @@
         snap: true,
         tooltips: true,
         cameraSpeed: 1,
+        guideColor: "#ffd54a",
         autosave: false,
         autosaveInterval: 5
       };
@@ -38017,6 +38027,7 @@
         defaults.snap = APP_DEFAULTS.ui.snapEnabled;
         defaults.tooltips = APP_DEFAULTS.ui.tooltipsEnabled;
         defaults.cameraSpeed = APP_DEFAULTS.ui.cameraSpeed;
+        defaults.guideColor = APP_DEFAULTS.ui.guideColor || defaults.guideColor;
         defaults.autosave = APP_DEFAULTS.ui.autosaveEnabled;
         defaults.autosaveInterval = APP_DEFAULTS.ui.autosaveInterval;
       }
@@ -38025,6 +38036,7 @@
       if (this.app.setAxesVisible) this.app.setAxesVisible(true);
       if (this.app.setSnapEnabled) this.app.setSnapEnabled(true);
       if (this.app.setCameraSpeed) this.app.setCameraSpeed(1);
+      if (this.app.setGuideColor) this.app.setGuideColor(defaults.guideColor);
       window.tooltipsEnabled = true;
       if (this.app.fileManager && this.app.fileManager.setAutosaveEnabled) {
         this.app.fileManager.setAutosaveEnabled(false);
@@ -40048,6 +40060,7 @@
         this.initUnifiedSettingsModal();
         this.unifiedSettingsInitialized = true;
       }
+      this.loadSettingsToUI();
       this.loadAISettingsToUI();
       this.switchSettingsTab(initialTab);
       this.unifiedSettingsModal.classList.add("open");
@@ -43679,6 +43692,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
       snapEnabled: true,
       tooltipsEnabled: true,
       cameraSpeed: 1,
+      guideColor: "#ffd54a",
       autosaveEnabled: false,
       autosaveInterval: 5,
       tutorialAutoStart: false
@@ -49948,6 +49962,14 @@ ${xrefOffset}
       }
       this.syncCameraGuideControls();
       this.ui?.showNotification?.(`Camera safe zones ${this.cameraGuidesEnabled ? "on" : "off"}`, "info");
+    }
+    /** Colour used for the camera action/title safe-zone guides. */
+    setGuideColor(color) {
+      const fallback = this.APP_DEFAULTS?.ui?.guideColor || "#ffd54a";
+      const value = /^#[0-9a-f]{6}$/i.test(color || "") ? color : fallback;
+      this.guideColor = value;
+      const guides = document.getElementById("camera-guides");
+      if (guides) guides.style.setProperty("--guide-safe-color", value);
     }
     syncCameraGuideControls() {
       const active = !!this.cameraGuidesEnabled;

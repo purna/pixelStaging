@@ -5285,6 +5285,9 @@ export class UI {
             if (this.app.setAxesVisible) this.app.setAxesVisible(settings.axes);
             if (this.app.setSnapEnabled) this.app.setSnapEnabled(settings.snap);
             if (this.app.setCameraSpeed) this.app.setCameraSpeed(settings.cameraSpeed);
+            if (this.app.setGuideColor) {
+                this.app.setGuideColor(settings.guideColor || this.app.APP_DEFAULTS?.ui?.guideColor || '#ffd54a');
+            }
             // Apply tooltips
             window.tooltipsEnabled = settings.tooltips !== false;
             // Apply autosave
@@ -5308,6 +5311,7 @@ export class UI {
             const tooltipsEl = document.getElementById('setting-tooltips');
             const speedEl = document.getElementById('setting-camera-speed');
             const speedValueEl = document.getElementById('camera-speed-value');
+            const guideColorEl = document.getElementById('setting-guide-color');
             const autosaveEl = document.getElementById('setting-autosave');
             const autosaveIntervalEl = document.getElementById('setting-autosave-interval');
             const autosaveIntervalValueEl = document.getElementById('autosave-interval-value');
@@ -5319,6 +5323,11 @@ export class UI {
             if (speedEl) {
                 speedEl.value = settings.cameraSpeed || 1;
                 if (speedValueEl) speedValueEl.textContent = settings.cameraSpeed || 1;
+            }
+            if (guideColorEl) {
+                guideColorEl.value = settings.guideColor
+                    || this.app.APP_DEFAULTS?.ui?.guideColor
+                    || '#ffd54a';
             }
             if (autosaveEl) autosaveEl.checked = settings.autosave !== false;
             if (autosaveIntervalEl) {
@@ -5343,6 +5352,7 @@ export class UI {
             snap: document.getElementById('setting-snap').checked,
             tooltips: document.getElementById('setting-tooltips').checked,
             cameraSpeed: parseFloat(document.getElementById('setting-camera-speed').value),
+            guideColor: document.getElementById('setting-guide-color')?.value || '#ffd54a',
             autosave: document.getElementById('setting-autosave').checked,
             autosaveInterval: parseInt(document.getElementById('setting-autosave-interval').value)
         };
@@ -5355,6 +5365,7 @@ export class UI {
         if (this.app.setAxesVisible) this.app.setAxesVisible(settings.axes);
         if (this.app.setSnapEnabled) this.app.setSnapEnabled(settings.snap);
         if (this.app.setCameraSpeed) this.app.setCameraSpeed(settings.cameraSpeed);
+        if (this.app.setGuideColor) this.app.setGuideColor(settings.guideColor);
 
         // Tooltip global variable update
         window.tooltipsEnabled = settings.tooltips;
@@ -5377,6 +5388,7 @@ export class UI {
             snap: true,
             tooltips: true,
             cameraSpeed: 1,
+            guideColor: '#ffd54a',
             autosave: false,
             autosaveInterval: 5
         };
@@ -5388,6 +5400,7 @@ export class UI {
             defaults.snap = APP_DEFAULTS.ui.snapEnabled;
             defaults.tooltips = APP_DEFAULTS.ui.tooltipsEnabled;
             defaults.cameraSpeed = APP_DEFAULTS.ui.cameraSpeed;
+            defaults.guideColor = APP_DEFAULTS.ui.guideColor || defaults.guideColor;
             defaults.autosave = APP_DEFAULTS.ui.autosaveEnabled;
             defaults.autosaveInterval = APP_DEFAULTS.ui.autosaveInterval;
         }
@@ -5400,6 +5413,7 @@ export class UI {
         if (this.app.setAxesVisible) this.app.setAxesVisible(true);
         if (this.app.setSnapEnabled) this.app.setSnapEnabled(true);
         if (this.app.setCameraSpeed) this.app.setCameraSpeed(1);
+        if (this.app.setGuideColor) this.app.setGuideColor(defaults.guideColor);
 
         window.tooltipsEnabled = true;
         // Apply autosave
@@ -7861,6 +7875,7 @@ export class UI {
         }
 
         // Switch to the requested tab
+        this.loadSettingsToUI();
         this.loadAISettingsToUI();
         this.switchSettingsTab(initialTab);
 

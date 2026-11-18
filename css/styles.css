@@ -5876,6 +5876,8 @@ input[type="number"].color-slider-value-compact {
     inset: 0;
     pointer-events: none;
     z-index: 40;
+    /* Overridden by Settings > General > Safe-zone Colour. */
+    --guide-safe-color: #ffd54a;
 }
 
 .camera-guides.hidden {
@@ -5890,7 +5892,8 @@ input[type="number"].color-slider-value-compact {
 }
 
 .guide-line {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.34);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
 .guide-v {
@@ -5912,7 +5915,8 @@ input[type="number"].color-slider-value-compact {
 .guide-h2 { top: 66.666%; }
 
 .guide-safe {
-    border: 1px dashed rgba(255, 255, 255, 0.35);
+    border: 2px dashed var(--guide-safe-color);
+    filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.95));
 }
 
 .guide-action-safe {
@@ -5922,30 +5926,34 @@ input[type="number"].color-slider-value-compact {
 .guide-title-safe {
     inset: 10%;
     border-style: dotted;
-    border-color: rgba(255, 255, 255, 0.25);
+    border-width: 2px;
+    border-color: var(--guide-safe-color);
+    opacity: 0.9;
 }
 
 .guide-center {
     left: 50%;
     top: 50%;
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     transform: translate(-50%, -50%);
-    border: 1px solid rgba(255, 255, 255, 0.45);
+    border: 2px solid var(--guide-safe-color);
     border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 0 5px rgba(0, 0, 0, 0.4);
 }
 
 /* Centre tick marks on each edge, matching standard camera framing guides. */
 .guide-tick {
     position: absolute;
-    background: rgba(255, 255, 255, 0.55);
+    background: var(--guide-safe-color);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
 }
 
 .guide-tick-top,
 .guide-tick-bottom {
     left: 50%;
-    width: 1px;
-    height: 12px;
+    width: 2px;
+    height: 14px;
     transform: translateX(-50%);
 }
 
@@ -5955,8 +5963,8 @@ input[type="number"].color-slider-value-compact {
 .guide-tick-left,
 .guide-tick-right {
     top: 50%;
-    width: 12px;
-    height: 1px;
+    width: 14px;
+    height: 2px;
     transform: translateY(-50%);
 }
 

@@ -7,6 +7,7 @@ export const APP_DEFAULTS = {
         snapEnabled: true,
         tooltipsEnabled: true,
         cameraSpeed: 1.0,
+        guideColor: '#ffd54a',
         autosaveEnabled: false,
         autosaveInterval: 5,
         tutorialAutoStart: false
