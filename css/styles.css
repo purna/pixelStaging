@@ -584,43 +584,173 @@ header {
     z-index: 1000;
 }
 
-/* Transform Space Toggle */
-.transform-space-toggle {
+/* Camera / Scene mode switch */
+.mode-switch {
     display: flex;
     align-items: center;
-    gap: 4px;
-    background: var(--bg-medium);
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.35);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 0.7rem;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.2s;
+    border-radius: 6px;
+    padding: 2px;
     margin-left: 8px;
 }
 
-.transform-space-toggle:hover {
-    background: var(--bg-light);
-    border-color: var(--text-secondary);
-}
-
-.transform-space-toggle .Checkbox {
-    width: 14px;
-    height: 14px;
-    cursor: pointer;
-    accent-color: var(--accent-primary);
-}
-
-.transform-space-toggle .toggle-label {
-    font-size: 0.7rem;
+.mode-switch-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
     color: var(--text-secondary);
-    user-select: none;
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.transform-space-toggle .Checkbox:checked+.toggle-label {
-    color: var(--accent-primary);
+.mode-switch-btn i {
+    font-size: 11px;
+}
+
+.mode-switch-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.mode-switch-btn.active {
+    color: #00d9ff;
+    background: rgba(0, 217, 255, 0.14);
+    border-color: rgba(0, 217, 255, 0.5);
+}
+
+.mode-switch-btn[data-control-mode="camera"].active {
+    color: #ffb020;
+    background: rgba(255, 176, 32, 0.14);
+    border-color: rgba(255, 176, 32, 0.55);
+}
+
+/* Persistent mode badge: makes it obvious whether a click edits or navigates */
+.mode-banner {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    max-width: calc(100% - 560px);
+    padding: 6px 7px 6px 11px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 176, 32, 0.55);
+    background: rgba(15, 15, 27, 0.92);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    z-index: 999;
+    pointer-events: none;
+    transition: border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.mode-banner[data-mode="scene"] {
+    border-color: rgba(0, 217, 255, 0.6);
+}
+
+.mode-banner-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: #ffb020;
+    background: rgba(255, 176, 32, 0.14);
+    font-size: 11px;
+}
+
+.mode-banner[data-mode="scene"] .mode-banner-icon {
+    color: #00d9ff;
+    background: rgba(0, 217, 255, 0.14);
+}
+
+.mode-banner-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.mode-banner-title {
+    color: var(--text-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.mode-banner-hint {
+    color: var(--text-secondary);
+    font-size: 0.65rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mode-banner-action {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    margin-left: 4px;
+    padding: 5px 9px;
+    border: 1px solid rgba(255, 176, 32, 0.55);
+    border-radius: 5px;
+    background: rgba(255, 176, 32, 0.12);
+    color: #ffce73;
+    font-family: inherit;
+    font-size: 0.68rem;
     font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.mode-banner[data-mode="scene"] .mode-banner-action {
+    border-color: rgba(0, 217, 255, 0.55);
+    background: rgba(0, 217, 255, 0.1);
+    color: #7ce9ff;
+}
+
+.mode-banner-action:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: currentColor;
+}
+
+.mode-banner-action kbd {
+    padding: 1px 4px;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 0.6rem;
+    line-height: 1.2;
+    opacity: 0.8;
+}
+
+@media (max-width: 1100px) {
+    .mode-banner {
+        top: 58px;
+        max-width: calc(100% - 24px);
+    }
+}
+
+@media (max-width: 720px) {
+    .mode-banner-hint {
+        display: none;
+    }
 }
 
 /* Zoom Control */

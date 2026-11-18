@@ -51,7 +51,12 @@ class StageApp {
         this.isInteractingWithGizmo = false;
         this.isDraggingGizmo = false;
         this.gizmoDragJustEnded = false;
+        // Hover highlight state, keyed by material UUID so shared materials are
+        // only saved/restored once per hover.
         this.originalColors = new Map();
+        this.selectionOutline = null;
+        this.selectionBounds = new THREE.Box3();
+        this._pendingClickSelection = null;
         // 'camera' = drag/navigate the view; 'scene' = select and transform objects.
         this.controlMode = 'camera';
         this.cameraGuidesEnabled = false;
@@ -205,15 +210,22 @@ class StageApp {
 
         // Camera/Scene switch. Bind immediately so it works as soon as the
         // canvas is ready (a delayed binding could miss early clicks).
-        const spaceCheckbox = document.getElementById('transform-space-checkbox');
-        if (spaceCheckbox) {
-            spaceCheckbox.addEventListener('change', (e) => {
-                this.toggleTransformSpace(e.target.checked);
-            });
-            // The whole label is clickable; make the hit area obvious.
-            const spaceLabel = spaceCheckbox.closest('.transform-space-toggle');
-            if (spaceLabel) spaceLabel.style.cursor = 'pointer';
-        }
+        document.querySelectorAll('[data-control-mode]').forEach((button) => {
+            button.addEventListener('click', () => this.setControlMode(button.dataset.controlMode));
+        });
+        document.getElementById('mode-banner-action')?.addEventListener('click', () => {
+            this.setControlMode(this.controlMode === 'camera' ? 'scene' : 'camera');
+        });
+
+        // A bright box around the selection makes it obvious which object the
+        // gizmo belongs to, including groups whose origin is not their centre.
+        this.selectionOutline = new THREE.BoxHelper(new THREE.Object3D(), 0x00d9ff);
+        this.selectionOutline.visible = false;
+        this.selectionOutline.renderOrder = 998;
+        this.selectionOutline.material.depthTest = false;
+        this.selectionOutline.material.transparent = true;
+        this.selectionOutline.material.opacity = 0.95;
+        this.scene.add(this.selectionOutline);
 
         // Ensure grid and axes are visible by default
         this.setGridVisible(true);
@@ -613,6 +625,9 @@ class StageApp {
         this.controlMode = mode === 'scene' ? 'scene' : 'camera';
         const modeChanged = previousMode !== this.controlMode;
 
+        // A pending Camera-mode click is only valid for the mode it started in.
+        this._pendingClickSelection = null;
+
         // Keyboard movement only applies to the editor camera.
         if (this.controlMode === 'camera') this.cameraNavKeys.clear();
 
@@ -662,24 +677,53 @@ class StageApp {
             this.staging.shotManager.previewActive = false;
         }
 
-        const checkbox = document.getElementById('transform-space-checkbox');
-        const label = document.querySelector('.transform-space-toggle .toggle-label');
-        if (checkbox) checkbox.checked = this.controlMode === 'camera';
-        if (label) label.textContent = this.controlMode === 'camera' ? 'Camera' : 'Scene';
+        const isCameraMode = this.controlMode === 'camera';
+
+        // Keep every Camera/Scene affordance in sync: the segmented switch, the
+        // canvas badge and the body-level styling hook.
+        document.querySelectorAll('[data-control-mode]').forEach((button) => {
+            const active = button.dataset.controlMode === this.controlMode;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        document.body.dataset.controlMode = this.controlMode;
+
+        const banner = document.getElementById('mode-banner');
+        const bannerIcon = banner?.querySelector('.mode-banner-icon i');
+        const bannerTitle = banner?.querySelector('.mode-banner-title');
+        const bannerHint = banner?.querySelector('.mode-banner-hint');
+        const bannerAction = document.getElementById('mode-banner-action');
+        if (banner) banner.dataset.mode = this.controlMode;
+        if (bannerIcon) bannerIcon.className = isCameraMode ? 'fas fa-video' : 'fas fa-vector-square';
+        if (bannerTitle) bannerTitle.textContent = isCameraMode ? 'Camera mode' : 'Scene mode';
+        if (bannerHint) {
+            bannerHint.textContent = isCameraMode
+                ? 'View only — click an object to edit it, or press Tab'
+                : 'Click an object to select · drag the gizmo to move it';
+        }
+        if (bannerAction) {
+            bannerAction.innerHTML = isCameraMode
+                ? '<i class="fas fa-pen-ruler"></i> Edit scene <kbd>Tab</kbd>'
+                : '<i class="fas fa-video"></i> Move camera <kbd>Tab</kbd>';
+        }
+
+        if (this.selectionOutline?.material?.color) {
+            this.selectionOutline.material.color.setHex(isCameraMode ? 0xffb020 : 0x00d9ff);
+        }
 
         // Camera nudge tools and the shot timeline belong to camera mode only.
-        document.getElementById('camera-nudge')?.classList.toggle('hidden', this.controlMode !== 'camera');
+        document.getElementById('camera-nudge')?.classList.toggle('hidden', !isCameraMode);
         const timeline = document.getElementById('shot-timeline');
-        if (timeline) timeline.style.display = this.controlMode === 'camera' ? 'flex' : 'none';
-        if (this.controlMode === 'camera') this.staging?.shotManager?.refreshUI?.();
-        document.getElementById('selection-info')?.classList.toggle('hidden', !(this.selectedObject && this.controlMode === 'scene'));
+        if (timeline) timeline.style.display = isCameraMode ? 'flex' : 'none';
+        if (isCameraMode) this.staging?.shotManager?.refreshUI?.();
+        document.getElementById('selection-info')?.classList.toggle('hidden', !(this.selectedObject && !isCameraMode));
 
-        this.renderer?.domElement && (this.renderer.domElement.style.cursor = 'default');
+        this.renderer?.domElement && (this.renderer.domElement.style.cursor = isCameraMode ? 'grab' : 'default');
         if (modeChanged && !silent) {
             this.ui?.showNotification?.(
-                this.controlMode === 'camera'
-                    ? 'Camera mode: drag to look, WASD to move, Q/E to rotate'
-                    : 'Scene mode: click an object and use the gizmo to move it',
+                isCameraMode
+                    ? 'Camera mode — view only. Click an object or press Tab to edit the scene.'
+                    : 'Scene mode — click an object, then drag the gizmo to edit it.',
                 'info'
             );
         }
@@ -1129,6 +1173,7 @@ class StageApp {
         if (this._pressPos && (event.buttons & 1) && this.controlMode === 'camera') {
             if (!this._orbitDragging && Math.hypot(event.clientX - this._pressPos.x, event.clientY - this._pressPos.y) > 4) {
                 this._orbitDragging = true;
+                this._pendingClickSelection = null;
                 this.setHoverObject(null);
             }
             if (this._orbitDragging) {
@@ -1136,12 +1181,13 @@ class StageApp {
                 return;
             }
         }
+
         const rect = this.renderer.domElement.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        
+
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        
+
         // Track hover for gizmo
         if (this.transformControl && this.transformControl.object) {
             const transformHelpers = [];
@@ -1150,34 +1196,106 @@ class StageApp {
                     transformHelpers.push(child);
                 }
             });
-            this.transformControl.isHovered = transformHelpers.length > 0 && 
+            this.transformControl.isHovered = transformHelpers.length > 0 &&
                 this.raycaster.intersectObjects(transformHelpers, true).length > 0;
         }
-        
-        // Track hover for scene objects
-        const allSceneObjects = [];
-        this.scene.traverse((obj) => {
-            if (obj.userData?.rigRef) return;
-            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging' || obj.userData.type === 'character')) {
-                allSceneObjects.push(obj);
-            }
-        });
-        
-        const intersects = this.raycaster.intersectObjects(allSceneObjects, true);
-        
+
+        // Track hover for scene objects. Groups (actors, props, architecture)
+        // are highlighted through their child meshes so they give real feedback.
+        const selectableObjects = this.getSelectableRoots();
+        const intersects = this.raycaster.intersectObjects(selectableObjects, true);
+
         if (intersects.length > 0) {
-            let target = intersects[0].object;
-            while (target.parent && target.parent !== this.scene) {
-                target = target.parent;
-            }
-            this.setHoverObject(target);
+            this.setHoverObject(this.resolveSelectableRoot(intersects[0].object));
             this.renderer.domElement.style.cursor = 'pointer';
         } else if (!this.transformControl?.isHovered) {
             this.setHoverObject(null);
-            this.renderer.domElement.style.cursor = 'default';
+            this.renderer.domElement.style.cursor = this.controlMode === 'camera' ? 'grab' : 'default';
         }
     }
-    
+
+    /** Root objects the user is allowed to select. */
+    getSelectableRoots() {
+        const selectableTypes = new Set(['shape', 'shape2d', 'light', 'figure', 'staging', 'character']);
+        const roots = [];
+        this.scene.traverse((obj) => {
+            if (obj.userData?.rigRef) return;
+            if (!obj.visible) return;
+            if (obj.userData?.type && selectableTypes.has(obj.userData.type)) roots.push(obj);
+        });
+        return roots;
+    }
+
+    /** Walk up from a raycast hit to the first selectable root object. */
+    resolveSelectableRoot(object) {
+        let target = object;
+        while (target && target !== this.scene) {
+            if (target.userData?.type && ['shape', 'shape2d', 'light', 'figure', 'staging', 'character'].includes(target.userData.type)) {
+                return target;
+            }
+            target = target.parent;
+        }
+        return null;
+    }
+
+    /**
+     * Pick the object under the pointer. Direct hits win, but a small screen-space
+     * fallback lets users click near small props instead of pixel-perfect on them.
+     */
+    pickSelectableRoot(event) {
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        const roots = this.getSelectableRoots();
+        const intersects = this.raycaster.intersectObjects(roots, true);
+        if (intersects.length > 0) {
+            return this.resolveSelectableRoot(intersects[0].object);
+        }
+
+        // No geometry directly under the cursor. Find the nearest selectable
+        // object whose projected bounding sphere is within a forgiving radius.
+        const box = new THREE.Box3();
+        const sphere = new THREE.Sphere();
+        const right = new THREE.Vector3();
+        const projectedCenter = new THREE.Vector3();
+        const projectedEdge = new THREE.Vector3();
+        this.camera.updateMatrixWorld();
+        right.setFromMatrixColumn(this.camera.matrixWorld, 0);
+
+        let best = null;
+        let bestDistance = Infinity;
+        for (const root of roots) {
+            if (!root.parent) continue;
+            box.setFromObject(root);
+            if (box.isEmpty()) continue;
+            box.getBoundingSphere(sphere);
+
+            projectedCenter.copy(sphere.center).project(this.camera);
+            if (projectedCenter.z < -1 || projectedCenter.z > 1) continue;
+
+            const centerX = (projectedCenter.x * 0.5 + 0.5) * rect.width + rect.left;
+            const centerY = (-projectedCenter.y * 0.5 + 0.5) * rect.height + rect.top;
+            const distance = Math.hypot(event.clientX - centerX, event.clientY - centerY);
+
+            projectedEdge.copy(sphere.center).addScaledVector(right, sphere.radius).project(this.camera);
+            const edgeX = (projectedEdge.x * 0.5 + 0.5) * rect.width + rect.left;
+            const edgeY = (-projectedEdge.y * 0.5 + 0.5) * rect.height + rect.top;
+            const screenRadius = Math.hypot(edgeX - centerX, edgeY - centerY);
+            // Large objects (floors, walls) are easy to hit directly; don't let
+            // the forgiveness radius grab them when the user clicks empty space.
+            if (screenRadius > 90) continue;
+            const threshold = Math.max(16, Math.min(screenRadius * 0.75, 56));
+
+            if (distance <= threshold && distance < bestDistance) {
+                best = root;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
     setHoverObject(obj) {
         if (obj === this.hoveredObject) return;
 
@@ -1185,46 +1303,62 @@ class StageApp {
         if (this.hoveredObject) this.restoreObjectColor(this.hoveredObject);
 
         this.hoveredObject = obj;
-
-        // Apply hover highlight. We use the emissive channel rather than lerping material.color,
-        // so the user's colour edits (Properties / palette) can never be overwritten by a stale
-        // "original colour" when the highlight is cleared.
-        if (obj && obj.isMesh) {
-            const materials = (Array.isArray(obj.material) ? obj.material : [obj.material]).filter(m => m && m.emissive);
-            if (!materials.length) return;
-            this.originalColors.set(obj.uuid, materials.map(material => ({
-                material,
-                emissive: material.emissive.getHex(),
-                intensity: material.emissiveIntensity
-            })));
-            materials.forEach(material => {
-                material.emissive.setHex(0xffffff);
-                material.emissiveIntensity = 0.15;
-            });
-        }
+        if (obj) this.applyHoverHighlight(obj);
     }
 
-    restoreObjectColor(obj) {
-        if (!obj || !this.originalColors.has(obj.uuid)) return;
-        this.originalColors.get(obj.uuid).forEach(({ material, emissive, intensity }) => {
-            material.emissive.setHex(emissive);
-            material.emissiveIntensity = intensity;
+    applyHoverHighlight(root) {
+        // Use the emissive channel so the user's colour edits are never overwritten.
+        // Save by material UUID: props/figures share materials between meshes.
+        root.traverse((child) => {
+            if (!child.isMesh) return;
+            const materials = (Array.isArray(child.material) ? child.material : [child.material])
+                .filter(material => material && material.emissive);
+            materials.forEach((material) => {
+                if (this.originalColors.has(material.uuid)) return;
+                this.originalColors.set(material.uuid, {
+                    material,
+                    emissive: material.emissive.getHex(),
+                    intensity: material.emissiveIntensity
+                });
+                material.emissive.setHex(0xffffff);
+                material.emissiveIntensity = 0.18;
+            });
         });
-        this.originalColors.delete(obj.uuid);
+    }
+
+    restoreObjectColor(root) {
+        if (!root) return;
+        root.traverse((child) => {
+            if (!child.isMesh) return;
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            materials.forEach((material) => {
+                if (!material) return;
+                const state = this.originalColors.get(material.uuid);
+                if (!state) return;
+                state.material.emissive.setHex(state.emissive);
+                state.material.emissiveIntensity = state.intensity;
+                this.originalColors.delete(material.uuid);
+            });
+        });
     }
 
     onPointerLeaveCanvas() {
         // Don't clear while dragging: OrbitControls/TransformControls capture the pointer.
         if (this._orbitDragging || this.isDraggingGizmo) return;
         this.setHoverObject(null);
-        if (this.renderer?.domElement) this.renderer.domElement.style.cursor = 'default';
+        if (this.renderer?.domElement) {
+            this.renderer.domElement.style.cursor = this.controlMode === 'camera' ? 'grab' : 'default';
+        }
     }
 
     endPointerGesture() {
         this._pressPos = null;
+        this._pendingClickSelection = null;
         if (this._orbitDragging) {
             this._orbitDragging = false;
-            if (this.renderer?.domElement) this.renderer.domElement.style.cursor = 'default';
+            if (this.renderer?.domElement) {
+                this.renderer.domElement.style.cursor = this.controlMode === 'camera' ? 'grab' : 'default';
+            }
         }
     }
 
@@ -1241,29 +1375,29 @@ class StageApp {
     // --- POINTER EVENTS ---
 
     onPointerUpForDeselect(event) {
-        if (event.button !== 0 || this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
+        if (event.button !== 0) return;
+
+        // In Camera mode a click on an object selects it and moves the user into
+        // Scene mode. A drag is navigation, so it never selects anything.
+        if (this._pendingClickSelection) {
+            const pending = this._pendingClickSelection;
+            this._pendingClickSelection = null;
+            const moved = Math.hypot(event.clientX - pending.x, event.clientY - pending.y);
+            if (moved <= 5 && pending.root?.parent) {
+                this.selectObject(pending.root);
+                this.setControlMode('scene');
+            }
             return;
         }
-        
-        const rect = this.renderer.domElement.getBoundingClientRect();
-        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        
-this.raycaster.setFromCamera(this.mouse, this.camera);
 
-        const allSceneObjects = [];
-        this.scene.traverse((obj) => {
-            if (obj.userData?.rigRef) return;
-            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging' || obj.userData.type === 'character')) {
-                allSceneObjects.push(obj);
-            }
-        });
+        if (this.gizmoDragJustEnded || this.isDraggingGizmo || this.transformControl?.isHovered) return;
+        // Don't clear a selection at the end of an orbit/pan gesture.
+        if (this._orbitDragging) return;
+        if (this._pressPos && Math.hypot(event.clientX - this._pressPos.x, event.clientY - this._pressPos.y) > 5) return;
+        if (!this.selectedObject) return;
 
-        const intersects = this.raycaster.intersectObjects(allSceneObjects, true);
-
-        if (intersects.length === 0) {
-            this.deselect();
-        }
+        const picked = this.pickSelectableRoot(event);
+        if (!picked) this.deselect();
     }
 
     onPointerDown(event) {
@@ -1293,15 +1427,15 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        
+
         // Check if pointer is over transform controls gizmo
         // Only check if an object is selected AND gizmo is visible AND attached
         let isOverGizmo = false;
-        if (this.transformControl && 
-            this.transformControl.object && 
+        if (this.transformControl &&
+            this.transformControl.object &&
             this.transformControl.visible &&
             this.transformControl.parent === this.scene) {
-            
+
             // Raycast to check if we're over the transform gizmo
             const transformHelpers = [];
             this.transformControl.traverse((child) => {
@@ -1309,46 +1443,33 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
                     transformHelpers.push(child);
                 }
             });
-            
+
             if (transformHelpers.length > 0) {
                 const helperIntersects = this.raycaster.intersectObjects(transformHelpers, true);
                 isOverGizmo = helperIntersects.length > 0;
             }
-            
+
             if (isOverGizmo) {
                 // Let TransformControls handle gizmo interaction without orbiting.
                 this.suppressOrbitForClick();
                 return;
             }
         }
-        
-// Not over gizmo, check if we clicked on an object
-        const allSceneObjects = [];
-        this.scene.traverse((obj) => {
-            if (obj.userData?.rigRef) return;
-            if (obj.userData && (obj.userData.type === 'shape' || obj.userData.type === 'shape2d' || obj.userData.type === 'light' || obj.userData.type === 'figure' || obj.userData.type === 'staging' || obj.userData.type === 'character')) {
-                allSceneObjects.push(obj);
-            }
-        });
 
-        const intersects = this.raycaster.intersectObjects(allSceneObjects, true);
+        const target = this.pickSelectableRoot(event);
 
-        if (intersects.length > 0) {
+        // Camera mode is for navigating. A click still tells us which object the
+        // user wants, but we only select on pointerup so drag-to-look is unaffected.
+        if (this.controlMode === 'camera') {
+            this._pendingClickSelection = target
+                ? { root: target, x: event.clientX, y: event.clientY }
+                : null;
+            return;
+        }
+
+        if (target) {
             this.suppressOrbitForClick();
-            let target = intersects[0].object;
-
-            // Walk up hierarchy to find root selectable object
-            while (target.parent && target.parent !== this.scene) {
-                if (target.userData && (target.userData.type === 'shape' || target.userData.type === 'shape2d' || target.userData.type === 'light' || target.userData.type === 'figure' || target.userData.type === 'staging' || target.userData.type === 'character')) {
-                    break;
-                }
-                target = target.parent;
-            }
-
-            // If clicking a different object, select it
-            if (target !== this.selectedObject) {
-                this.selectObject(target);
-            }
+            if (target !== this.selectedObject) this.selectObject(target);
         } else {
             // Clicking empty space clears the selection immediately, so the
             // next click can select a different object without fighting the
@@ -2026,6 +2147,22 @@ this.raycaster.setFromCamera(this.mouse, this.camera);
 
         // WASD move / QE rotate the editor camera in Camera mode.
         if (this.controlMode === 'camera') this.updateKeyboardCamera(delta);
+
+        // Keep the selection box tight around the selected object while it moves.
+        // Objects without renderable geometry (e.g. lights) have no box to show.
+        if (this.selectionOutline) {
+            if (this.selectedObject && this.selectedObject.parent) {
+                this.selectionBounds.setFromObject(this.selectedObject);
+                if (this.selectionBounds.isEmpty()) {
+                    this.selectionOutline.visible = false;
+                } else {
+                    this.selectionOutline.setFromObject(this.selectedObject);
+                    this.selectionOutline.visible = true;
+                }
+            } else {
+                this.selectionOutline.visible = false;
+            }
+        }
 
         // Update orbit controls (only if initialized and enabled)
         if (this.orbit && this.orbit.enabled) {

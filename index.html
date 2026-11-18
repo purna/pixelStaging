@@ -28,7 +28,7 @@
         }
     </style>
     <!-- External Styles -->
-    <link rel="stylesheet" href="css/styles.css?v=20261112-1">
+    <link rel="stylesheet" href="css/styles.css?v=20261118-1">
     <link rel="stylesheet" href="css/settings.css?v=20261111-2">
     <link rel="stylesheet" href="css/modal.css?v=20261112-1">
     <link rel="stylesheet" href="css/tutorials.css">
@@ -331,10 +331,24 @@ Open application settings"><i class="fas fa-cog"></i></div>
                 </select>
 
                 <!-- Camera / Scene controls -->
-                <label class="transform-space-toggle" title="Camera controls: drag to look. Scene controls: select and move objects.">
-                    <input type="checkbox" id="transform-space-checkbox" class="Checkbox" checked>
-                    <span class="toggle-label">Camera</span>
-                </label>
+                <div class="mode-switch" id="control-mode-switch" role="group" aria-label="Editing mode">
+                    <button type="button" class="mode-switch-btn" data-control-mode="scene" aria-pressed="false" title="Scene mode (Tab): select objects and edit them">
+                        <i class="fas fa-vector-square"></i><span>Scene</span>
+                    </button>
+                    <button type="button" class="mode-switch-btn active" data-control-mode="camera" aria-pressed="true" title="Camera mode (Tab): move and look around the view">
+                        <i class="fas fa-video"></i><span>Camera</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Always-visible mode badge so users know whether clicks edit or navigate -->
+            <div id="mode-banner" class="mode-banner" data-mode="camera" role="status" aria-live="polite">
+                <span class="mode-banner-icon"><i class="fas fa-video"></i></span>
+                <span class="mode-banner-copy">
+                    <strong class="mode-banner-title">Camera mode</strong>
+                    <span class="mode-banner-hint">View only — click an object to edit it, or press Tab</span>
+                </span>
+                <button type="button" class="mode-banner-action" id="mode-banner-action"><i class="fas fa-pen-ruler"></i> Edit scene <kbd>Tab</kbd></button>
             </div>
 
             <!-- Zoom Control -->
@@ -378,7 +392,7 @@ Open application settings"><i class="fas fa-cog"></i></div>
 
             <!-- Floating Info Box (bottom left) -->
             <div id="selection-info" class="selection-info-box hidden">
-                <p>Right click to deselect</p>
+                <p>Selected object — drag the gizmo to edit · right-click to deselect</p>
             </div>
 
             <!-- Floating Camera Controls (bottom right of canvas) -->
@@ -870,7 +884,7 @@ Open application settings"><i class="fas fa-cog"></i></div>
                         </div>
                         <div class="welcome-step">
                             <span class="welcome-step-number">2</span>
-                            <div><h3>Select and edit</h3><p>Switch to Scene mode, click an object and use the gizmo. Change position, rotation, scale, colour and materials in Properties. In Camera mode, use W A S D to move and Q E to rotate the view.</p></div>
+                            <div><h3>Select and edit</h3><p>Click an object to select it. If you are in Camera mode the app switches to Scene mode automatically, so you can use the gizmo. Change position, rotation, scale, colour and materials in Properties. Press Tab to switch between Scene and Camera controls.</p></div>
                         </div>
                         <div class="welcome-step">
                             <span class="welcome-step-number">3</span>
@@ -1578,7 +1592,7 @@ Open application settings"><i class="fas fa-cog"></i></div>
         </div>
 
         <!-- Self-contained app bundle: works over http:// and when index.html is opened directly. -->
-        <script src="dist/pixel3d.js?v=20261112-1"></script>
+        <script src="dist/pixel3d.js?v=20261118-1"></script>
 
         <!-- ANIMATION TIMELINE PANEL -->
         <div id="anim-panel" style="display:none;">

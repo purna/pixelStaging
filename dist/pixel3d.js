@@ -7596,7 +7596,7 @@
       }
     }
   }
-  var REVISION, MOUSE, TOUCH, CullFaceNone, CullFaceBack, CullFaceFront, PCFShadowMap, PCFSoftShadowMap, VSMShadowMap, FrontSide, BackSide, DoubleSide, NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending, CustomBlending, AddEquation, SubtractEquation, ReverseSubtractEquation, MinEquation, MaxEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, ConstantColorFactor, OneMinusConstantColorFactor, ConstantAlphaFactor, OneMinusConstantAlphaFactor, NeverDepth, AlwaysDepth, LessDepth, LessEqualDepth, EqualDepth, GreaterEqualDepth, GreaterDepth, NotEqualDepth, MultiplyOperation, MixOperation, AddOperation, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, CustomToneMapping, AgXToneMapping, AttachedBindMode, DetachedBindMode, UVMapping, CubeReflectionMapping, CubeRefractionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping, CubeUVReflectionMapping, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, AlphaFormat, RGBAFormat, LuminanceFormat, LuminanceAlphaFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, LoopOnce, LoopRepeat, LoopPingPong, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, AdditiveAnimationBlendMode, TrianglesDrawMode, TriangleStripDrawMode, TriangleFanDrawMode, LinearEncoding, sRGBEncoding, BasicDepthPacking, RGBADepthPacking, TangentSpaceNormalMap, ObjectSpaceNormalMap, NoColorSpace, SRGBColorSpace, LinearSRGBColorSpace, DisplayP3ColorSpace, LinearDisplayP3ColorSpace, LinearTransfer, SRGBTransfer, Rec709Primaries, P3Primaries, KeepStencilOp, AlwaysStencilFunc, NeverCompare, LessCompare, EqualCompare, LessEqualCompare, GreaterCompare, NotEqualCompare, GreaterEqualCompare, AlwaysCompare, StaticDrawUsage, GLSL3, _SRGBAFormat, WebGLCoordinateSystem, WebGPUCoordinateSystem, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Matrix3, _m3, _cache, LINEAR_SRGB_TO_LINEAR_DISPLAY_P3, LINEAR_DISPLAY_P3_TO_LINEAR_SRGB, COLOR_SPACES, SUPPORTED_WORKING_COLOR_SPACES, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Quaternion, Vector3, _vector$c, _quaternion$4, Box3, _points, _vector$b, _box$4, _v0$2, _v1$7, _v2$4, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _box$3, _v1$6, _v2$3, Sphere, _vector$a, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, Matrix4, _v1$5, _m1$2, _zero, _one, _x, _y, _z, _matrix$1, _quaternion$3, Euler, Layers, _object3DId, _v1$4, _q1, _m1$1, _target, _position$3, _scale$2, _quaternion$2, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, Object3D, _v0$1, _v1$3, _v2$2, _v3$1, _vab, _vac, _vbc, _vap, _vbp, _vcp, warnedGetUV, Triangle, _colorKeywords, _hslA, _hslB, Color, _color, _materialId, Material, MeshBasicMaterial, _vector$9, _vector2$1, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _id$2, _m1, _obj, _offset, _box$2, _boxMorphTargets, _vector$8, BufferGeometry, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA$1, _vB$1, _vC$1, _tempA, _morphA, _uvA$1, _uvB$1, _uvC$1, _normalA, _normalB, _normalC, _intersectionPoint, _intersectionPointWorld, Mesh, BoxGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, Camera, PerspectiveCamera, fov, aspect, CubeCamera, CubeTexture, WebGLCubeRenderTarget, _vector1, _vector2, _normalMatrix, Plane, _sphere$5, _vector$7, Frustum, PlaneGeometry, alphahash_fragment, alphahash_pars_fragment, alphamap_fragment, alphamap_pars_fragment, alphatest_fragment, alphatest_pars_fragment, aomap_fragment, aomap_pars_fragment, batching_pars_vertex, batching_vertex, begin_vertex, beginnormal_vertex, bsdfs, iridescence_fragment, bumpmap_pars_fragment, clipping_planes_fragment, clipping_planes_pars_fragment, clipping_planes_pars_vertex, clipping_planes_vertex, color_fragment, color_pars_fragment, color_pars_vertex, color_vertex, common, cube_uv_reflection_fragment, defaultnormal_vertex, displacementmap_pars_vertex, displacementmap_vertex, emissivemap_fragment, emissivemap_pars_fragment, colorspace_fragment, colorspace_pars_fragment, envmap_fragment, envmap_common_pars_fragment, envmap_pars_fragment, envmap_pars_vertex, envmap_vertex, fog_vertex, fog_pars_vertex, fog_fragment, fog_pars_fragment, gradientmap_pars_fragment, lightmap_fragment, lightmap_pars_fragment, lights_lambert_fragment, lights_lambert_pars_fragment, lights_pars_begin, envmap_physical_pars_fragment, lights_toon_fragment, lights_toon_pars_fragment, lights_phong_fragment, lights_phong_pars_fragment, lights_physical_fragment, lights_physical_pars_fragment, lights_fragment_begin, lights_fragment_maps, lights_fragment_end, logdepthbuf_fragment, logdepthbuf_pars_fragment, logdepthbuf_pars_vertex, logdepthbuf_vertex, map_fragment, map_pars_fragment, map_particle_fragment, map_particle_pars_fragment, metalnessmap_fragment, metalnessmap_pars_fragment, morphcolor_vertex, morphnormal_vertex, morphtarget_pars_vertex, morphtarget_vertex, normal_fragment_begin, normal_fragment_maps, normal_pars_fragment, normal_pars_vertex, normal_vertex, normalmap_pars_fragment, clearcoat_normal_fragment_begin, clearcoat_normal_fragment_maps, clearcoat_pars_fragment, iridescence_pars_fragment, opaque_fragment, packing, premultiplied_alpha_fragment, project_vertex, dithering_fragment, dithering_pars_fragment, roughnessmap_fragment, roughnessmap_pars_fragment, shadowmap_pars_fragment, shadowmap_pars_vertex, shadowmap_vertex, shadowmask_pars_fragment, skinbase_vertex, skinning_pars_vertex, skinning_vertex, skinnormal_vertex, specularmap_fragment, specularmap_pars_fragment, tonemapping_fragment, tonemapping_pars_fragment, transmission_fragment, transmission_pars_fragment, uv_pars_fragment, uv_pars_vertex, uv_vertex, worldpos_vertex, vertex$h, fragment$h, vertex$g, fragment$g, vertex$f, fragment$f, vertex$e, fragment$e, vertex$d, fragment$d, vertex$c, fragment$c, vertex$b, fragment$b, vertex$a, fragment$a, vertex$9, fragment$9, vertex$8, fragment$8, vertex$7, fragment$7, vertex$6, fragment$6, vertex$5, fragment$5, vertex$4, fragment$4, vertex$3, fragment$3, vertex$2, fragment$2, vertex$1, fragment$1, ShaderChunk, UniformsLib, ShaderLib, _rgb, OrthographicCamera, LOD_MIN, EXTRA_LOD_SIGMA, MAX_SAMPLES, _flatCamera, _clearColor, _oldTarget, _oldActiveCubeFace, _oldActiveMipmapLevel, PHI, INV_PHI, _axisDirections, PMREMGenerator, DepthTexture, emptyTexture, emptyShadowTexture, emptyArrayTexture, empty3dTexture, emptyCubeTexture, arrayCacheF32, arrayCacheI32, mat4array, mat3array, mat2array, SingleUniform, PureArrayUniform, StructuredUniform, RePathPart, WebGLUniforms, COMPLETION_STATUS_KHR, programIdCount, includePattern, shaderChunkMap, unrollLoopPattern, _id$1, WebGLShaderCache, WebGLShaderStage, nextVersion, MeshDepthMaterial, MeshDistanceMaterial, vertex, fragment, ArrayCamera, Group, _moveEvent, WebXRController, WebXRManager, WebGLRenderer, WebGL1Renderer, Fog, Scene, InterleavedBuffer, _vector$6, InterleavedBufferAttribute, _basePosition, _skinIndex, _skinWeight, _vector3, _matrix4, _vertex, _sphere$4, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$3, InstancedMesh, LineBasicMaterial, _start$1, _end$1, _inverseMatrix$1, _ray$1, _sphere$1, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray, _sphere, _position$2, Points, CompressedTexture, CanvasTexture, Curve, EllipseCurve, ArcCurve, tmp, px, py, pz, CatmullRomCurve3, CubicBezierCurve, CubicBezierCurve3, LineCurve, LineCurve3, QuadraticBezierCurve, QuadraticBezierCurve3, SplineCurve, Curves, CurvePath, Path, LatheGeometry, CapsuleGeometry, CircleGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, DodecahedronGeometry, _v0, _v1$1, _normal, _triangle, EdgesGeometry, Shape, Earcut, ShapeUtils, ExtrudeGeometry, WorldUVGenerator, IcosahedronGeometry, OctahedronGeometry, ShapeGeometry, SphereGeometry, TetrahedronGeometry, TorusGeometry, TorusKnotGeometry, MeshStandardMaterial, MeshPhysicalMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, SpotLightShadow, SpotLight, _projScreenMatrix, _lightPositionWorld, _lookTarget, PointLightShadow, PointLight, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, ImageBitmapLoader, Clock, PropertyMixer, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, AnimationAction, _controlInterpolantsResultBuffer, AnimationMixer, Uniform, Raycaster, Spherical, _vector$3, SpotLightHelper, PointLightHelper, _vector$1, _color1, _color2, HemisphereLightHelper, GridHelper, _v1, _v2, _v3, DirectionalLightHelper, AxesHelper;
+  var REVISION, MOUSE, TOUCH, CullFaceNone, CullFaceBack, CullFaceFront, PCFShadowMap, PCFSoftShadowMap, VSMShadowMap, FrontSide, BackSide, DoubleSide, NoBlending, NormalBlending, AdditiveBlending, SubtractiveBlending, MultiplyBlending, CustomBlending, AddEquation, SubtractEquation, ReverseSubtractEquation, MinEquation, MaxEquation, ZeroFactor, OneFactor, SrcColorFactor, OneMinusSrcColorFactor, SrcAlphaFactor, OneMinusSrcAlphaFactor, DstAlphaFactor, OneMinusDstAlphaFactor, DstColorFactor, OneMinusDstColorFactor, SrcAlphaSaturateFactor, ConstantColorFactor, OneMinusConstantColorFactor, ConstantAlphaFactor, OneMinusConstantAlphaFactor, NeverDepth, AlwaysDepth, LessDepth, LessEqualDepth, EqualDepth, GreaterEqualDepth, GreaterDepth, NotEqualDepth, MultiplyOperation, MixOperation, AddOperation, NoToneMapping, LinearToneMapping, ReinhardToneMapping, CineonToneMapping, ACESFilmicToneMapping, CustomToneMapping, AgXToneMapping, AttachedBindMode, DetachedBindMode, UVMapping, CubeReflectionMapping, CubeRefractionMapping, EquirectangularReflectionMapping, EquirectangularRefractionMapping, CubeUVReflectionMapping, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, ByteType, ShortType, UnsignedShortType, IntType, UnsignedIntType, FloatType, HalfFloatType, UnsignedShort4444Type, UnsignedShort5551Type, UnsignedInt248Type, AlphaFormat, RGBAFormat, LuminanceFormat, LuminanceAlphaFormat, DepthFormat, DepthStencilFormat, RedFormat, RedIntegerFormat, RGFormat, RGIntegerFormat, RGBAIntegerFormat, RGB_S3TC_DXT1_Format, RGBA_S3TC_DXT1_Format, RGBA_S3TC_DXT3_Format, RGBA_S3TC_DXT5_Format, RGB_PVRTC_4BPPV1_Format, RGB_PVRTC_2BPPV1_Format, RGBA_PVRTC_4BPPV1_Format, RGBA_PVRTC_2BPPV1_Format, RGB_ETC1_Format, RGB_ETC2_Format, RGBA_ETC2_EAC_Format, RGBA_ASTC_4x4_Format, RGBA_ASTC_5x4_Format, RGBA_ASTC_5x5_Format, RGBA_ASTC_6x5_Format, RGBA_ASTC_6x6_Format, RGBA_ASTC_8x5_Format, RGBA_ASTC_8x6_Format, RGBA_ASTC_8x8_Format, RGBA_ASTC_10x5_Format, RGBA_ASTC_10x6_Format, RGBA_ASTC_10x8_Format, RGBA_ASTC_10x10_Format, RGBA_ASTC_12x10_Format, RGBA_ASTC_12x12_Format, RGBA_BPTC_Format, RGB_BPTC_SIGNED_Format, RGB_BPTC_UNSIGNED_Format, RED_RGTC1_Format, SIGNED_RED_RGTC1_Format, RED_GREEN_RGTC2_Format, SIGNED_RED_GREEN_RGTC2_Format, LoopOnce, LoopRepeat, LoopPingPong, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, AdditiveAnimationBlendMode, TrianglesDrawMode, TriangleStripDrawMode, TriangleFanDrawMode, LinearEncoding, sRGBEncoding, BasicDepthPacking, RGBADepthPacking, TangentSpaceNormalMap, ObjectSpaceNormalMap, NoColorSpace, SRGBColorSpace, LinearSRGBColorSpace, DisplayP3ColorSpace, LinearDisplayP3ColorSpace, LinearTransfer, SRGBTransfer, Rec709Primaries, P3Primaries, KeepStencilOp, AlwaysStencilFunc, NeverCompare, LessCompare, EqualCompare, LessEqualCompare, GreaterCompare, NotEqualCompare, GreaterEqualCompare, AlwaysCompare, StaticDrawUsage, GLSL3, _SRGBAFormat, WebGLCoordinateSystem, WebGPUCoordinateSystem, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Matrix3, _m3, _cache, LINEAR_SRGB_TO_LINEAR_DISPLAY_P3, LINEAR_DISPLAY_P3_TO_LINEAR_SRGB, COLOR_SPACES, SUPPORTED_WORKING_COLOR_SPACES, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, Texture, Vector4, RenderTarget, WebGLRenderTarget, DataArrayTexture, Data3DTexture, Quaternion, Vector3, _vector$c, _quaternion$4, Box3, _points, _vector$b, _box$4, _v0$2, _v1$7, _v2$4, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _box$3, _v1$6, _v2$3, Sphere, _vector$a, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, Matrix4, _v1$5, _m1$2, _zero, _one, _x, _y, _z, _matrix$1, _quaternion$3, Euler, Layers, _object3DId, _v1$4, _q1, _m1$1, _target, _position$3, _scale$2, _quaternion$2, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, Object3D, _v0$1, _v1$3, _v2$2, _v3$1, _vab, _vac, _vbc, _vap, _vbp, _vcp, warnedGetUV, Triangle, _colorKeywords, _hslA, _hslB, Color, _color, _materialId, Material, MeshBasicMaterial, _vector$9, _vector2$1, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _id$2, _m1, _obj, _offset, _box$2, _boxMorphTargets, _vector$8, BufferGeometry, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA$1, _vB$1, _vC$1, _tempA, _morphA, _uvA$1, _uvB$1, _uvC$1, _normalA, _normalB, _normalC, _intersectionPoint, _intersectionPointWorld, Mesh, BoxGeometry, UniformsUtils, default_vertex, default_fragment, ShaderMaterial, Camera, PerspectiveCamera, fov, aspect, CubeCamera, CubeTexture, WebGLCubeRenderTarget, _vector1, _vector2, _normalMatrix, Plane, _sphere$5, _vector$7, Frustum, PlaneGeometry, alphahash_fragment, alphahash_pars_fragment, alphamap_fragment, alphamap_pars_fragment, alphatest_fragment, alphatest_pars_fragment, aomap_fragment, aomap_pars_fragment, batching_pars_vertex, batching_vertex, begin_vertex, beginnormal_vertex, bsdfs, iridescence_fragment, bumpmap_pars_fragment, clipping_planes_fragment, clipping_planes_pars_fragment, clipping_planes_pars_vertex, clipping_planes_vertex, color_fragment, color_pars_fragment, color_pars_vertex, color_vertex, common, cube_uv_reflection_fragment, defaultnormal_vertex, displacementmap_pars_vertex, displacementmap_vertex, emissivemap_fragment, emissivemap_pars_fragment, colorspace_fragment, colorspace_pars_fragment, envmap_fragment, envmap_common_pars_fragment, envmap_pars_fragment, envmap_pars_vertex, envmap_vertex, fog_vertex, fog_pars_vertex, fog_fragment, fog_pars_fragment, gradientmap_pars_fragment, lightmap_fragment, lightmap_pars_fragment, lights_lambert_fragment, lights_lambert_pars_fragment, lights_pars_begin, envmap_physical_pars_fragment, lights_toon_fragment, lights_toon_pars_fragment, lights_phong_fragment, lights_phong_pars_fragment, lights_physical_fragment, lights_physical_pars_fragment, lights_fragment_begin, lights_fragment_maps, lights_fragment_end, logdepthbuf_fragment, logdepthbuf_pars_fragment, logdepthbuf_pars_vertex, logdepthbuf_vertex, map_fragment, map_pars_fragment, map_particle_fragment, map_particle_pars_fragment, metalnessmap_fragment, metalnessmap_pars_fragment, morphcolor_vertex, morphnormal_vertex, morphtarget_pars_vertex, morphtarget_vertex, normal_fragment_begin, normal_fragment_maps, normal_pars_fragment, normal_pars_vertex, normal_vertex, normalmap_pars_fragment, clearcoat_normal_fragment_begin, clearcoat_normal_fragment_maps, clearcoat_pars_fragment, iridescence_pars_fragment, opaque_fragment, packing, premultiplied_alpha_fragment, project_vertex, dithering_fragment, dithering_pars_fragment, roughnessmap_fragment, roughnessmap_pars_fragment, shadowmap_pars_fragment, shadowmap_pars_vertex, shadowmap_vertex, shadowmask_pars_fragment, skinbase_vertex, skinning_pars_vertex, skinning_vertex, skinnormal_vertex, specularmap_fragment, specularmap_pars_fragment, tonemapping_fragment, tonemapping_pars_fragment, transmission_fragment, transmission_pars_fragment, uv_pars_fragment, uv_pars_vertex, uv_vertex, worldpos_vertex, vertex$h, fragment$h, vertex$g, fragment$g, vertex$f, fragment$f, vertex$e, fragment$e, vertex$d, fragment$d, vertex$c, fragment$c, vertex$b, fragment$b, vertex$a, fragment$a, vertex$9, fragment$9, vertex$8, fragment$8, vertex$7, fragment$7, vertex$6, fragment$6, vertex$5, fragment$5, vertex$4, fragment$4, vertex$3, fragment$3, vertex$2, fragment$2, vertex$1, fragment$1, ShaderChunk, UniformsLib, ShaderLib, _rgb, OrthographicCamera, LOD_MIN, EXTRA_LOD_SIGMA, MAX_SAMPLES, _flatCamera, _clearColor, _oldTarget, _oldActiveCubeFace, _oldActiveMipmapLevel, PHI, INV_PHI, _axisDirections, PMREMGenerator, DepthTexture, emptyTexture, emptyShadowTexture, emptyArrayTexture, empty3dTexture, emptyCubeTexture, arrayCacheF32, arrayCacheI32, mat4array, mat3array, mat2array, SingleUniform, PureArrayUniform, StructuredUniform, RePathPart, WebGLUniforms, COMPLETION_STATUS_KHR, programIdCount, includePattern, shaderChunkMap, unrollLoopPattern, _id$1, WebGLShaderCache, WebGLShaderStage, nextVersion, MeshDepthMaterial, MeshDistanceMaterial, vertex, fragment, ArrayCamera, Group, _moveEvent, WebXRController, WebXRManager, WebGLRenderer, WebGL1Renderer, Fog, Scene, InterleavedBuffer, _vector$6, InterleavedBufferAttribute, _basePosition, _skinIndex, _skinWeight, _vector3, _matrix4, _vertex, _sphere$4, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$3, InstancedMesh, LineBasicMaterial, _start$1, _end$1, _inverseMatrix$1, _ray$1, _sphere$1, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray, _sphere, _position$2, Points, CompressedTexture, CanvasTexture, Curve, EllipseCurve, ArcCurve, tmp, px, py, pz, CatmullRomCurve3, CubicBezierCurve, CubicBezierCurve3, LineCurve, LineCurve3, QuadraticBezierCurve, QuadraticBezierCurve3, SplineCurve, Curves, CurvePath, Path, LatheGeometry, CapsuleGeometry, CircleGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, DodecahedronGeometry, _v0, _v1$1, _normal, _triangle, EdgesGeometry, Shape, Earcut, ShapeUtils, ExtrudeGeometry, WorldUVGenerator, IcosahedronGeometry, OctahedronGeometry, ShapeGeometry, SphereGeometry, TetrahedronGeometry, TorusGeometry, TorusKnotGeometry, MeshStandardMaterial, MeshPhysicalMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix$1, _lightPositionWorld$1, _lookTarget$1, LightShadow, SpotLightShadow, SpotLight, _projScreenMatrix, _lightPositionWorld, _lookTarget, PointLightShadow, PointLight, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, ImageBitmapLoader, Clock, PropertyMixer, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, AnimationAction, _controlInterpolantsResultBuffer, AnimationMixer, Uniform, Raycaster, Spherical, _vector$3, SpotLightHelper, PointLightHelper, _vector$1, _color1, _color2, HemisphereLightHelper, GridHelper, _v1, _v2, _v3, DirectionalLightHelper, _box, BoxHelper, AxesHelper;
   var init_three_module = __esm({
     "node_modules/three/build/three.module.js"() {
       REVISION = "160";
@@ -25397,6 +25397,74 @@
           }
           this.targetLine.lookAt(_v2);
           this.targetLine.scale.z = _v3.length();
+        }
+      };
+      _box = /* @__PURE__ */ new Box3();
+      BoxHelper = class extends LineSegments {
+        constructor(object, color = 16776960) {
+          const indices = new Uint16Array([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7]);
+          const positions = new Float32Array(8 * 3);
+          const geometry = new BufferGeometry();
+          geometry.setIndex(new BufferAttribute(indices, 1));
+          geometry.setAttribute("position", new BufferAttribute(positions, 3));
+          super(geometry, new LineBasicMaterial({ color, toneMapped: false }));
+          this.object = object;
+          this.type = "BoxHelper";
+          this.matrixAutoUpdate = false;
+          this.update();
+        }
+        update(object) {
+          if (object !== void 0) {
+            console.warn("THREE.BoxHelper: .update() has no longer arguments.");
+          }
+          if (this.object !== void 0) {
+            _box.setFromObject(this.object);
+          }
+          if (_box.isEmpty()) return;
+          const min = _box.min;
+          const max = _box.max;
+          const position = this.geometry.attributes.position;
+          const array = position.array;
+          array[0] = max.x;
+          array[1] = max.y;
+          array[2] = max.z;
+          array[3] = min.x;
+          array[4] = max.y;
+          array[5] = max.z;
+          array[6] = min.x;
+          array[7] = min.y;
+          array[8] = max.z;
+          array[9] = max.x;
+          array[10] = min.y;
+          array[11] = max.z;
+          array[12] = max.x;
+          array[13] = max.y;
+          array[14] = min.z;
+          array[15] = min.x;
+          array[16] = max.y;
+          array[17] = min.z;
+          array[18] = min.x;
+          array[19] = min.y;
+          array[20] = min.z;
+          array[21] = max.x;
+          array[22] = min.y;
+          array[23] = min.z;
+          position.needsUpdate = true;
+          this.geometry.computeBoundingSphere();
+        }
+        setFromObject(object) {
+          this.object = object;
+          this.update();
+          return this;
+        }
+        copy(source, recursive) {
+          super.copy(source, recursive);
+          this.object = source.object;
+          return this;
+        }
+        dispose() {
+          this.geometry.dispose();
+          this.material.dispose();
         }
       };
       AxesHelper = class extends LineSegments {
@@ -43781,7 +43849,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               position: "center",
               arrowPosition: "none",
               heading: "3. Move things",
-              content: "Switch controls with Tab or the Camera/Scene toggle. In Scene mode, click the highlighted actor, then drag the coloured gizmo arrows. G moves, R rotates and S scales. Right-click empty space to deselect.",
+              content: "Switch controls with Tab or the Scene/Camera switch at the top of the canvas. In Scene mode, click the highlighted actor, then drag the coloured gizmo arrows. G moves, R rotates and S scales. Clicking an object in Camera mode selects it and switches you to Scene mode automatically.",
               demo: "move",
               showNext: true,
               showSkip: true
@@ -43918,7 +43986,7 @@ Use sensible positions and scales; place objects on or above the floor. Do not i
               position: "center",
               arrowPosition: "none",
               heading: "Scene Navigation",
-              content: "Switch between Camera and Scene controls with Tab or the Camera/Scene toggle. In Camera mode use W A S D to move and Q E to rotate, or drag empty space to orbit. Right-drag pans and the wheel zooms. F, Shift+S, B and T give front, side, back and top views.",
+              content: "Switch between Camera and Scene controls with Tab or the Scene/Camera switch at the top of the canvas. The mode badge always shows which one is active. In Camera mode use W A S D to move and Q E to rotate, or drag empty space to orbit. Right-drag pans and the wheel zooms. F, Shift+S, B and T give front, side, back and top views.",
               demo: "camera",
               showNext: true,
               showSkip: true
@@ -49229,6 +49297,9 @@ ${xrefOffset}
       this.isDraggingGizmo = false;
       this.gizmoDragJustEnded = false;
       this.originalColors = /* @__PURE__ */ new Map();
+      this.selectionOutline = null;
+      this.selectionBounds = new Box3();
+      this._pendingClickSelection = null;
       this.controlMode = "camera";
       this.cameraGuidesEnabled = false;
       this.cameraNavKeys = /* @__PURE__ */ new Set();
@@ -49351,14 +49422,19 @@ ${xrefOffset}
       window.addEventListener("pointerup", () => this.endPointerGesture());
       window.addEventListener("blur", () => this.endPointerGesture());
       this.renderer.domElement.addEventListener("contextmenu", (e) => this.onRightClick(e));
-      const spaceCheckbox = document.getElementById("transform-space-checkbox");
-      if (spaceCheckbox) {
-        spaceCheckbox.addEventListener("change", (e) => {
-          this.toggleTransformSpace(e.target.checked);
-        });
-        const spaceLabel = spaceCheckbox.closest(".transform-space-toggle");
-        if (spaceLabel) spaceLabel.style.cursor = "pointer";
-      }
+      document.querySelectorAll("[data-control-mode]").forEach((button) => {
+        button.addEventListener("click", () => this.setControlMode(button.dataset.controlMode));
+      });
+      document.getElementById("mode-banner-action")?.addEventListener("click", () => {
+        this.setControlMode(this.controlMode === "camera" ? "scene" : "camera");
+      });
+      this.selectionOutline = new BoxHelper(new Object3D(), 55807);
+      this.selectionOutline.visible = false;
+      this.selectionOutline.renderOrder = 998;
+      this.selectionOutline.material.depthTest = false;
+      this.selectionOutline.material.transparent = true;
+      this.selectionOutline.material.opacity = 0.95;
+      this.scene.add(this.selectionOutline);
       this.setGridVisible(true);
       this.setAxesVisible(true);
       this.addDefaultTestObjects();
@@ -49684,6 +49760,7 @@ ${xrefOffset}
       const previousMode = this.controlMode;
       this.controlMode = mode === "scene" ? "scene" : "camera";
       const modeChanged = previousMode !== this.controlMode;
+      this._pendingClickSelection = null;
       if (this.controlMode === "camera") this.cameraNavKeys.clear();
       if (this.orbit) {
         this.orbit.enabled = true;
@@ -49721,19 +49798,39 @@ ${xrefOffset}
       if (this.controlMode === "camera" && this.staging?.shotManager) {
         this.staging.shotManager.previewActive = false;
       }
-      const checkbox = document.getElementById("transform-space-checkbox");
-      const label = document.querySelector(".transform-space-toggle .toggle-label");
-      if (checkbox) checkbox.checked = this.controlMode === "camera";
-      if (label) label.textContent = this.controlMode === "camera" ? "Camera" : "Scene";
-      document.getElementById("camera-nudge")?.classList.toggle("hidden", this.controlMode !== "camera");
+      const isCameraMode = this.controlMode === "camera";
+      document.querySelectorAll("[data-control-mode]").forEach((button) => {
+        const active = button.dataset.controlMode === this.controlMode;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      document.body.dataset.controlMode = this.controlMode;
+      const banner = document.getElementById("mode-banner");
+      const bannerIcon = banner?.querySelector(".mode-banner-icon i");
+      const bannerTitle = banner?.querySelector(".mode-banner-title");
+      const bannerHint = banner?.querySelector(".mode-banner-hint");
+      const bannerAction = document.getElementById("mode-banner-action");
+      if (banner) banner.dataset.mode = this.controlMode;
+      if (bannerIcon) bannerIcon.className = isCameraMode ? "fas fa-video" : "fas fa-vector-square";
+      if (bannerTitle) bannerTitle.textContent = isCameraMode ? "Camera mode" : "Scene mode";
+      if (bannerHint) {
+        bannerHint.textContent = isCameraMode ? "View only \u2014 click an object to edit it, or press Tab" : "Click an object to select \xB7 drag the gizmo to move it";
+      }
+      if (bannerAction) {
+        bannerAction.innerHTML = isCameraMode ? '<i class="fas fa-pen-ruler"></i> Edit scene <kbd>Tab</kbd>' : '<i class="fas fa-video"></i> Move camera <kbd>Tab</kbd>';
+      }
+      if (this.selectionOutline?.material?.color) {
+        this.selectionOutline.material.color.setHex(isCameraMode ? 16756768 : 55807);
+      }
+      document.getElementById("camera-nudge")?.classList.toggle("hidden", !isCameraMode);
       const timeline = document.getElementById("shot-timeline");
-      if (timeline) timeline.style.display = this.controlMode === "camera" ? "flex" : "none";
-      if (this.controlMode === "camera") this.staging?.shotManager?.refreshUI?.();
-      document.getElementById("selection-info")?.classList.toggle("hidden", !(this.selectedObject && this.controlMode === "scene"));
-      this.renderer?.domElement && (this.renderer.domElement.style.cursor = "default");
+      if (timeline) timeline.style.display = isCameraMode ? "flex" : "none";
+      if (isCameraMode) this.staging?.shotManager?.refreshUI?.();
+      document.getElementById("selection-info")?.classList.toggle("hidden", !(this.selectedObject && !isCameraMode));
+      this.renderer?.domElement && (this.renderer.domElement.style.cursor = isCameraMode ? "grab" : "default");
       if (modeChanged && !silent) {
         this.ui?.showNotification?.(
-          this.controlMode === "camera" ? "Camera mode: drag to look, WASD to move, Q/E to rotate" : "Scene mode: click an object and use the gizmo to move it",
+          isCameraMode ? "Camera mode \u2014 view only. Click an object or press Tab to edit the scene." : "Scene mode \u2014 click an object, then drag the gizmo to edit it.",
           "info"
         );
       }
@@ -50089,6 +50186,7 @@ ${xrefOffset}
       if (this._pressPos && event.buttons & 1 && this.controlMode === "camera") {
         if (!this._orbitDragging && Math.hypot(event.clientX - this._pressPos.x, event.clientY - this._pressPos.y) > 4) {
           this._orbitDragging = true;
+          this._pendingClickSelection = null;
           this.setHoverObject(null);
         }
         if (this._orbitDragging) {
@@ -50109,62 +50207,136 @@ ${xrefOffset}
         });
         this.transformControl.isHovered = transformHelpers.length > 0 && this.raycaster.intersectObjects(transformHelpers, true).length > 0;
       }
-      const allSceneObjects = [];
-      this.scene.traverse((obj) => {
-        if (obj.userData?.rigRef) return;
-        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging" || obj.userData.type === "character")) {
-          allSceneObjects.push(obj);
-        }
-      });
-      const intersects2 = this.raycaster.intersectObjects(allSceneObjects, true);
+      const selectableObjects = this.getSelectableRoots();
+      const intersects2 = this.raycaster.intersectObjects(selectableObjects, true);
       if (intersects2.length > 0) {
-        let target = intersects2[0].object;
-        while (target.parent && target.parent !== this.scene) {
-          target = target.parent;
-        }
-        this.setHoverObject(target);
+        this.setHoverObject(this.resolveSelectableRoot(intersects2[0].object));
         this.renderer.domElement.style.cursor = "pointer";
       } else if (!this.transformControl?.isHovered) {
         this.setHoverObject(null);
-        this.renderer.domElement.style.cursor = "default";
+        this.renderer.domElement.style.cursor = this.controlMode === "camera" ? "grab" : "default";
       }
+    }
+    /** Root objects the user is allowed to select. */
+    getSelectableRoots() {
+      const selectableTypes = /* @__PURE__ */ new Set(["shape", "shape2d", "light", "figure", "staging", "character"]);
+      const roots = [];
+      this.scene.traverse((obj) => {
+        if (obj.userData?.rigRef) return;
+        if (!obj.visible) return;
+        if (obj.userData?.type && selectableTypes.has(obj.userData.type)) roots.push(obj);
+      });
+      return roots;
+    }
+    /** Walk up from a raycast hit to the first selectable root object. */
+    resolveSelectableRoot(object) {
+      let target = object;
+      while (target && target !== this.scene) {
+        if (target.userData?.type && ["shape", "shape2d", "light", "figure", "staging", "character"].includes(target.userData.type)) {
+          return target;
+        }
+        target = target.parent;
+      }
+      return null;
+    }
+    /**
+     * Pick the object under the pointer. Direct hits win, but a small screen-space
+     * fallback lets users click near small props instead of pixel-perfect on them.
+     */
+    pickSelectableRoot(event) {
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
+      this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const roots = this.getSelectableRoots();
+      const intersects2 = this.raycaster.intersectObjects(roots, true);
+      if (intersects2.length > 0) {
+        return this.resolveSelectableRoot(intersects2[0].object);
+      }
+      const box = new Box3();
+      const sphere = new Sphere();
+      const right = new Vector3();
+      const projectedCenter = new Vector3();
+      const projectedEdge = new Vector3();
+      this.camera.updateMatrixWorld();
+      right.setFromMatrixColumn(this.camera.matrixWorld, 0);
+      let best = null;
+      let bestDistance = Infinity;
+      for (const root of roots) {
+        if (!root.parent) continue;
+        box.setFromObject(root);
+        if (box.isEmpty()) continue;
+        box.getBoundingSphere(sphere);
+        projectedCenter.copy(sphere.center).project(this.camera);
+        if (projectedCenter.z < -1 || projectedCenter.z > 1) continue;
+        const centerX = (projectedCenter.x * 0.5 + 0.5) * rect.width + rect.left;
+        const centerY = (-projectedCenter.y * 0.5 + 0.5) * rect.height + rect.top;
+        const distance = Math.hypot(event.clientX - centerX, event.clientY - centerY);
+        projectedEdge.copy(sphere.center).addScaledVector(right, sphere.radius).project(this.camera);
+        const edgeX = (projectedEdge.x * 0.5 + 0.5) * rect.width + rect.left;
+        const edgeY = (-projectedEdge.y * 0.5 + 0.5) * rect.height + rect.top;
+        const screenRadius = Math.hypot(edgeX - centerX, edgeY - centerY);
+        if (screenRadius > 90) continue;
+        const threshold = Math.max(16, Math.min(screenRadius * 0.75, 56));
+        if (distance <= threshold && distance < bestDistance) {
+          best = root;
+          bestDistance = distance;
+        }
+      }
+      return best;
     }
     setHoverObject(obj) {
       if (obj === this.hoveredObject) return;
       if (this.hoveredObject) this.restoreObjectColor(this.hoveredObject);
       this.hoveredObject = obj;
-      if (obj && obj.isMesh) {
-        const materials = (Array.isArray(obj.material) ? obj.material : [obj.material]).filter((m) => m && m.emissive);
-        if (!materials.length) return;
-        this.originalColors.set(obj.uuid, materials.map((material) => ({
-          material,
-          emissive: material.emissive.getHex(),
-          intensity: material.emissiveIntensity
-        })));
-        materials.forEach((material) => {
-          material.emissive.setHex(16777215);
-          material.emissiveIntensity = 0.15;
-        });
-      }
+      if (obj) this.applyHoverHighlight(obj);
     }
-    restoreObjectColor(obj) {
-      if (!obj || !this.originalColors.has(obj.uuid)) return;
-      this.originalColors.get(obj.uuid).forEach(({ material, emissive, intensity }) => {
-        material.emissive.setHex(emissive);
-        material.emissiveIntensity = intensity;
+    applyHoverHighlight(root) {
+      root.traverse((child) => {
+        if (!child.isMesh) return;
+        const materials = (Array.isArray(child.material) ? child.material : [child.material]).filter((material) => material && material.emissive);
+        materials.forEach((material) => {
+          if (this.originalColors.has(material.uuid)) return;
+          this.originalColors.set(material.uuid, {
+            material,
+            emissive: material.emissive.getHex(),
+            intensity: material.emissiveIntensity
+          });
+          material.emissive.setHex(16777215);
+          material.emissiveIntensity = 0.18;
+        });
       });
-      this.originalColors.delete(obj.uuid);
+    }
+    restoreObjectColor(root) {
+      if (!root) return;
+      root.traverse((child) => {
+        if (!child.isMesh) return;
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((material) => {
+          if (!material) return;
+          const state = this.originalColors.get(material.uuid);
+          if (!state) return;
+          state.material.emissive.setHex(state.emissive);
+          state.material.emissiveIntensity = state.intensity;
+          this.originalColors.delete(material.uuid);
+        });
+      });
     }
     onPointerLeaveCanvas() {
       if (this._orbitDragging || this.isDraggingGizmo) return;
       this.setHoverObject(null);
-      if (this.renderer?.domElement) this.renderer.domElement.style.cursor = "default";
+      if (this.renderer?.domElement) {
+        this.renderer.domElement.style.cursor = this.controlMode === "camera" ? "grab" : "default";
+      }
     }
     endPointerGesture() {
       this._pressPos = null;
+      this._pendingClickSelection = null;
       if (this._orbitDragging) {
         this._orbitDragging = false;
-        if (this.renderer?.domElement) this.renderer.domElement.style.cursor = "default";
+        if (this.renderer?.domElement) {
+          this.renderer.domElement.style.cursor = this.controlMode === "camera" ? "grab" : "default";
+        }
       }
     }
     onMouseUp(event) {
@@ -50177,24 +50349,23 @@ ${xrefOffset}
     }
     // --- POINTER EVENTS ---
     onPointerUpForDeselect(event) {
-      if (event.button !== 0 || this.gizmoDragJustEnded || this.isDraggingGizmo || !this.selectedObject || this.transformControl.isHovered) {
+      if (event.button !== 0) return;
+      if (this._pendingClickSelection) {
+        const pending = this._pendingClickSelection;
+        this._pendingClickSelection = null;
+        const moved = Math.hypot(event.clientX - pending.x, event.clientY - pending.y);
+        if (moved <= 5 && pending.root?.parent) {
+          this.selectObject(pending.root);
+          this.setControlMode("scene");
+        }
         return;
       }
-      const rect = this.renderer.domElement.getBoundingClientRect();
-      this.mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
-      this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      const allSceneObjects = [];
-      this.scene.traverse((obj) => {
-        if (obj.userData?.rigRef) return;
-        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging" || obj.userData.type === "character")) {
-          allSceneObjects.push(obj);
-        }
-      });
-      const intersects2 = this.raycaster.intersectObjects(allSceneObjects, true);
-      if (intersects2.length === 0) {
-        this.deselect();
-      }
+      if (this.gizmoDragJustEnded || this.isDraggingGizmo || this.transformControl?.isHovered) return;
+      if (this._orbitDragging) return;
+      if (this._pressPos && Math.hypot(event.clientX - this._pressPos.x, event.clientY - this._pressPos.y) > 5) return;
+      if (!this.selectedObject) return;
+      const picked = this.pickSelectableRoot(event);
+      if (!picked) this.deselect();
     }
     onPointerDown(event) {
       if (this.keyframeControls?.axis || this.poseControls?.axis) {
@@ -50232,26 +50403,14 @@ ${xrefOffset}
           return;
         }
       }
-      const allSceneObjects = [];
-      this.scene.traverse((obj) => {
-        if (obj.userData?.rigRef) return;
-        if (obj.userData && (obj.userData.type === "shape" || obj.userData.type === "shape2d" || obj.userData.type === "light" || obj.userData.type === "figure" || obj.userData.type === "staging" || obj.userData.type === "character")) {
-          allSceneObjects.push(obj);
-        }
-      });
-      const intersects2 = this.raycaster.intersectObjects(allSceneObjects, true);
-      if (intersects2.length > 0) {
+      const target = this.pickSelectableRoot(event);
+      if (this.controlMode === "camera") {
+        this._pendingClickSelection = target ? { root: target, x: event.clientX, y: event.clientY } : null;
+        return;
+      }
+      if (target) {
         this.suppressOrbitForClick();
-        let target = intersects2[0].object;
-        while (target.parent && target.parent !== this.scene) {
-          if (target.userData && (target.userData.type === "shape" || target.userData.type === "shape2d" || target.userData.type === "light" || target.userData.type === "figure" || target.userData.type === "staging" || target.userData.type === "character")) {
-            break;
-          }
-          target = target.parent;
-        }
-        if (target !== this.selectedObject) {
-          this.selectObject(target);
-        }
+        if (target !== this.selectedObject) this.selectObject(target);
       } else {
         this.deselect();
       }
@@ -50795,6 +50954,19 @@ ${xrefOffset}
       });
       this.characterManager.update(delta);
       if (this.controlMode === "camera") this.updateKeyboardCamera(delta);
+      if (this.selectionOutline) {
+        if (this.selectedObject && this.selectedObject.parent) {
+          this.selectionBounds.setFromObject(this.selectedObject);
+          if (this.selectionBounds.isEmpty()) {
+            this.selectionOutline.visible = false;
+          } else {
+            this.selectionOutline.setFromObject(this.selectedObject);
+            this.selectionOutline.visible = true;
+          }
+        } else {
+          this.selectionOutline.visible = false;
+        }
+      }
       if (this.orbit && this.orbit.enabled) {
         this.orbit.update();
       }

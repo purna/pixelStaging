@@ -53,7 +53,7 @@ class TutorialConfig {
                         position: 'center',
                         arrowPosition: 'none',
                         heading: '3. Move things',
-                        content: 'Switch controls with Tab or the Camera/Scene toggle. In Scene mode, click the highlighted actor, then drag the coloured gizmo arrows. G moves, R rotates and S scales. Right-click empty space to deselect.',
+                        content: 'Switch controls with Tab or the Scene/Camera switch at the top of the canvas. In Scene mode, click the highlighted actor, then drag the coloured gizmo arrows. G moves, R rotates and S scales. Clicking an object in Camera mode selects it and switches you to Scene mode automatically.',
                         demo: 'move',
                         showNext: true,
                         showSkip: true
@@ -190,7 +190,7 @@ class TutorialConfig {
                         position: 'center',
                         arrowPosition: 'none',
                         heading: 'Scene Navigation',
-                        content: 'Switch between Camera and Scene controls with Tab or the Camera/Scene toggle. In Camera mode use W A S D to move and Q E to rotate, or drag empty space to orbit. Right-drag pans and the wheel zooms. F, Shift+S, B and T give front, side, back and top views.',
+                        content: 'Switch between Camera and Scene controls with Tab or the Scene/Camera switch at the top of the canvas. The mode badge always shows which one is active. In Camera mode use W A S D to move and Q E to rotate, or drag empty space to orbit. Right-drag pans and the wheel zooms. F, Shift+S, B and T give front, side, back and top views.',
                         demo: 'camera',
                         showNext: true,
                         showSkip: true
