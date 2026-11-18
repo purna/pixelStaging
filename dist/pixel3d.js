@@ -47050,7 +47050,8 @@ ${elements.join("\n")}
       this.playing ? this.pause() : this.playAll();
     }
     seek(t) {
-      this.currentTime = clamp2(t, 0, this.duration);
+      const max = this.duration;
+      this.currentTime = Math.max(0, Math.min(Number.isFinite(t) ? t : 0, max));
       this.previewActive = true;
       if (this.ui) this.ui.updateScrubber();
       this.updatePathPreview();
