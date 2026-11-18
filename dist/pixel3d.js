@@ -50008,6 +50008,18 @@ ${xrefOffset}
       const guides = document.getElementById("camera-guides");
       if (!guides) return;
       if (!viewport) {
+        const timeline = document.getElementById("shot-timeline");
+        const timelineVisible = timeline && getComputedStyle(timeline).display !== "none" && timeline.offsetHeight > 0;
+        if (timelineVisible && this.renderer) {
+          const width = this.renderer.domElement.clientWidth;
+          const height = Math.max(1, this.renderer.domElement.clientHeight - timeline.offsetHeight);
+          guides.style.inset = "auto";
+          guides.style.left = "0px";
+          guides.style.top = "0px";
+          guides.style.width = `${width}px`;
+          guides.style.height = `${height}px`;
+          return;
+        }
         guides.style.inset = "";
         guides.style.left = "";
         guides.style.top = "";
