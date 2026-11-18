@@ -1352,6 +1352,7 @@ class StageApp {
      * fallback lets users click near small props instead of pixel-perfect on them.
      */
     pickSelectableRoot(event, { through = false } = {}) {
+        through = through || !!(event.metaKey || event.ctrlKey);
         const rect = this.renderer.domElement.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
