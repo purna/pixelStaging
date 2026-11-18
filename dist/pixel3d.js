@@ -49511,6 +49511,12 @@ ${xrefOffset}
         this.setCameraGuidesEnabled(!this.cameraGuidesEnabled);
       });
       this.syncCameraGuideControls();
+      this.positionModeBanner();
+      const timelineEl = document.getElementById("shot-timeline");
+      if (timelineEl && window.ResizeObserver) {
+        new ResizeObserver(() => this.positionModeBanner()).observe(timelineEl);
+      }
+      window.addEventListener("resize", () => this.positionModeBanner());
       this.selectionOutline = new BoxHelper(new Object3D(), 55807);
       this.selectionOutline.visible = false;
       this.selectionOutline.renderOrder = 998;
@@ -49909,6 +49915,7 @@ ${xrefOffset}
       const timeline = document.getElementById("shot-timeline");
       if (timeline) timeline.style.display = isCameraMode ? "flex" : "none";
       if (isCameraMode) this.staging?.shotManager?.refreshUI?.();
+      this.positionModeBanner();
       document.getElementById("selection-info")?.classList.toggle("hidden", !(this.selectedObject && !isCameraMode));
       this.syncCameraGuideControls();
       this.renderer?.domElement && (this.renderer.domElement.style.cursor = isCameraMode ? "grab" : "default");
@@ -49918,6 +49925,14 @@ ${xrefOffset}
           "info"
         );
       }
+    }
+    positionModeBanner() {
+      const banner = document.getElementById("mode-banner");
+      const timeline = document.getElementById("shot-timeline");
+      if (!banner) return;
+      const timelineVisible = timeline && getComputedStyle(timeline).display !== "none" && timeline.offsetHeight > 0;
+      const offset = timelineVisible ? timeline.offsetHeight + 16 : 20;
+      banner.style.bottom = `${offset}px`;
     }
     setCameraGuidesEnabled(enabled) {
       this.cameraGuidesEnabled = !!enabled;

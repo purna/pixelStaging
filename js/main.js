@@ -225,6 +225,14 @@ class StageApp {
             this.setCameraGuidesEnabled(!this.cameraGuidesEnabled);
         });
         this.syncCameraGuideControls();
+        this.positionModeBanner();
+
+        // Keep the bottom-left mode info clear of the timeline as it grows/shrinks.
+        const timelineEl = document.getElementById('shot-timeline');
+        if (timelineEl && window.ResizeObserver) {
+            new ResizeObserver(() => this.positionModeBanner()).observe(timelineEl);
+        }
+        window.addEventListener('resize', () => this.positionModeBanner());
 
         // A bright box around the selection makes it obvious which object the
         // gizmo belongs to, including groups whose origin is not their centre.
@@ -725,6 +733,7 @@ class StageApp {
         const timeline = document.getElementById('shot-timeline');
         if (timeline) timeline.style.display = isCameraMode ? 'flex' : 'none';
         if (isCameraMode) this.staging?.shotManager?.refreshUI?.();
+        this.positionModeBanner();
         document.getElementById('selection-info')?.classList.toggle('hidden', !(this.selectedObject && !isCameraMode));
         this.syncCameraGuideControls();
 
@@ -737,6 +746,17 @@ class StageApp {
                 'info'
             );
         }
+    }
+
+    positionModeBanner() {
+        const banner = document.getElementById('mode-banner');
+        const timeline = document.getElementById('shot-timeline');
+        if (!banner) return;
+        const timelineVisible = timeline
+            && getComputedStyle(timeline).display !== 'none'
+            && timeline.offsetHeight > 0;
+        const offset = timelineVisible ? timeline.offsetHeight + 16 : 20;
+        banner.style.bottom = `${offset}px`;
     }
 
     setCameraGuidesEnabled(enabled) {
