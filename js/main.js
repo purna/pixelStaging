@@ -549,7 +549,9 @@ class StageApp {
         const shot = shotManager?.selectedShot;
         const rig = shot ? this.staging.cameras.get(shot.cameraId) : null;
 
-        if (!shot || !rig || shotManager.framingControls || shotManager.previewActive || shotManager.playing) {
+        // Camera bodies and keyframe frustums are Camera-mode tools. In Scene
+        // mode they must not appear or be draggable as scene objects.
+        if (this.controlMode !== 'camera' || !shot || !rig || shotManager.framingControls || shotManager.previewActive || shotManager.playing) {
             for (const { group } of this.keyframeGizmos.values()) group.visible = false;
             this.keyframeControls.detach();
             this.keyframeControls.visible = false;
@@ -692,6 +694,22 @@ class StageApp {
         // exactly what the controls are moving.
         if (this.controlMode === 'camera' && this.staging?.shotManager) {
             this.staging.shotManager.previewActive = false;
+        }
+
+        // Cameras belong to Camera mode / the Camera tab. In Scene mode they are
+        // hidden and must not retain a selection or transform gizmo.
+        if (this.controlMode !== 'camera') {
+            if (this.selectedObject && this.isCameraEditorObject(this.selectedObject)) {
+                this.deselect();
+            }
+            for (const { group } of this.keyframeGizmos?.values?.() || []) group.visible = false;
+            if (this.keyframeControls) {
+                this.keyframeControls.detach();
+                this.keyframeControls.visible = false;
+                this.keyframeControls.enabled = false;
+            }
+        } else {
+            this.updateKeyframeGizmos();
         }
 
         const isCameraMode = this.controlMode === 'camera';
@@ -1582,7 +1600,24 @@ class StageApp {
         }
     }
 
+    /** True for virtual-camera rigs and the camera keyframe helpers. */
+    isCameraEditorObject(obj) {
+        let cursor = obj;
+        while (cursor && cursor !== this.scene) {
+            if (cursor.userData?.rigRef || cursor.userData?.isKeyframeGizmo) return true;
+            cursor = cursor.parent;
+        }
+        return false;
+    }
+
     selectObject(obj) {
+        // Cameras are edited from the Camera tab / Shot Designer, never as
+        // scene objects. This also covers rigs inside hierarchy folders.
+        if (this.isCameraEditorObject(obj)) {
+            this.ui?.showNotification?.('Cameras are edited in the Camera tab, not selected in the scene.', 'info');
+            return;
+        }
+
         // Always resolve a character mesh/bone up to the character root so the
         // pose controls in the properties panel are available.
         let characterRoot = obj;
