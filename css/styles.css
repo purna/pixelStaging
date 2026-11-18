@@ -633,6 +633,21 @@ header {
     border-color: rgba(255, 176, 32, 0.55);
 }
 
+.camera-safe-toggle {
+    margin-left: 6px;
+    color: var(--text-secondary);
+}
+
+.camera-safe-toggle.active {
+    color: #ffb020;
+    border-color: rgba(255, 176, 32, 0.55) !important;
+    background: rgba(255, 176, 32, 0.14) !important;
+}
+
+.camera-safe-toggle.hidden {
+    display: none !important;
+}
+
 /* Persistent mode badge: makes it obvious whether a click edits or navigates */
 .mode-banner {
     position: absolute;
@@ -5890,6 +5905,34 @@ input[type="number"].color-slider-value-compact {
     border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: 50%;
 }
+
+/* Centre tick marks on each edge, matching standard camera framing guides. */
+.guide-tick {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.guide-tick-top,
+.guide-tick-bottom {
+    left: 50%;
+    width: 1px;
+    height: 12px;
+    transform: translateX(-50%);
+}
+
+.guide-tick-top { top: 0; }
+.guide-tick-bottom { bottom: 0; }
+
+.guide-tick-left,
+.guide-tick-right {
+    top: 50%;
+    width: 12px;
+    height: 1px;
+    transform: translateY(-50%);
+}
+
+.guide-tick-left { left: 0; }
+.guide-tick-right { right: 0; }
 
 /* Timeline keyframes */
 .shot-timeline-kf {

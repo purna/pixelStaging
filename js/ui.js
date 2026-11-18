@@ -2378,11 +2378,15 @@ export class UI {
         if (guidesBtn && !guidesBtn.dataset.wired) {
             guidesBtn.dataset.wired = 'true';
             guidesBtn.addEventListener('click', () => {
-                this.app.cameraGuidesEnabled = !this.app.cameraGuidesEnabled;
-                guidesBtn.classList.toggle('active', this.app.cameraGuidesEnabled);
-                const guides = document.getElementById('camera-guides');
-                if (guides) guides.classList.toggle('hidden', !this.app.cameraGuidesEnabled);
-                this.showNotification(`Camera guides ${this.app.cameraGuidesEnabled ? 'on' : 'off'}`, 'info');
+                if (this.app.setCameraGuidesEnabled) {
+                    this.app.setCameraGuidesEnabled(!this.app.cameraGuidesEnabled);
+                } else {
+                    this.app.cameraGuidesEnabled = !this.app.cameraGuidesEnabled;
+                    guidesBtn.classList.toggle('active', this.app.cameraGuidesEnabled);
+                    const guides = document.getElementById('camera-guides');
+                    if (guides) guides.classList.toggle('hidden', !this.app.cameraGuidesEnabled);
+                    this.showNotification(`Camera guides ${this.app.cameraGuidesEnabled ? 'on' : 'off'}`, 'info');
+                }
             });
         }
 

@@ -233,7 +233,13 @@
     gap: 22px;
 }
 
+/* Let the body scroll instead of compressing the artwork and cards to fit. */
+.welcome-body > * {
+    flex-shrink: 0;
+}
+
 .welcome-hero {
+    flex-shrink: 0;
     margin: 0;
     border: 1px solid var(--border-color);
     border-radius: 10px;
@@ -244,6 +250,8 @@
 .welcome-hero img {
     display: block;
     width: 100%;
+    height: auto;
+    min-height: 220px;
     max-height: 360px;
     object-fit: cover;
     object-position: top center;

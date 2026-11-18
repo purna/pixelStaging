@@ -37,6 +37,9 @@ export class SceneManager {
             shots: [],
             settings: {
                 backgroundColor: '#2a2a4e',
+                backgroundGradient: false,
+                gradientTop: '#2a2a4e',
+                gradientBottom: '#0f0f1b',
                 fog: { enabled: true, color: '#2a2a4e', near: 30, far: 100 },
                 ambientLight: { enabled: true, color: '#ffffff', intensity: 0.6 },
                 directionalLight: { enabled: true, color: '#ffffff', intensity: 1.2, position: [10, 10, 5] }
@@ -184,7 +187,8 @@ export class SceneManager {
                 rotation: rig.group.rotation.toArray(),
                 lens: { ...rig.lens },
                 aspect: rig.aspect,
-                color: rig.color
+                color: rig.color,
+                visibleInViewport: rig.visibleInViewport !== false
             }));
             // Keep the invariant even if the live list was temporarily empty.
             if (!sceneData.cameraRigs.some(r => r.isDefault)) {
@@ -196,6 +200,46 @@ export class SceneManager {
         if (this.app.staging?.shotManager) {
             sceneData.shots = this.app.staging.shotManager.shots.map(s => ({ ...s }));
         }
+
+        // Save the scene's visual settings so exported projects restore the
+        // same sky, fog, ambient light and key light on every scene.
+        sceneData.settings = this.captureSceneSettings();
+    }
+
+    captureSceneSettings() {
+        const bg = this.app.backgroundState || {};
+        const fog = this.app.fogState || {};
+        const sceneFog = this.app.scene?.fog;
+        const ambient = this.app.sceneAmbientLight;
+        const directional = this.app.sceneDirectionalLight;
+        const isGradient = bg.type === 'gradient';
+        const backgroundColor = bg.type === 'color'
+            ? bg.color
+            : (bg.top || '#2a2a4e');
+
+        return {
+            backgroundColor,
+            backgroundGradient: isGradient,
+            gradientTop: bg.top || backgroundColor,
+            gradientBottom: bg.bottom || '#0f0f1b',
+            fog: {
+                enabled: fog.enabled ?? !!sceneFog,
+                color: fog.color || (sceneFog?.color ? `#${sceneFog.color.getHexString()}` : '#2a2a4e'),
+                near: fog.near ?? sceneFog?.near ?? 30,
+                far: fog.far ?? sceneFog?.far ?? 100
+            },
+            ambientLight: {
+                enabled: ambient?.visible !== false,
+                color: ambient?.color ? `#${ambient.color.getHexString()}` : '#ffffff',
+                intensity: ambient?.intensity ?? 0.6
+            },
+            directionalLight: {
+                enabled: directional?.visible !== false,
+                color: directional?.color ? `#${directional.color.getHexString()}` : '#ffffff',
+                intensity: directional?.intensity ?? 1.2,
+                position: directional?.position ? directional.position.toArray() : [10, 10, 5]
+            }
+        };
     }
 
     extractMaterials(object) {
@@ -256,21 +300,40 @@ export class SceneManager {
         this.app.ui?.renderHierarchyPanel();
     }
 
-    applySceneSettings(settings) {
-        // Background
-        if (settings.backgroundColor) {
-            this.app.setBackgroundColor(settings.backgroundColor);
-        }
-        
-        // Fog
-        if (settings.fog?.enabled) {
-            this.app.setFog(true, settings.fog.color, settings.fog.near, settings.fog.far);
+    applySceneSettings(settings = {}) {
+        // Background (solid colour or gradient)
+        if (settings.backgroundGradient) {
+            this.app.setGradientBackground?.(
+                settings.gradientTop || settings.backgroundColor || '#2a2a4e',
+                settings.gradientBottom || '#0f0f1b'
+            );
         } else {
-            this.app.setFog(false);
+            this.app.setBackgroundColor?.(settings.backgroundColor || '#2a2a4e');
         }
-        
-        // Lights - these would need to find and update existing lights
-        // For now we just store the settings
+
+        // Fog
+        const fog = settings.fog || {
+            enabled: settings.fogEnabled,
+            color: settings.fogColor,
+            near: settings.fogNear,
+            far: settings.fogFar
+        };
+        this.app.setFog?.(!!fog.enabled, fog.color, fog.near, fog.far);
+
+        // Ambient light
+        const ambient = settings.ambientLight || {};
+        if (ambient.intensity != null) this.app.setAmbientIntensity?.(ambient.intensity);
+        this.app.setAmbientLight?.(ambient.enabled !== false, ambient.color || '#ffffff');
+
+        // Key / directional light
+        const directional = settings.directionalLight;
+        const keyLight = this.app.sceneDirectionalLight;
+        if (directional && keyLight) {
+            keyLight.visible = directional.enabled !== false;
+            if (directional.color) keyLight.color.set(directional.color);
+            if (directional.intensity != null) keyLight.intensity = directional.intensity;
+            if (Array.isArray(directional.position)) keyLight.position.fromArray(directional.position);
+        }
     }
 
     restoreSceneCameras(sceneData) {
@@ -283,7 +346,7 @@ export class SceneManager {
 
         cameras.clearRigs();
         for (const def of saved) {
-            cameras.addRig(def.name, new THREE.Vector3().fromArray(def.position || [4, 1.5, 4]), {
+            const rig = cameras.addRig(def.name, new THREE.Vector3().fromArray(def.position || [4, 1.5, 4]), {
                 id: def.id,
                 name: def.name,
                 isDefault: !!def.isDefault,
@@ -293,6 +356,7 @@ export class SceneManager {
                 aspect: def.aspect,
                 color: def.color
             });
+            if (rig) rig.visibleInViewport = def.visibleInViewport !== false;
         }
         cameras.ensureDefaultRig();
         cameras.refreshUI();
@@ -403,6 +467,9 @@ export class SceneManager {
                 shots: sceneData.shots || [],
                 settings: sceneData.settings || {
                     backgroundColor: '#2a2a4e',
+                    backgroundGradient: false,
+                    gradientTop: '#2a2a4e',
+                    gradientBottom: '#0f0f1b',
                     fog: { enabled: true, color: '#2a2a4e', near: 30, far: 100 },
                     ambientLight: { enabled: true, color: '#ffffff', intensity: 0.6 },
                     directionalLight: { enabled: true, color: '#ffffff', intensity: 1.2, position: [10, 10, 5] }

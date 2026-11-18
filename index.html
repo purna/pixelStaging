@@ -28,10 +28,10 @@
         }
     </style>
     <!-- External Styles -->
-    <link rel="stylesheet" href="css/styles.css?v=20261118-1">
+    <link rel="stylesheet" href="css/styles.css?v=20261119-1">
     <link rel="stylesheet" href="css/settings.css?v=20261111-2">
-    <link rel="stylesheet" href="css/modal.css?v=20261112-1">
-    <link rel="stylesheet" href="css/tutorials.css">
+    <link rel="stylesheet" href="css/modal.css?v=20261119-1">
+    <link rel="stylesheet" href="css/tutorials.css?v=20261119-1">
     <link rel="stylesheet" href="css/animation.css">
 
     <!-- Local Font Awesome -->
@@ -339,6 +339,15 @@ Open application settings"><i class="fas fa-cog"></i></div>
                         <i class="fas fa-video"></i><span>Camera</span>
                     </button>
                 </div>
+
+                <!-- Safe zones are only useful while composing a camera view -->
+                <button class="btn icon-only camera-safe-toggle" id="camera-safe-toggle"
+                    title="Camera safe zones (Camera mode)" aria-pressed="true"
+                    data-tooltip="**Camera Safe Zones**
+Show action-safe (90%) and title-safe (80%) guides
+--Camera mode only--">
+                    <i class="fas fa-border-all"></i>
+                </button>
             </div>
 
             <!-- Always-visible mode badge so users know whether clicks edit or navigate -->
@@ -388,6 +397,10 @@ Open application settings"><i class="fas fa-cog"></i></div>
                 <span class="guide-safe guide-action-safe"></span>
                 <span class="guide-safe guide-title-safe"></span>
                 <span class="guide-center"></span>
+                <span class="guide-tick guide-tick-top"></span>
+                <span class="guide-tick guide-tick-right"></span>
+                <span class="guide-tick guide-tick-bottom"></span>
+                <span class="guide-tick guide-tick-left"></span>
             </div>
 
             <!-- Floating Info Box (bottom left) -->
@@ -1592,7 +1605,7 @@ Open application settings"><i class="fas fa-cog"></i></div>
         </div>
 
         <!-- Self-contained app bundle: works over http:// and when index.html is opened directly. -->
-        <script src="dist/pixel3d.js?v=20261118-1"></script>
+        <script src="dist/pixel3d.js?v=20261119-1"></script>
 
         <!-- ANIMATION TIMELINE PANEL -->
         <div id="anim-panel" style="display:none;">

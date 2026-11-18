@@ -35132,11 +35132,15 @@
       if (guidesBtn && !guidesBtn.dataset.wired) {
         guidesBtn.dataset.wired = "true";
         guidesBtn.addEventListener("click", () => {
-          this.app.cameraGuidesEnabled = !this.app.cameraGuidesEnabled;
-          guidesBtn.classList.toggle("active", this.app.cameraGuidesEnabled);
-          const guides = document.getElementById("camera-guides");
-          if (guides) guides.classList.toggle("hidden", !this.app.cameraGuidesEnabled);
-          this.showNotification(`Camera guides ${this.app.cameraGuidesEnabled ? "on" : "off"}`, "info");
+          if (this.app.setCameraGuidesEnabled) {
+            this.app.setCameraGuidesEnabled(!this.app.cameraGuidesEnabled);
+          } else {
+            this.app.cameraGuidesEnabled = !this.app.cameraGuidesEnabled;
+            guidesBtn.classList.toggle("active", this.app.cameraGuidesEnabled);
+            const guides = document.getElementById("camera-guides");
+            if (guides) guides.classList.toggle("hidden", !this.app.cameraGuidesEnabled);
+            this.showNotification(`Camera guides ${this.app.cameraGuidesEnabled ? "on" : "off"}`, "info");
+          }
         });
       }
       const timelineBtn = document.getElementById("tool-toggle-shot-timeline");
@@ -40479,10 +40483,18 @@
     }
     saveSceneJSON() {
       this.app.staging?.scenes?.saveCurrentSceneState?.();
+      const sceneManager = this.app.staging?.scenes;
+      const currentScene = sceneManager?.getCurrentScene?.() || null;
       const sceneData = {
         ...this.serializeCurrentScene(),
+        // Top-level copies keep older importers working while `scenes`
+        // remains the complete multi-scene project payload.
+        currentScene: sceneManager?.currentSceneName || null,
+        sceneSettings: currentScene?.settings || null,
+        cameraRigs: (currentScene?.cameraRigs || []).map((rig) => ({ ...rig })),
+        shots: (currentScene?.shots || []).map((shot) => ({ ...shot })),
         customPoses: this.app.characterManager?.exportCustomPoses?.() || {},
-        scenes: this.app.staging?.scenes?.exportScenes?.() || null
+        scenes: sceneManager?.exportScenes?.() || null
       };
       const blob = new Blob([JSON.stringify(sceneData)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -48224,6 +48236,9 @@ ${elements.join("\n")}
         shots: [],
         settings: {
           backgroundColor: "#2a2a4e",
+          backgroundGradient: false,
+          gradientTop: "#2a2a4e",
+          gradientBottom: "#0f0f1b",
           fog: { enabled: true, color: "#2a2a4e", near: 30, far: 100 },
           ambientLight: { enabled: true, color: "#ffffff", intensity: 0.6 },
           directionalLight: { enabled: true, color: "#ffffff", intensity: 1.2, position: [10, 10, 5] }
@@ -48342,7 +48357,8 @@ ${elements.join("\n")}
           rotation: rig.group.rotation.toArray(),
           lens: { ...rig.lens },
           aspect: rig.aspect,
-          color: rig.color
+          color: rig.color,
+          visibleInViewport: rig.visibleInViewport !== false
         }));
         if (!sceneData.cameraRigs.some((r) => r.isDefault)) {
           sceneData.cameraRigs.unshift(this.makeDefaultCamera());
@@ -48351,6 +48367,39 @@ ${elements.join("\n")}
       if (this.app.staging?.shotManager) {
         sceneData.shots = this.app.staging.shotManager.shots.map((s) => ({ ...s }));
       }
+      sceneData.settings = this.captureSceneSettings();
+    }
+    captureSceneSettings() {
+      const bg = this.app.backgroundState || {};
+      const fog = this.app.fogState || {};
+      const sceneFog = this.app.scene?.fog;
+      const ambient = this.app.sceneAmbientLight;
+      const directional = this.app.sceneDirectionalLight;
+      const isGradient = bg.type === "gradient";
+      const backgroundColor = bg.type === "color" ? bg.color : bg.top || "#2a2a4e";
+      return {
+        backgroundColor,
+        backgroundGradient: isGradient,
+        gradientTop: bg.top || backgroundColor,
+        gradientBottom: bg.bottom || "#0f0f1b",
+        fog: {
+          enabled: fog.enabled ?? !!sceneFog,
+          color: fog.color || (sceneFog?.color ? `#${sceneFog.color.getHexString()}` : "#2a2a4e"),
+          near: fog.near ?? sceneFog?.near ?? 30,
+          far: fog.far ?? sceneFog?.far ?? 100
+        },
+        ambientLight: {
+          enabled: ambient?.visible !== false,
+          color: ambient?.color ? `#${ambient.color.getHexString()}` : "#ffffff",
+          intensity: ambient?.intensity ?? 0.6
+        },
+        directionalLight: {
+          enabled: directional?.visible !== false,
+          color: directional?.color ? `#${directional.color.getHexString()}` : "#ffffff",
+          intensity: directional?.intensity ?? 1.2,
+          position: directional?.position ? directional.position.toArray() : [10, 10, 5]
+        }
+      };
     }
     extractMaterials(object) {
       const materials = [];
@@ -48394,14 +48443,32 @@ ${elements.join("\n")}
       this.applySceneSettings(sceneData.settings);
       this.app.ui?.renderHierarchyPanel();
     }
-    applySceneSettings(settings) {
-      if (settings.backgroundColor) {
-        this.app.setBackgroundColor(settings.backgroundColor);
-      }
-      if (settings.fog?.enabled) {
-        this.app.setFog(true, settings.fog.color, settings.fog.near, settings.fog.far);
+    applySceneSettings(settings = {}) {
+      if (settings.backgroundGradient) {
+        this.app.setGradientBackground?.(
+          settings.gradientTop || settings.backgroundColor || "#2a2a4e",
+          settings.gradientBottom || "#0f0f1b"
+        );
       } else {
-        this.app.setFog(false);
+        this.app.setBackgroundColor?.(settings.backgroundColor || "#2a2a4e");
+      }
+      const fog = settings.fog || {
+        enabled: settings.fogEnabled,
+        color: settings.fogColor,
+        near: settings.fogNear,
+        far: settings.fogFar
+      };
+      this.app.setFog?.(!!fog.enabled, fog.color, fog.near, fog.far);
+      const ambient = settings.ambientLight || {};
+      if (ambient.intensity != null) this.app.setAmbientIntensity?.(ambient.intensity);
+      this.app.setAmbientLight?.(ambient.enabled !== false, ambient.color || "#ffffff");
+      const directional = settings.directionalLight;
+      const keyLight = this.app.sceneDirectionalLight;
+      if (directional && keyLight) {
+        keyLight.visible = directional.enabled !== false;
+        if (directional.color) keyLight.color.set(directional.color);
+        if (directional.intensity != null) keyLight.intensity = directional.intensity;
+        if (Array.isArray(directional.position)) keyLight.position.fromArray(directional.position);
       }
     }
     restoreSceneCameras(sceneData) {
@@ -48410,7 +48477,7 @@ ${elements.join("\n")}
       const saved = Array.isArray(sceneData?.cameraRigs) && sceneData.cameraRigs.length ? sceneData.cameraRigs : [this.makeDefaultCamera()];
       cameras.clearRigs();
       for (const def of saved) {
-        cameras.addRig(def.name, new Vector3().fromArray(def.position || [4, 1.5, 4]), {
+        const rig = cameras.addRig(def.name, new Vector3().fromArray(def.position || [4, 1.5, 4]), {
           id: def.id,
           name: def.name,
           isDefault: !!def.isDefault,
@@ -48420,6 +48487,7 @@ ${elements.join("\n")}
           aspect: def.aspect,
           color: def.color
         });
+        if (rig) rig.visibleInViewport = def.visibleInViewport !== false;
       }
       cameras.ensureDefaultRig();
       cameras.refreshUI();
@@ -48507,6 +48575,9 @@ ${elements.join("\n")}
           shots: sceneData.shots || [],
           settings: sceneData.settings || {
             backgroundColor: "#2a2a4e",
+            backgroundGradient: false,
+            gradientTop: "#2a2a4e",
+            gradientBottom: "#0f0f1b",
             fog: { enabled: true, color: "#2a2a4e", near: 30, far: 100 },
             ambientLight: { enabled: true, color: "#ffffff", intensity: 0.6 },
             directionalLight: { enabled: true, color: "#ffffff", intensity: 1.2, position: [10, 10, 5] }
@@ -49301,7 +49372,14 @@ ${xrefOffset}
       this.selectionBounds = new Box3();
       this._pendingClickSelection = null;
       this.controlMode = "camera";
-      this.cameraGuidesEnabled = false;
+      let storedGuides = null;
+      try {
+        storedGuides = localStorage.getItem("pixelstaging-camera-guides");
+      } catch (e) {
+      }
+      this.cameraGuidesEnabled = storedGuides !== "0";
+      this.backgroundState = { type: "color", color: "#2a2a4e" };
+      this.fogState = { enabled: true, color: "#2a2a4e", near: 30, far: 100 };
       this.cameraNavKeys = /* @__PURE__ */ new Set();
       this.cameraNavBaseSpeed = 9;
       this.cameraNavRotateSpeed = 1.4;
@@ -49391,6 +49469,7 @@ ${xrefOffset}
       this.sceneAmbientLight = ambientLight;
       this.scene.add(ambientLight);
       const directionalLight = new DirectionalLight(16777215, 1.2);
+      this.sceneDirectionalLight = directionalLight;
       directionalLight.position.set(10, 10, 5);
       directionalLight.castShadow = true;
       directionalLight.shadow.mapSize.width = 2048;
@@ -49428,6 +49507,10 @@ ${xrefOffset}
       document.getElementById("mode-banner-action")?.addEventListener("click", () => {
         this.setControlMode(this.controlMode === "camera" ? "scene" : "camera");
       });
+      document.getElementById("camera-safe-toggle")?.addEventListener("click", () => {
+        this.setCameraGuidesEnabled(!this.cameraGuidesEnabled);
+      });
+      this.syncCameraGuideControls();
       this.selectionOutline = new BoxHelper(new Object3D(), 55807);
       this.selectionOutline.visible = false;
       this.selectionOutline.renderOrder = 998;
@@ -49827,6 +49910,7 @@ ${xrefOffset}
       if (timeline) timeline.style.display = isCameraMode ? "flex" : "none";
       if (isCameraMode) this.staging?.shotManager?.refreshUI?.();
       document.getElementById("selection-info")?.classList.toggle("hidden", !(this.selectedObject && !isCameraMode));
+      this.syncCameraGuideControls();
       this.renderer?.domElement && (this.renderer.domElement.style.cursor = isCameraMode ? "grab" : "default");
       if (modeChanged && !silent) {
         this.ui?.showNotification?.(
@@ -49834,6 +49918,47 @@ ${xrefOffset}
           "info"
         );
       }
+    }
+    setCameraGuidesEnabled(enabled) {
+      this.cameraGuidesEnabled = !!enabled;
+      try {
+        localStorage.setItem("pixelstaging-camera-guides", enabled ? "1" : "0");
+      } catch (e) {
+      }
+      this.syncCameraGuideControls();
+      this.ui?.showNotification?.(`Camera safe zones ${this.cameraGuidesEnabled ? "on" : "off"}`, "info");
+    }
+    syncCameraGuideControls() {
+      const active = !!this.cameraGuidesEnabled;
+      const inCameraMode = this.controlMode === "camera";
+      const button = document.getElementById("camera-safe-toggle");
+      if (button) {
+        button.classList.toggle("active", active);
+        button.classList.toggle("hidden", !inCameraMode);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      }
+      const panelButton = document.getElementById("tool-toggle-camera-guides");
+      panelButton?.classList.toggle("active", active);
+      const guides = document.getElementById("camera-guides");
+      if (guides) guides.classList.toggle("hidden", !(active && inCameraMode));
+    }
+    /** Align the guide overlay with the letterboxed camera view when one is rendered. */
+    updateCameraGuideFrame(viewport) {
+      const guides = document.getElementById("camera-guides");
+      if (!guides) return;
+      if (!viewport) {
+        guides.style.inset = "";
+        guides.style.left = "";
+        guides.style.top = "";
+        guides.style.width = "";
+        guides.style.height = "";
+        return;
+      }
+      guides.style.inset = "auto";
+      guides.style.left = `${viewport.x}px`;
+      guides.style.top = `${viewport.y}px`;
+      guides.style.width = `${viewport.width}px`;
+      guides.style.height = `${viewport.height}px`;
     }
     // Configure orbit controls for optimal touch/trackpad experience
     configureOrbitControlsForTouch() {
@@ -50881,11 +51006,9 @@ ${xrefOffset}
     // --- SCENE SETTINGS METHODS ---
     setBackgroundColor(colorHex) {
       if (!this.scene) return;
-      if (colorHex) {
-        this.scene.background = new Color(colorHex);
-      } else {
-        this.scene.background = new Color(2763342);
-      }
+      const color = colorHex || "#2a2a4e";
+      this.scene.background = new Color(color);
+      this.backgroundState = { type: "color", color: `#${this.scene.background.getHexString()}` };
     }
     setAmbientLight(enabled, colorHex) {
       const light = this.sceneAmbientLight;
@@ -50911,6 +51034,12 @@ ${xrefOffset}
       } else {
         this.scene.fog = null;
       }
+      this.fogState = {
+        enabled: !!enabled,
+        color: colorHex || "#2a2a4e",
+        near: near ?? 30,
+        far: far ?? 100
+      };
     }
     setGradientBackground(topColorHex, bottomColorHex) {
       const canvas = document.createElement("canvas");
@@ -50927,9 +51056,15 @@ ${xrefOffset}
       const texture = new CanvasTexture(canvas);
       texture.needsUpdate = true;
       this.scene.background = texture;
+      this.backgroundState = {
+        type: "gradient",
+        top: topColorHex || "#1a1a2e",
+        bottom: bottomColorHex || "#0f0f1b"
+      };
     }
     clearGradientBackground() {
       this.scene.background = new Color(2763342);
+      this.backgroundState = { type: "color", color: "#2a2a4e" };
     }
     addDefaultTestObjects() {
       const floor = this.staging.place("architecture", "floor", { params: { width: 12, depth: 12 } });
@@ -50973,7 +51108,8 @@ ${xrefOffset}
       const shotCam = this.staging.shotManager.update(delta);
       const rigCam = shotCam || this.staging.cameras.getRenderCamera();
       const guides = document.getElementById("camera-guides");
-      if (guides) guides.classList.toggle("hidden", !this.cameraGuidesEnabled);
+      if (guides) guides.classList.toggle("hidden", !(this.cameraGuidesEnabled && this.controlMode === "camera"));
+      this.updateCameraGuideFrame(rigCam ? this.staging.cameras.getRenderViewport(this.renderer.domElement) : null);
       this.axisGizmo?.update(rigCam || this.camera);
       if (rigCam) {
         const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);

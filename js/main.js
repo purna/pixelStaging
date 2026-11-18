@@ -59,7 +59,11 @@ class StageApp {
         this._pendingClickSelection = null;
         // 'camera' = drag/navigate the view; 'scene' = select and transform objects.
         this.controlMode = 'camera';
-        this.cameraGuidesEnabled = false;
+        let storedGuides = null;
+        try { storedGuides = localStorage.getItem('pixelstaging-camera-guides'); } catch (e) { /* storage unavailable */ }
+        this.cameraGuidesEnabled = storedGuides !== '0';
+        this.backgroundState = { type: 'color', color: '#2a2a4e' };
+        this.fogState = { enabled: true, color: '#2a2a4e', near: 30, far: 100 };
         this.cameraNavKeys = new Set();
         this.cameraNavBaseSpeed = 9;
         this.cameraNavRotateSpeed = 1.4;
@@ -165,6 +169,7 @@ class StageApp {
 
         // Main directional light (like sunlight)
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        this.sceneDirectionalLight = directionalLight;
         directionalLight.position.set(10, 10, 5);
         directionalLight.castShadow = true;
         directionalLight.shadow.mapSize.width = 2048;
@@ -216,6 +221,10 @@ class StageApp {
         document.getElementById('mode-banner-action')?.addEventListener('click', () => {
             this.setControlMode(this.controlMode === 'camera' ? 'scene' : 'camera');
         });
+        document.getElementById('camera-safe-toggle')?.addEventListener('click', () => {
+            this.setCameraGuidesEnabled(!this.cameraGuidesEnabled);
+        });
+        this.syncCameraGuideControls();
 
         // A bright box around the selection makes it obvious which object the
         // gizmo belongs to, including groups whose origin is not their centre.
@@ -717,6 +726,7 @@ class StageApp {
         if (timeline) timeline.style.display = isCameraMode ? 'flex' : 'none';
         if (isCameraMode) this.staging?.shotManager?.refreshUI?.();
         document.getElementById('selection-info')?.classList.toggle('hidden', !(this.selectedObject && !isCameraMode));
+        this.syncCameraGuideControls();
 
         this.renderer?.domElement && (this.renderer.domElement.style.cursor = isCameraMode ? 'grab' : 'default');
         if (modeChanged && !silent) {
@@ -727,6 +737,47 @@ class StageApp {
                 'info'
             );
         }
+    }
+
+    setCameraGuidesEnabled(enabled) {
+        this.cameraGuidesEnabled = !!enabled;
+        try { localStorage.setItem('pixelstaging-camera-guides', enabled ? '1' : '0'); } catch (e) { /* storage unavailable */ }
+        this.syncCameraGuideControls();
+        this.ui?.showNotification?.(`Camera safe zones ${this.cameraGuidesEnabled ? 'on' : 'off'}`, 'info');
+    }
+
+    syncCameraGuideControls() {
+        const active = !!this.cameraGuidesEnabled;
+        const inCameraMode = this.controlMode === 'camera';
+        const button = document.getElementById('camera-safe-toggle');
+        if (button) {
+            button.classList.toggle('active', active);
+            button.classList.toggle('hidden', !inCameraMode);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        }
+        const panelButton = document.getElementById('tool-toggle-camera-guides');
+        panelButton?.classList.toggle('active', active);
+        const guides = document.getElementById('camera-guides');
+        if (guides) guides.classList.toggle('hidden', !(active && inCameraMode));
+    }
+
+    /** Align the guide overlay with the letterboxed camera view when one is rendered. */
+    updateCameraGuideFrame(viewport) {
+        const guides = document.getElementById('camera-guides');
+        if (!guides) return;
+        if (!viewport) {
+            guides.style.inset = '';
+            guides.style.left = '';
+            guides.style.top = '';
+            guides.style.width = '';
+            guides.style.height = '';
+            return;
+        }
+        guides.style.inset = 'auto';
+        guides.style.left = `${viewport.x}px`;
+        guides.style.top = `${viewport.y}px`;
+        guides.style.width = `${viewport.width}px`;
+        guides.style.height = `${viewport.height}px`;
     }
 
     // Configure orbit controls for optimal touch/trackpad experience
@@ -2049,12 +2100,9 @@ class StageApp {
     // --- SCENE SETTINGS METHODS ---
     setBackgroundColor(colorHex) {
         if (!this.scene) return;
-        if (colorHex) {
-            this.scene.background = new THREE.Color(colorHex);
-        } else {
-            // Use default background if null/undefined
-            this.scene.background = new THREE.Color(0x2a2a4e);
-        }
+        const color = colorHex || '#2a2a4e';
+        this.scene.background = new THREE.Color(color);
+        this.backgroundState = { type: 'color', color: `#${this.scene.background.getHexString()}` };
     }
 
     setAmbientLight(enabled, colorHex) {
@@ -2085,6 +2133,12 @@ class StageApp {
         } else {
             this.scene.fog = null;
         }
+        this.fogState = {
+            enabled: !!enabled,
+            color: colorHex || '#2a2a4e',
+            near: near ?? 30,
+            far: far ?? 100
+        };
     }
 
     setGradientBackground(topColorHex, bottomColorHex) {
@@ -2106,10 +2160,16 @@ class StageApp {
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
         this.scene.background = texture;
+        this.backgroundState = {
+            type: 'gradient',
+            top: topColorHex || '#1a1a2e',
+            bottom: bottomColorHex || '#0f0f1b'
+        };
     }
 
     clearGradientBackground() {
         this.scene.background = new THREE.Color(0x2a2a4e);
+        this.backgroundState = { type: 'color', color: '#2a2a4e' };
     }
 
     addDefaultTestObjects() {
@@ -2172,7 +2232,8 @@ class StageApp {
         const shotCam = this.staging.shotManager.update(delta);
         const rigCam = shotCam || this.staging.cameras.getRenderCamera();
         const guides = document.getElementById('camera-guides');
-        if (guides) guides.classList.toggle('hidden', !this.cameraGuidesEnabled);
+        if (guides) guides.classList.toggle('hidden', !(this.cameraGuidesEnabled && this.controlMode === 'camera'));
+        this.updateCameraGuideFrame(rigCam ? this.staging.cameras.getRenderViewport(this.renderer.domElement) : null);
         this.axisGizmo?.update(rigCam || this.camera);
         if (rigCam) {
             const vp = this.staging.cameras.getRenderViewport(this.renderer.domElement);

@@ -131,10 +131,18 @@ export class FileManager {
 
     saveSceneJSON() {
         this.app.staging?.scenes?.saveCurrentSceneState?.();
+        const sceneManager = this.app.staging?.scenes;
+        const currentScene = sceneManager?.getCurrentScene?.() || null;
         const sceneData = {
             ...this.serializeCurrentScene(),
+            // Top-level copies keep older importers working while `scenes`
+            // remains the complete multi-scene project payload.
+            currentScene: sceneManager?.currentSceneName || null,
+            sceneSettings: currentScene?.settings || null,
+            cameraRigs: (currentScene?.cameraRigs || []).map(rig => ({ ...rig })),
+            shots: (currentScene?.shots || []).map(shot => ({ ...shot })),
             customPoses: this.app.characterManager?.exportCustomPoses?.() || {},
-            scenes: this.app.staging?.scenes?.exportScenes?.() || null
+            scenes: sceneManager?.exportScenes?.() || null
         };
 
         const blob = new Blob([JSON.stringify(sceneData)], { type: 'application/json' });
