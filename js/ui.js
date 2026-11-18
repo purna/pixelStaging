@@ -5490,6 +5490,12 @@ export class UI {
         }
     }
 
+    // Hide the selection hint immediately (e.g. when the gizmo is grabbed).
+    dismissSelectionHint() {
+        clearTimeout(this._selectionHintTimer);
+        document.getElementById('selection-info')?.setAttribute('data-dismissed', 'true');
+    }
+
     // --- PROPERTIES PANEL ---
     updateUI(selectedObject) {
         // Delegate Layer List Rendering to LayerManager
@@ -5500,11 +5506,24 @@ export class UI {
         // Update hierarchy panel
         this.renderHierarchyPanel();
 
-        // Show/hide the floating selection info box
+        // Show/hide the floating selection info box. It auto-dismisses so it
+        // never sits over the gizmo while the user is manipulating an object.
         const infoBox = document.getElementById('selection-info');
         if (infoBox) {
             const showInfo = !!selectedObject && this.app.controlMode === 'scene';
             infoBox.classList.toggle('hidden', !showInfo);
+            if (!showInfo) {
+                this._selectionHintObject = null;
+                clearTimeout(this._selectionHintTimer);
+                infoBox.removeAttribute('data-dismissed');
+            } else if (selectedObject !== this._selectionHintObject) {
+                this._selectionHintObject = selectedObject;
+                infoBox.removeAttribute('data-dismissed');
+                clearTimeout(this._selectionHintTimer);
+                this._selectionHintTimer = setTimeout(() => {
+                    infoBox.setAttribute('data-dismissed', 'true');
+                }, 4000);
+            }
         }
 
         // Camera controls live inside the Camera tab accordion now.

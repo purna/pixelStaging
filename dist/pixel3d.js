@@ -38098,6 +38098,11 @@
         this.btnCancel.disabled = false;
       }
     }
+    // Hide the selection hint immediately (e.g. when the gizmo is grabbed).
+    dismissSelectionHint() {
+      clearTimeout(this._selectionHintTimer);
+      document.getElementById("selection-info")?.setAttribute("data-dismissed", "true");
+    }
     // --- PROPERTIES PANEL ---
     updateUI(selectedObject) {
       if (this.app.layerManager) {
@@ -38108,6 +38113,18 @@
       if (infoBox) {
         const showInfo = !!selectedObject && this.app.controlMode === "scene";
         infoBox.classList.toggle("hidden", !showInfo);
+        if (!showInfo) {
+          this._selectionHintObject = null;
+          clearTimeout(this._selectionHintTimer);
+          infoBox.removeAttribute("data-dismissed");
+        } else if (selectedObject !== this._selectionHintObject) {
+          this._selectionHintObject = selectedObject;
+          infoBox.removeAttribute("data-dismissed");
+          clearTimeout(this._selectionHintTimer);
+          this._selectionHintTimer = setTimeout(() => {
+            infoBox.setAttribute("data-dismissed", "true");
+          }, 4e3);
+        }
       }
       document.getElementById("floating-camera-controls")?.classList.add("hidden");
       this.renderPropertiesPanel(selectedObject);
@@ -49597,6 +49614,7 @@ ${xrefOffset}
           this.transformControl.isHovered = false;
         });
         this.transformControl.addEventListener("dragging-changed", (event) => {
+          if (event.value) this.ui?.dismissSelectionHint?.();
           if (this.orbit) this.orbit.enabled = !event.value;
           if (this.cameraManager) {
             this.cameraManager.setCameraEnabled(!event.value);

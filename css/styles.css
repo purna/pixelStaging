@@ -832,21 +832,23 @@ header {
     z-index: 1000;
 }
 
-/* Selection Info Box (bottom left of canvas) */
+/* Selection Info Box — fixed to the bottom of the viewport, clear of the gizmo */
 .selection-info-box {
     position: absolute;
-    bottom: 82px;
-    left: 20px;
-    background: rgba(26, 26, 46, 0.9);
+    bottom: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(26, 26, 46, 0.92);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 12px 16px;
+    padding: 10px 16px;
     color: var(--text-secondary);
     font-size: 0.75rem;
     line-height: 1.4;
+    text-align: center;
     pointer-events: none;
-    z-index: 1000;
-    max-width: 220px;
+    z-index: 900;
+    max-width: min(520px, calc(100% - 40px));
     transition: opacity 0.3s ease;
 }
 
@@ -855,7 +857,8 @@ header {
     color: var(--text-secondary);
 }
 
-.selection-info-box.hidden {
+.selection-info-box.hidden,
+.selection-info-box[data-dismissed="true"] {
     opacity: 0;
     pointer-events: none;
 }
@@ -6317,12 +6320,7 @@ input[type="number"].color-slider-value-compact {
     padding: 0;
 }
 
-/* Deselect hint sits above the timeline */
-.selection-info-box {
-    bottom: 188px !important;
-    left: 50% !important;
-    transform: translateX(-50%);
-}
+/* Selection hint is positioned by the base .selection-info-box rule. */
 
 /* Timeline styled after the Shot Designer reference */
 #shot-timeline {
@@ -6929,10 +6927,7 @@ input[type="number"].color-slider-value-compact {
     margin-left: 1px;
 }
 
-/* Keep the deselect hint above the horizontal camera strip */
-.selection-info-box {
-    bottom: 244px !important;
-}
+/* Selection hint uses its base bottom-bar position. */
 
 .camera-name-input {
     width: 100%;

@@ -342,6 +342,7 @@ class StageApp {
             });
 
             this.transformControl.addEventListener('dragging-changed', (event) => {
+                if (event.value) this.ui?.dismissSelectionHint?.();
                 if (this.orbit) this.orbit.enabled = !event.value;
                 // Also disable camera movement completely during object transformation
                 if (this.cameraManager) {
